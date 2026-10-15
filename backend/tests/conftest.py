@@ -25,6 +25,17 @@ def owner():
     return create_engine(os.environ["OWNER_DATABASE_URL"])
 
 
+@pytest.fixture(autouse=True)
+def fresh_explanation_cache(owner):
+    """Each test starts without the stored explanations other tests made; the app's own entries are kept."""
+    newest = "SELECT COALESCE(max(id), 0) FROM explanation_cache"
+    with owner.connect() as conn:
+        before = conn.execute(text(newest)).scalar_one()
+    yield
+    with owner.begin() as conn:
+        conn.execute(text("DELETE FROM explanation_cache WHERE id > :b"), {"b": before})
+
+
 @pytest.fixture(scope="session")
 def client():
     return TestClient(app)

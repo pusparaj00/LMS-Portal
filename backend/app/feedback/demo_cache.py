@@ -4,7 +4,7 @@
 submissions. When a student submits exactly that code, the cached explanation is used, but it is NOT trusted blindly:
 it is checked again by the same verifier against this submission's own run evidence, and it is labelled `cached` in the
 API response, in the interface and in explanation_checks. If anything does not match, the normal live flow runs.
-This is not the failure-signature cache of F-46, which is not built.
+It is separate from the failure-signature cache of F-46 (app.feedback.signature_cache) and is tried first.
 """
 import hashlib
 import json

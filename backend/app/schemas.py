@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
@@ -337,7 +338,7 @@ class ProbeOut(BaseModel):
 class ExplainResponse(BaseModel):
     status: Literal["verified", "fallback"]
     attempts: int
-    cached: bool = False  # true for a prepared demo explanation; it is still verified against this submission
+    cached: bool = False  # a stored (demo or failure-signature) explanation, verified again for this submission
     explanation: ExplanationOut | None
     fallback_text: str | None
     fallback_sources: list[SourceOut]
@@ -367,6 +368,28 @@ class ProbeResult(BaseModel):
 
 class ProblemPolicy(BaseModel):
     max_hint_level: int = Field(ge=1, le=3)
+
+
+class StoredExplanation(BaseModel):
+    """One failure-signature cache entry, for instructor review (F-62)."""
+
+    signature: str
+    problem_id: int
+    problem_title: str
+    claim: str
+    line: int
+    line_text: str | None
+    concept: str
+    test_category: str
+    status: Literal["auto_verified", "instructor_approved", "rejected"]
+    hit_count: int
+    approved_by: int | None
+    updated_at: datetime
+
+
+class ExplanationDecision(BaseModel):
+    decision: Literal["approve", "reject"]
+    claim: Text | None = Field(default=None, min_length=1, max_length=400, description="an edited claim, approve only")
 
 
 class ClassStudent(BaseModel):
