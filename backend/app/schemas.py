@@ -159,50 +159,96 @@ class SubmissionResult(BaseModel):
     mastery_changes: list[MasteryChange]
 
 
-class DiagnosticStartResponse(Mockable):
+class OptionOut(BaseModel):
+    id: int
+    text: str
+
+
+class DiagnosticItem(BaseModel):
+    problem_id: int
+    kind: Literal["code", "mcq"]
+    title: str
+    statement: str
+    options: list[OptionOut]
+
+
+class DiagnosticStartRequest(BaseModel):
+    course_id: int
+
+
+class ConceptMastery(BaseModel):
+    concept_id: int
+    name: str
+    p_known: float
+
+
+class SuspectedMisconception(BaseModel):
+    name: str
+    description: str
+    probability: float
+
+
+class DiagnosticResult(BaseModel):
+    mastery: list[ConceptMastery]
+    misconceptions: list[SuspectedMisconception]
+    ability: float
+
+
+class DiagnosticStartResponse(BaseModel):
     session_id: str
     item_number: int
     max_items: int
-    problem: Problem
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "session_id": "mock-session",
-                    "item_number": 1,
-                    "max_items": 10,
-                    "problem": Problem.mock().model_dump(),
-                }
-            ]
-        }
-    )
+    item: DiagnosticItem
 
 
 class DiagnosticAnswerRequest(BaseModel):
     session_id: str
     problem_id: int
-    answer: str
+    option_id: int | None = None
+    code: str | None = Field(default=None, max_length=50_000)
 
 
-class DiagnosticAnswerResponse(Mockable):
+class DiagnosticAnswerResponse(BaseModel):
     session_id: str
     done: bool
-    mastery: dict[str, float]
-    next_problem: Problem | None
+    item_number: int
+    next_item: DiagnosticItem | None
+    result: DiagnosticResult | None
 
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "session_id": "mock-session",
-                    "done": False,
-                    "mastery": {"loops": 0.55, "functions": 0.5},
-                    "next_problem": Problem.mock().model_dump(),
-                }
-            ]
-        }
-    )
+
+class LedgerEntry(BaseModel):
+    created_at: str
+    concept: str
+    p_before: float
+    p_after: float
+    evidence_type: str
+    rule_id: str
+    explanation: str
+    submission_id: int | None
+
+
+class RecentSubmission(BaseModel):
+    submission_id: int
+    problem_id: int
+    problem_title: str
+    status: str
+    passed: int
+    failed: int
+    created_at: str
+
+
+class RecommendedProblem(BaseModel):
+    problem_id: int
+    title: str
+    reason: str
+
+
+class Dashboard(BaseModel):
+    concepts: list[ConceptMastery]
+    misconceptions: list[SuspectedMisconception]
+    recent_submissions: list[RecentSubmission]
+    recommended: RecommendedProblem | None
+    placement_completed: bool
 
 
 class ChatRequest(BaseModel):
