@@ -216,6 +216,14 @@ def report_config() -> None:
     os.chmod(JOBS / "config.json", 0o644)
 
 
+def _mtime(path: Path) -> float | None:
+    # The API deletes job and result files on its own schedule, so any file can vanish here.
+    try:
+        return path.stat().st_mtime
+    except FileNotFoundError:
+        return None
+
+
 def main() -> None:
     setup()
     last_beat = 0.0
@@ -225,11 +233,12 @@ def main() -> None:
             (JOBS / "heartbeat").write_text(str(now))
             last_beat = now
         for orphan in (JOBS / "out").glob("*.json"):
-            if now - orphan.stat().st_mtime > ORPHAN_RESULT_SECONDS:
+            mtime = _mtime(orphan)
+            if mtime is not None and now - mtime > ORPHAN_RESULT_SECONDS:
                 orphan.unlink(missing_ok=True)
-        pending = sorted((JOBS / "in").glob("*.json"), key=lambda p: p.stat().st_mtime)
+        pending = [(m, p) for p in (JOBS / "in").glob("*.json") if (m := _mtime(p)) is not None]
         if pending:
-            handle(pending[0])
+            handle(min(pending)[1])
         else:
             time.sleep(0.05)
 

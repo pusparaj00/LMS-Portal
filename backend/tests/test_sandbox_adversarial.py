@@ -22,8 +22,9 @@ ATTACKS = {
     "infinite loop": ("while True:\n    pass\n", "", "time_limit", ""),
     "sleep past wall clock": ("import time\ntime.sleep(60)\n", "", "time_limit", ""),
     "memory bomb (one allocation)": ("x = bytearray(10**10)\n", "", "memory_limit", ""),
+    # Allocation speed decides whether the memory or the CPU limit stops this one first.
     "memory bomb (growing list)": (
-        "a = []\nwhile True:\n    a.append(' ' * 10**6)\n", "", "memory_limit", "",
+        "a = []\nwhile True:\n    a.append(' ' * 10**6)\n", "", {"memory_limit", "time_limit"}, "",
     ),
     "fork bomb": (
         "import os\nwhile True:\n    try:\n        os.fork()\n    except OSError:\n        pass\n",
@@ -64,7 +65,8 @@ def test_attack_is_contained(name):
     code, stdin, expected_status, stderr_hint = ATTACKS[name]
     (run,) = run_batch(code, [stdin])
     RESULTS[name] = (run.status, run.runtime_ms)
-    assert run.status == expected_status, (name, run.status, run.stderr)
+    allowed = expected_status if isinstance(expected_status, set) else {expected_status}
+    assert run.status in allowed, (name, run.status, run.stderr)
     assert stderr_hint.lower() in run.stderr.lower(), (name, run.stderr)
     assert len(run.stdout) <= 64 * 1024
     if name == "shell characters in input":
@@ -113,3 +115,18 @@ def test_print_result_table(capsys):
     table = "\n".join(lines)
     with capsys.disabled():
         print("\n" + table)
+
+
+def test_sandbox_survives_jobs_withdrawn_while_queued():
+    # The API deletes a job file when it gives up waiting; the runner must not crash on that.
+    import os
+    import uuid
+    from pathlib import Path
+
+    jobs_in = Path(os.environ["JOBS_DIR"]) / "in"
+    for _ in range(400):
+        path = jobs_in / f"{uuid.uuid4().hex}.json"
+        path.write_text('{"code": "print(1)", "runs": []}')
+        path.unlink(missing_ok=True)
+    (run,) = run_batch("print('alive')\n", [""])
+    assert (run.status, run.stdout.strip()) == ("ok", "alive")
