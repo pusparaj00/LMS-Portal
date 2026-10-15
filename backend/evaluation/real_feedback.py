@@ -21,6 +21,7 @@ from app.config import get_settings
 from app.db import get_engine
 from app.feedback import leak as guard
 from app.llm.adapter import LLMError, build_adapter
+from evaluation.consent import agree
 
 API = "http://localhost:8000/api/v1"
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,6 +68,7 @@ def session() -> tuple[httpx.Client, dict, int]:
         f"{API}/auth/register", json={"email": f"g3-{uuid.uuid4().hex[:8]}@eval.local", "password": "eval-password-1"}
     ).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
+    agree(client, API, headers)
     with get_engine().connect() as conn:
         course_id, = conn.execute(text("SELECT id FROM courses WHERE title = :t ORDER BY id LIMIT 1"), {"t": COURSE_TITLE}).one()
     client.post(f"{API}/courses/{course_id}/enroll", headers=headers)

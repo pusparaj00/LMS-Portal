@@ -73,6 +73,7 @@ def generate(sheet_path: str, key_path: str) -> None:
     from app.db import get_engine
     from app.llm.adapter import LLMError, build_adapter
     from app.main import app
+    from evaluation.consent import agree as agree_to_notice
 
     client = TestClient(app)
     api = "/api/v1"
@@ -80,6 +81,7 @@ def generate(sheet_path: str, key_path: str) -> None:
         f"{api}/auth/register", json={"email": f"rating-{uuid.uuid4().hex[:8]}@eval.local", "password": "rating-sheet-1"}
     ).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
+    agree_to_notice(client, api, headers)
     with get_engine().connect() as conn:
         course = conn.execute(text("SELECT id FROM courses WHERE title = 'Python Fundamentals' ORDER BY id LIMIT 1")).scalar_one()
         problems = {r.title: r for r in conn.execute(text("SELECT id, title, statement FROM problems WHERE course_id = :c AND kind = 'code'"), {"c": course})}

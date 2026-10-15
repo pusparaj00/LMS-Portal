@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
 from app import ratelimit
-from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
+from app.auth import Conn, CurrentUser, can_access_course, current_user
+from app.consent import consented_student
 from app.errors import sandbox_error
 from app.grading import Grade, TestSpec, grade
 from app.mastery import client as mastery
@@ -14,7 +15,7 @@ from app.schemas import SubmissionCreate, SubmissionResult, VisibleTest
 
 log = logging.getLogger("app.submissions")
 router = APIRouter(prefix="/submissions", tags=["submissions"])
-Student = Annotated[CurrentUser, Depends(require_role("student"))]
+Student = Annotated[CurrentUser, Depends(consented_student)]
 
 
 def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) -> list[TestSpec]:

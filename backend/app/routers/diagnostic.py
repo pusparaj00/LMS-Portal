@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
 from app import ratelimit
-from app.auth import Conn, CurrentUser, can_access_course, require_role
+from app.auth import Conn, CurrentUser, can_access_course
+from app.consent import consented_student
 from app.db import get_redis
 from app.diagnostic import selection
 from app.errors import sandbox_error
@@ -27,7 +28,7 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/diagnostic", tags=["diagnostic"])
-Student = Annotated[CurrentUser, Depends(require_role("student"))]
+Student = Annotated[CurrentUser, Depends(consented_student)]
 SESSION_TTL_SECONDS = 2 * 60 * 60
 LOCK_TTL_SECONDS = 60
 TOP_MISCONCEPTIONS = 3

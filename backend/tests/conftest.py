@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
 from app.auth import create_token, hash_password
+from app.consent import CONSENT_VERSION
 from app.main import app
 
 
@@ -46,7 +47,8 @@ def make_user(owner):
     """Create users as the DB owner; remove them and everything they own at the end."""
     created: list[int] = []
 
-    def factory(role: str):
+    def factory(role: str, consented: bool = True):
+        """Students have agreed to the privacy notice unless a test needs one who has not (TR-S-05)."""
         with owner.begin() as conn:
             user_id = conn.execute(
                 text(
@@ -54,6 +56,11 @@ def make_user(owner):
                 ),
                 {"e": f"{role}-{uuid.uuid4().hex[:8]}@test.local", "h": hash_password("pw-12345678"), "r": role},
             ).scalar_one()
+            if role == "student" and consented:
+                conn.execute(
+                    text("INSERT INTO consents (user_id, version) VALUES (:u, :v)"),
+                    {"u": user_id, "v": CONSENT_VERSION},
+                )
         created.append(user_id)
         return user_id, {"Authorization": f"Bearer {create_token(user_id, role)}"}
 
@@ -88,6 +95,7 @@ def make_user(owner):
             "DELETE FROM mastery WHERE user_id = ANY(:ids)",
             "DELETE FROM mastery_events WHERE user_id = ANY(:ids)",
             "DELETE FROM chat_messages WHERE user_id = ANY(:ids)",
+            "DELETE FROM consents WHERE user_id = ANY(:ids)",
             f"DELETE FROM concepts WHERE course_id IN ({courses})",
             "DELETE FROM enrollments WHERE user_id = ANY(:ids)",
             f"DELETE FROM enrollments WHERE course_id IN ({courses})",

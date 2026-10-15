@@ -21,6 +21,7 @@ from sqlalchemy import text  # noqa: E402
 from app.config import get_settings  # noqa: E402
 from app.db import get_engine  # noqa: E402
 from app.main import app  # noqa: E402
+from evaluation.consent import agree
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = next(p for p in (ROOT / "data" / "demo", ROOT.parent / "data" / "demo") if p.exists()) / "scenarios.json"
@@ -34,6 +35,7 @@ def main() -> None:
         f"{API}/auth/register", json={"email": f"demo-cache-{uuid.uuid4().hex[:8]}@eval.local", "password": "cache-build-1"}
     ).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
+    agree(client, API, headers)
     with get_engine().connect() as conn:
         course_id = conn.execute(text("SELECT id FROM courses WHERE title = 'Python Fundamentals' ORDER BY id LIMIT 1")).scalar_one()
         problems = dict(

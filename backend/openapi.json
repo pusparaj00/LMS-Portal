@@ -254,6 +254,138 @@
         "title": "ConceptTag",
         "type": "object"
       },
+      "ConsentAccept": {
+        "properties": {
+          "version": {
+            "description": "the notice version the student was shown",
+            "maxLength": 40,
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "ConsentAccept",
+        "type": "object"
+      },
+      "ConsentNotice": {
+        "properties": {
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ConsentProvider"
+            },
+            "title": "Providers",
+            "type": "array"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/ConsentSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "title",
+          "sections",
+          "providers"
+        ],
+        "title": "ConsentNotice",
+        "type": "object"
+      },
+      "ConsentProvider": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "order": {
+            "title": "Order",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "order"
+        ],
+        "title": "ConsentProvider",
+        "type": "object"
+      },
+      "ConsentSection": {
+        "properties": {
+          "heading": {
+            "title": "Heading",
+            "type": "string"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Paragraphs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "heading",
+          "paragraphs"
+        ],
+        "title": "ConsentSection",
+        "type": "object"
+      },
+      "ConsentStatus": {
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "boolean"
+          },
+          "accepted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "withdrawn_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawn At"
+          }
+        },
+        "required": [
+          "version",
+          "accepted",
+          "accepted_at",
+          "withdrawn_at"
+        ],
+        "title": "ConsentStatus",
+        "type": "object"
+      },
       "Course": {
         "properties": {
           "enrolled": {
@@ -2094,6 +2226,132 @@
         "summary": "Chat",
         "tags": [
           "chat"
+        ]
+      }
+    },
+    "/api/v1/consent": {
+      "get": {
+        "operationId": "my_consent_api_v1_consent_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My Consent",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/api/v1/consent/accept": {
+      "post": {
+        "operationId": "accept_api_v1_consent_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentAccept"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/api/v1/consent/notice": {
+      "get": {
+        "description": "The current notice, with the model providers that are actually configured.",
+        "operationId": "read_notice_api_v1_consent_notice_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentNotice"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Notice",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/api/v1/consent/withdraw": {
+      "post": {
+        "description": "From now on nothing of this student's is processed until they agree again.",
+        "operationId": "withdraw_api_v1_consent_withdraw_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Withdraw",
+        "tags": [
+          "consent"
         ]
       }
     },

@@ -23,6 +23,7 @@ from app.chat import routing
 from app.config import get_settings
 from app.db import get_engine
 from app.llm.adapter import build_adapter
+from evaluation.consent import agree
 
 API = "http://localhost:8000/api/v1"
 ROOT = Path(__file__).resolve().parents[1]
@@ -95,6 +96,7 @@ def injection_test() -> None:
         f"{API}/auth/register", json={"email": f"inject-{uuid.uuid4().hex[:8]}@eval.local", "password": "eval-password-1"}
     ).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
+    agree(client, API, headers)
     with get_engine().connect() as conn:
         course = conn.execute(text("SELECT id FROM courses WHERE title = 'Python Fundamentals' ORDER BY id LIMIT 1")).scalar_one()
         user_id = conn.execute(text("SELECT id FROM users WHERE email LIKE 'inject-%' ORDER BY id DESC LIMIT 1")).scalar_one()

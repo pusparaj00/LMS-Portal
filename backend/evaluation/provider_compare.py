@@ -22,6 +22,7 @@ from app.db import get_engine  # noqa: E402
 from app.llm.adapter import GEMINI_KEYS, OPENAI_COMPATIBLE, build_adapter  # noqa: E402
 from app.main import app  # noqa: E402
 from app.routers.feedback import llm_adapter  # noqa: E402
+from evaluation.consent import agree
 from evaluation.real_feedback import WRONG_SUBMISSIONS  # noqa: E402
 
 API = "/api/v1"
@@ -43,6 +44,7 @@ def main(providers: list[str]) -> int:
         f"{API}/auth/register", json={"email": f"compare-{uuid.uuid4().hex[:8]}@eval.local", "password": "compare-pass-1"}
     ).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
+    agree(client, API, headers)
     with get_engine().connect() as conn:
         course = conn.execute(
             text("SELECT id FROM courses WHERE title = 'Python Fundamentals' ORDER BY id DESC LIMIT 1")

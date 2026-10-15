@@ -7,16 +7,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
 from app import ratelimit
-from app.auth import Conn, CurrentUser, require_role
+from app.auth import Conn, CurrentUser
 from app.chat import handlers, history, routing
 from app.config import get_settings
+from app.consent import consented_student
 from app.db import get_chat_engine, get_redis
 from app.llm.adapter import LLMAdapter
 from app.routers.feedback import llm_adapter
 from app.schemas import ChatRequest, ChatResponse, RouterInfo
 
 router = APIRouter(tags=["chat"])
-Student = Annotated[CurrentUser, Depends(require_role("student"))]
+Student = Annotated[CurrentUser, Depends(consented_student)]
 
 
 def chat_connection() -> Iterator[Connection]:

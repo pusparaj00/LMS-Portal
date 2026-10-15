@@ -84,6 +84,34 @@ class CourseConcept(BaseModel):
     name: str
 
 
+class ConsentProvider(BaseModel):
+    name: str
+    order: str
+
+
+class ConsentSection(BaseModel):
+    heading: str
+    paragraphs: list[str]
+
+
+class ConsentNotice(BaseModel):
+    version: str
+    title: str
+    sections: list[ConsentSection]
+    providers: list[ConsentProvider]
+
+
+class ConsentStatus(BaseModel):
+    version: str
+    accepted: bool
+    accepted_at: datetime | None
+    withdrawn_at: datetime | None
+
+
+class ConsentAccept(BaseModel):
+    version: Text = Field(max_length=40, description="the notice version the student was shown")
+
+
 class ConceptCreate(BaseModel):
     name: Text = Field(min_length=2, max_length=60, examples=["string formatting"])
 

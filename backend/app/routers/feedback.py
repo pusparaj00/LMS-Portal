@@ -7,6 +7,7 @@ from sqlalchemy import text
 from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.config import get_settings
+from app.consent import consented_student
 from app.db import get_redis
 from app.errors import sandbox_error
 from app.feedback import hints, probe, review, service
@@ -27,7 +28,7 @@ from app.schemas import (
 )
 
 router = APIRouter(tags=["feedback"])
-Student = Annotated[CurrentUser, Depends(require_role("student"))]
+Student = Annotated[CurrentUser, Depends(consented_student)]
 
 
 def llm_adapter() -> LLMAdapter:
