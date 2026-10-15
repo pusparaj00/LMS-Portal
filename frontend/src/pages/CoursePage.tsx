@@ -20,6 +20,13 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
         <a href="#/courses">All courses</a>
       </p>
       <h1>Problems</h1>
+      {session.role !== "student" && (
+        <p>
+          <a className="button" href={`#/class/${courseId}`}>
+            Class overview
+          </a>
+        </p>
+      )}
       {session.role === "student" && (
         <p>
           <a className="button" href={`#/placement/${courseId}`}>
