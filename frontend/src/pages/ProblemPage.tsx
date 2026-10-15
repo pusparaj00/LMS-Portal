@@ -48,6 +48,8 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
   useEffect(() => {
     setProblem(null);
     setResult(null);
+    setError(null);
+    setCode(STARTER);
     api<ProblemDetail>(`/problems/${problemId}`, session)
       .then(setProblem)
       .catch((e: Error) => setError(e.message));
