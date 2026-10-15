@@ -2,6 +2,7 @@ import Editor from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 
 import { ApiError, ProblemDetail, Session, SubmissionResult, api } from "../api";
+import { FeedbackPanel } from "./FeedbackPanel";
 
 const STARTER = "# Read from input(), print the answer.\n";
 
@@ -131,6 +132,9 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
           {result && (
             <div className="results" aria-live="polite">
               <Summary result={result} submitted={submitted} />
+              {submitted && result.submission_id !== null && result.status !== "passed" && (
+                <FeedbackPanel key={result.submission_id} session={session} submissionId={result.submission_id} />
+              )}
               <ul className="tests">
                 {result.visible_tests.map((t, i) => (
                   <li key={i} className={t.passed ? "pass" : "fail"}>
