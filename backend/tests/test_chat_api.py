@@ -292,3 +292,20 @@ def test_chat_is_for_students_only(client, make_user, world):
     assert client.post(f"{API}/chat", headers=headers, json={"message": "x" * 2001}).status_code == 422
     assert client.post(f"{API}/chat", headers=headers, json={"message": "hi", "route": "admin"}).status_code == 422
     assert NOTE  # keeps the shared fixture import used
+
+
+def test_a_student_cannot_read_a_courses_notes_by_naming_one_of_its_problems(client, make_user, world, owner, llm, open_notes):
+    """Regression: chat trusted the client's problem_id, so a student who was not enrolled got the course's notes."""
+    user_id, headers = make_user("student")  # deliberately not enrolled
+    llm(FakeLLM(route("general"), grounded(chunk_ids(owner, world)[:1])))
+    body = say(client, headers, "how does range work", problem_id=world["p"])
+    assert body["sources"] == [] and body["reply"] == handlers.NO_SOURCE
+    assert "range" not in body["reply"].lower()
+    assert all(m["sources"].get("sources", []) == [] for m in rows(owner, user_id) if m["role"] == "assistant")
+
+
+def test_an_enrolled_student_still_gets_the_notes_for_the_open_problem(client, make_user, world, owner, llm, open_notes):
+    _, headers = new_student(client, make_user, world)
+    ids = chunk_ids(owner, world)
+    llm(FakeLLM(route("general"), grounded(ids[:1])))
+    assert say(client, headers, "how does range work", problem_id=world["p"])["sources"]

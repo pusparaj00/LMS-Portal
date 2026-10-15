@@ -132,3 +132,11 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
             assert again["created"] == 0 and again["updated"] == 47
         finally:
             transaction.rollback()
+
+
+def test_a_problem_with_too_many_tests_is_rejected_with_a_clear_message():
+    many = [{"input": f"{n}\n", "expected": f"{n + 1}\n", "hidden": True, "category": "basic"} for n in range(51)]
+    errors = validate_code_problem(
+        concept_names=["loops"], known_concepts=CONCEPTS, reference_solution="print(int(input()) + 1)\n", tests=many
+    )
+    assert errors == ["has 51 tests; at most 50 are allowed"]

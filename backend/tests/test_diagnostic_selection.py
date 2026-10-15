@@ -74,12 +74,12 @@ def test_the_test_is_tracing_items_then_two_short_coding_tasks():
     assert 101 not in asked
 
 
-def test_the_test_stops_at_the_maximum_or_when_concepts_are_settled():
-    assert selection.finished(selection.MAX_ITEMS, {1: 0.5})
-    assert not selection.finished(5, {1: 0.5})
+def test_the_test_stops_early_only_when_concepts_are_settled_and_enough_items_were_asked():
     settled = {c: 0.98 for c in range(12)}
-    assert not selection.finished(selection.MIN_ITEMS_BEFORE_STOP - 1, settled)
-    assert selection.finished(selection.MIN_ITEMS_BEFORE_STOP, settled)
+    assert not selection.uncertain_enough_to_stop({1: 0.5}, 5)
+    assert not selection.uncertain_enough_to_stop(settled, selection.MIN_ITEMS_BEFORE_STOP - 1)
+    assert selection.uncertain_enough_to_stop(settled, selection.MIN_ITEMS_BEFORE_STOP)
+    assert selection.MAX_ITEMS == selection.MCQ_ITEMS + 2  # the maximum is the tracing items plus two coding tasks
 
 
 def test_probabilities_are_valid():

@@ -9,6 +9,17 @@ from app.auth import create_token, hash_password
 from app.main import app
 
 
+@pytest.fixture(autouse=True)
+def fresh_rate_limits():
+    """Counters live in Redis and survive between runs; every test starts with none."""
+    from app.db import get_redis
+
+    r = get_redis()
+    keys = list(r.scan_iter("rl:*"))
+    if keys:
+        r.delete(*keys)
+
+
 @pytest.fixture(scope="session")
 def owner():
     return create_engine(os.environ["OWNER_DATABASE_URL"])

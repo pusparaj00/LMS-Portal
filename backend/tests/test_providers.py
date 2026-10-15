@@ -39,7 +39,7 @@ def post(monkeypatch):
     answers: list[tuple[int, dict]] = []
 
     def fake(url, json=None, headers=None, timeout=None):
-        calls.append({"url": url, "json": json, "headers": headers})
+        calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         status, payload = answers.pop(0)
         return httpx.Response(status, json=payload, request=httpx.Request("POST", url))
 
@@ -189,3 +189,42 @@ def test_mistral_and_openrouter_join_the_chain_with_their_own_endpoints_and_mode
     ]
     assert chain.adapters[1]._url == "https://api.mistral.ai/v1/chat/completions"
     assert chain.adapters[2]._url == "https://openrouter.ai/api/v1/chat/completions"
+
+
+def test_the_whole_chain_answers_within_its_budget_or_fails(post, monkeypatch):
+    calls, answers = post
+    clock = [100.0]
+    monkeypatch.setattr(llm.time, "monotonic", lambda: clock[0])
+    config = LLMConfig("groq", "m", 12, 2, 0.1)
+    adapter = OpenAICompatibleAdapter(config, SECRET, "https://x/v1")
+    answers.append(completion("ok"))
+    chain = FallbackChain([adapter], budget_s=5.0)
+    assert chain.complete("s", "u") == "ok"
+    assert calls[0]["timeout"] == 5.0  # the request is cut short by the budget, not the configured 12 s
+
+
+def test_a_retry_that_cannot_finish_inside_the_budget_is_not_attempted(post, monkeypatch):
+    calls, answers = post
+    monkeypatch.setattr(llm.time, "monotonic", lambda: 100.0)  # time stands still, so only the budget check can stop it
+    answers += [(503, {"error": "busy"}), completion("never reached")]
+    adapter = OpenAICompatibleAdapter(LLMConfig("groq", "m", 12, 2, 0.1), SECRET, "https://x/v1")
+    with pytest.raises(LLMError, match="time budget used up"):
+        FallbackChain([adapter], budget_s=2.0).complete("s", "u")
+    assert len(calls) == 1  # the 1.5 s back-off plus a useful second would pass the deadline
+
+
+def test_no_provider_is_called_when_the_budget_is_already_gone(post):
+    calls, answers = post
+    adapter = OpenAICompatibleAdapter(LLMConfig("groq", "m", 12, 2, 0.1), SECRET, "https://x/v1")
+    with pytest.raises(LLMError):
+        FallbackChain([adapter], budget_s=0.2).complete("s", "u")
+    assert calls == []
+
+
+def test_the_budget_does_not_leak_into_later_calls(post):
+    calls, answers = post
+    answers += [completion("a"), completion("b")]
+    adapter = OpenAICompatibleAdapter(LLMConfig("groq", "m", 12, 0, 0.1), SECRET, "https://x/v1")
+    FallbackChain([adapter], budget_s=5.0).complete("s", "u")
+    assert llm._deadline.get() is None
+    assert adapter.complete("s", "u") == "b" and calls[1]["timeout"] == 12  # outside a chain only the config applies
