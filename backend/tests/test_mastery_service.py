@@ -266,3 +266,24 @@ def test_the_correct_option_lowers_a_misconception_and_repeats_change_nothing(ow
     assert lowered < raised
     assert answer(mastery_db, user_id, item, correct=True, option=item["right"], ref="diagnostic:t:2") == []
     assert misconception_probability(owner, user_id, item) == lowered
+
+
+def test_backfill_applies_evidence_for_submissions_that_never_reached_the_service(owner, mastery_db, make_user, world):
+    user_id, sid = submit(owner, make_user, world["two"], status="passed", passed=3, failed=0)
+    with owner.begin() as conn:  # old enough that the API's own call is no longer expected
+        conn.execute(text("UPDATE submissions SET created_at = now() - interval '1 minute' WHERE id = :s"), {"s": sid})
+    assert events(owner, user_id) == []
+    with mastery_db.begin() as conn:
+        assert service.backfill(conn) >= 1
+    assert {r["evidence_ref"] for r in events(owner, user_id)} == {f"submission:{sid}"}
+    after = vector(owner, user_id)
+    with mastery_db.begin() as conn:
+        service.backfill(conn)
+    assert vector(owner, user_id) == after  # a second pass changes nothing
+
+
+def test_backfill_leaves_fresh_submissions_to_the_api(owner, mastery_db, make_user, world):
+    user_id, _ = submit(owner, make_user, world["two"], status="passed", passed=3, failed=0)
+    with mastery_db.begin() as conn:
+        service.backfill(conn)
+    assert events(owner, user_id) == []

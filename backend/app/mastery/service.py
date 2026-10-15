@@ -154,6 +154,26 @@ def record_submission(conn: Connection, submission_id: int) -> list[Change]:
     return _apply(conn, row.user_id, plan, f"submission:{submission_id}", submission_id)
 
 
+BACKFILL_MIN_AGE_SECONDS = 10  # leave a fresh submission to the API's own call
+BACKFILL_BATCH = 100
+
+
+def backfill(conn: Connection) -> int:
+    """Apply evidence for graded submissions that never reached the service (it was down).
+
+    Safe to run any time: applying evidence is idempotent per submission.
+    """
+    pending = conn.execute(
+        text(
+            "SELECT s.id FROM submissions s JOIN run_results r ON r.submission_id = s.id"
+            " WHERE NOT EXISTS (SELECT 1 FROM mastery_events e WHERE e.submission_id = s.id)"
+            " AND s.created_at < now() - make_interval(secs => :age) ORDER BY s.id LIMIT :n"
+        ),
+        {"age": BACKFILL_MIN_AGE_SECONDS, "n": BACKFILL_BATCH},
+    ).scalars().all()
+    return sum(1 for submission_id in pending if record_submission(conn, submission_id))
+
+
 def _update_misconception(
     conn: Connection, user_id: int, misconception_id: int, picked: bool, chose_correct: bool
 ) -> None:
