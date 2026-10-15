@@ -315,3 +315,89 @@ def test_a_transient_failure_does_not_start_a_cooldown(post):
     chain = FallbackChain([first, Scripted("groq", "ok")])
     assert chain.complete("s", "u") == "ok"
     assert llm._cooling == {}
+
+
+def test_a_local_model_is_used_as_primary_or_fallback_with_its_own_host_and_no_key():
+    primary = build_adapter(settings(
+        llm_provider="local", llm_model="llama3", llm_fallback="", local_llm_base_url="http://host.docker.internal:11434/v1/",
+    ))
+    assert (primary.config.provider, primary.config.model) == ("local", "llama3")
+    assert primary.adapters[0]._url == "http://host.docker.internal:11434/v1/chat/completions"  # trailing slash is fine
+    chain = build_adapter(settings(
+        llm_fallback="groq,local", local_llm_base_url="http://llm.internal/v1", llm_model_local="qwen",
+    ))
+    assert [(a.config.provider, a.config.model) for a in chain.adapters][-1] == ("local", "qwen")
+
+
+def test_a_local_fallback_without_a_host_is_skipped_and_a_hosted_one_is_unaffected():
+    chain = build_adapter(settings(llm_fallback="local,groq"))
+    assert [a.config.provider for a in chain.adapters] == ["gemini", "groq"]
+
+
+def test_a_local_request_sends_no_authorization_header_and_works_without_a_key(post):
+    calls, answers = post
+    answers.append(completion("from the local model"))
+    chain = build_adapter(settings(
+        llm_provider="local", llm_model="llama3", llm_fallback="", local_llm_base_url="http://llm.internal/v1",
+    ))
+    assert chain.complete("s", "u") == "from the local model"
+    assert calls[0]["url"] == "http://llm.internal/v1/chat/completions" and calls[0]["headers"] == {}
+    assert calls[0]["json"]["model"] == "llama3"
+
+
+def test_a_local_key_is_sent_when_one_is_configured_and_never_appears_in_errors(post):
+    calls, answers = post
+    answers.append((500, {"error": SECRET}))
+    adapter = OpenAICompatibleAdapter(LLMConfig("local", "m", 5, 0, 0.1), SECRET, "http://x/v1", key_required=False)
+    with pytest.raises(LLMError) as raised:
+        adapter.complete("s", "u")
+    assert calls[0]["headers"] == {"Authorization": f"Bearer {SECRET}"} and SECRET not in str(raised.value)
+
+
+def test_an_unreachable_local_server_is_an_ordinary_provider_failure_and_the_chain_moves_on(monkeypatch):
+    def refuse(*args, **kwargs):
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(llm.httpx, "post", refuse)
+    monkeypatch.setattr(llm.time, "sleep", lambda _s: None)
+    local = build_adapter(settings(
+        llm_provider="local", llm_model="m", llm_fallback="", local_llm_base_url="http://down/v1", llm_max_retries=0,
+    ))
+    with pytest.raises(LLMError, match="every provider failed|ConnectError"):
+        local.complete("s", "u")
+    first = OpenAICompatibleAdapter(LLMConfig("local", "m", 5, 0, 0.1), "", "http://down/v1", key_required=False)
+    second = Scripted("groq", "answered by the hosted fallback")
+    assert FallbackChain([first, second]).complete("s", "u") == "answered by the hosted fallback"
+
+
+def test_a_real_openai_compatible_server_on_localhost_answers_through_the_chain():
+    import json as jsonlib
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    seen = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = jsonlib.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            seen.append((self.path, self.headers.get("Authorization"), body["model"]))
+            reply = jsonlib.dumps({"choices": [{"message": {"content": "hello from the local server"}}]}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(reply)))
+            self.end_headers()
+            self.wfile.write(reply)
+
+        def log_message(self, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        chain = build_adapter(settings(
+            llm_provider="local", llm_model="tiny", llm_fallback="", local_llm_base_url=f"http://127.0.0.1:{server.server_port}/v1",
+        ))
+        assert chain.complete("be brief", "hi") == "hello from the local server"
+    finally:
+        server.shutdown()
+    assert seen == [("/v1/chat/completions", None, "tiny")]  # no key, the configured model, the configured path

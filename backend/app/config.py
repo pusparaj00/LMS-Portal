@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     llm_model_gemini: str = "gemini-3.5-flash-lite"
     llm_model_gemini_pro: str = "gemini-3.5-flash-lite"
+    local_llm_base_url: str = ""  # e.g. http://host.docker.internal:11434/v1 for Ollama
+    local_llm_api_key: str = ""
+    llm_model_local: str = ""
     llm_model_groq: str = "openai/gpt-oss-20b"
     llm_model_openai: str = "gpt-4.1-mini"
     llm_model_mistral: str = "mistral-small-2603"

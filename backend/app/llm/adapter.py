@@ -185,12 +185,12 @@ OPENAI_COMPATIBLE = {
 class OpenAICompatibleAdapter:
     """Chat-completions API shared by Groq, OpenRouter, Mistral and OpenAI."""
 
-    def __init__(self, config: LLMConfig, api_key: str, base_url: str) -> None:
-        if not api_key:
+    def __init__(self, config: LLMConfig, api_key: str, base_url: str, key_required: bool = True) -> None:
+        if key_required and not api_key:
             raise LLMError(f"no API key for {config.provider}")
         self.config = config
         self._api_key = api_key
-        self._url = f"{base_url}/chat/completions"
+        self._url = f"{base_url.rstrip('/')}/chat/completions"
 
     def complete(self, system: str, user: str, json_schema: dict | None = None) -> str:
         if json_schema is not None:
@@ -207,7 +207,7 @@ class OpenAICompatibleAdapter:
             started = time.perf_counter()
             try:
                 response = httpx.post(
-                    self._url, json=body, headers={"Authorization": f"Bearer {self._api_key}"},
+                    self._url, json=body, headers={"Authorization": f"Bearer {self._api_key}"} if self._api_key else {},
                     timeout=_time_left(self.config.timeout_s),
                 )
                 response.raise_for_status()
@@ -226,7 +226,8 @@ class OpenAICompatibleAdapter:
                 if exc.response.status_code not in TRANSIENT_STATUS or cooldown:
                     break
             except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
-                last_error = LLMError(f"{type(exc).__name__}: {str(exc)[:120]}".replace(self._api_key, "<key>"))
+                message = f"{type(exc).__name__}: {str(exc)[:120]}"
+                last_error = LLMError(message.replace(self._api_key, "<key>") if self._api_key else message)
             if attempt < self.config.max_retries:
                 _pause(BACKOFF_SECONDS * (attempt + 1))
         raise last_error or LLMError("LLM call failed")
@@ -282,6 +283,10 @@ def _key(adapter: LLMAdapter) -> tuple[str, str]:
     return adapter.config.provider, adapter.config.model
 
 
+# A model served on this machine or inside the institution (Ollama, vLLM, LM Studio, ...): any OpenAI-compatible
+# server at LOCAL_LLM_BASE_URL, with no key needed. Student code then never leaves the institution (TR-S-09).
+LOCAL = "local"
+
 # Gemini keys: provider -> (settings field holding the key, settings field holding its default model)
 GEMINI_KEYS = {
     "gemini": ("gemini_api_key", "llm_model_gemini"),
@@ -304,6 +309,13 @@ def build_adapter(settings: Settings) -> LLMAdapter:
             key_field, model_field = GEMINI_KEYS[provider]
             model = model or getattr(settings, model_field)
             return GeminiAdapter(config(provider, model), getattr(settings, key_field))
+        if provider == LOCAL:
+            if not settings.local_llm_base_url:
+                raise LLMError("LOCAL_LLM_BASE_URL is not set")
+            return OpenAICompatibleAdapter(
+                config(LOCAL, model or settings.llm_model_local), settings.local_llm_api_key,
+                settings.local_llm_base_url, key_required=False,
+            )
         if provider in OPENAI_COMPATIBLE:
             base_url, key_field, model_field = OPENAI_COMPATIBLE[provider]
             return OpenAICompatibleAdapter(
@@ -316,7 +328,7 @@ def build_adapter(settings: Settings) -> LLMAdapter:
     adapters = [make(settings.llm_provider, settings.llm_model)]
     for entry in (e.strip() for e in settings.llm_fallback.split(",") if e.strip()):
         provider, _, model = entry.partition(":")
-        if provider not in GEMINI_KEYS and provider not in OPENAI_COMPATIBLE:
+        if provider not in GEMINI_KEYS and provider not in OPENAI_COMPATIBLE and provider != LOCAL:
             raise ValueError(f"unsupported fallback provider: {provider}")
         try:
             adapters.append(make(provider, model.strip() or None))
