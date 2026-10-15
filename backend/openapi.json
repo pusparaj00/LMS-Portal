@@ -942,6 +942,28 @@
             ],
             "title": "Concept"
           },
+          "example_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Input"
+          },
+          "example_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Output"
+          },
           "hint_level": {
             "title": "Hint Level",
             "type": "integer"

@@ -9,9 +9,10 @@ from dataclasses import dataclass, field
 from sqlalchemy import Connection, text
 
 from app.feedback import fallback
+from app.feedback.claim_check import ExampleRun, verify_with_example
 from app.feedback.context import ExplainContext
 from app.feedback.prompt import PROMPT_VERSION, build_prompt
-from app.feedback.verifier import JSON_SCHEMA, Check, Evidence, Explanation, all_passed, verify
+from app.feedback.verifier import JSON_SCHEMA, Check, Evidence, Explanation, all_passed
 from app.llm.adapter import LLMAdapter, LLMError
 from app.retrieval import store
 from app.retrieval.store import Source
@@ -29,6 +30,7 @@ class Outcome:
     concept_name: str | None = None
     sources: list[Source] = field(default_factory=list)
     fallback_text: str | None = None
+    example: ExampleRun | None = None  # an input the sandbox showed the program to fail on (TR-L-05)
 
 
 def retrieve(conn: Connection, ctx: ExplainContext, min_score: float) -> list[Source]:
@@ -67,21 +69,25 @@ def run_explain(conn: Connection, ctx: ExplainContext, adapter: LLMAdapter, min_
     evidence = Evidence(
         code=ctx.code, reference_solution=ctx.reference_solution, failed_tests=ctx.failed_tests,
         error_concept_ids=ctx.error_concept_ids, retrieved_chunk_ids=frozenset(s.chunk_id for s in sources),
+        hidden_inputs=ctx.hidden_inputs,
     )
     previous: list[Check] | None = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         system, user = build_prompt(ctx, sources, previous)
         explanation: Explanation | None = None
+        example: ExampleRun | None = None
         try:
             raw = adapter.complete(system, user, JSON_SCHEMA)
-            explanation, checks = verify(raw, evidence)
+            explanation, checks, example = verify_with_example(raw, evidence)
         except LLMError as exc:
             checks = [Check("llm_call", False, str(exc))]
         log_checks(conn, ctx.submission_id, attempt, adapter, checks)
         if explanation is not None and all_passed(checks):
             cited = [s for s in sources if s.chunk_id in set(explanation.source_chunk_ids)]
             log_checks(conn, ctx.submission_id, attempt, adapter, [Check("final", True, "verified")])
-            return Outcome("verified", attempt, explanation, ctx.concepts.get(explanation.concept_id), cited)
+            return Outcome(
+                "verified", attempt, explanation, ctx.concepts.get(explanation.concept_id), cited, example=example
+            )
         previous = checks
 
     text_hint = fallback.template_hint(ctx.error_type, ctx.primary_concept_name, ctx.failed_categories)

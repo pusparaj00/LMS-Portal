@@ -38,6 +38,8 @@ def _response(outcome: Outcome, offered: probe.Probe | None) -> ExplainResponse:
         explanation = ExplanationOut(
             claim=e.claim.strip(), line=e.line, concept=outcome.concept_name, hint_level=e.hint_level,
             sources=[source_out(s) for s in outcome.sources],
+            example_input=outcome.example.input if outcome.example else None,
+            example_output=outcome.example.student_output if outcome.example else None,
         )
     return ExplainResponse(
         status=outcome.status, attempts=outcome.attempts, explanation=explanation,

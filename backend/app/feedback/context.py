@@ -25,6 +25,7 @@ class ExplainContext:
     error_concept_ids: frozenset[int]
     concepts: dict[int, str]  # every concept an explanation may legitimately name
     primary_concept_id: int | None
+    hidden_inputs: frozenset[str] = frozenset()
 
     @property
     def primary_concept_name(self) -> str | None:
@@ -90,6 +91,11 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
         frozenset(linked_concepts(map_rows, problem, "*", row.error_type)) if row.error_type else frozenset()
     )
 
+    hidden_inputs = frozenset(
+        conn.execute(
+            text("SELECT input FROM test_cases WHERE problem_id = :p AND hidden"), {"p": row.problem_id}
+        ).scalars()
+    )
     candidate_ids = set(problem) | set(error_concepts).union(*(t.concept_ids for t in failed_tests))
     names = dict(
         conn.execute(text("SELECT id, name FROM concepts WHERE id = ANY(:ids)"), {"ids": list(candidate_ids)}).all()
@@ -102,4 +108,5 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
         reference_solution=row.reference_solution or "", status=row.status, error_type=row.error_type,
         stderr=row.stderr or "", failed_categories=list(row.failed_categories), failed_tests=failed_tests,
         error_concept_ids=error_concepts, concepts=names, primary_concept_id=primary,
+        hidden_inputs=hidden_inputs,
     )

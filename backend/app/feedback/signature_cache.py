@@ -15,8 +15,9 @@ import re
 
 from sqlalchemy import Connection, text
 
+from app.feedback.claim_check import ExampleRun, verify_with_example
 from app.feedback.context import ExplainContext
-from app.feedback.verifier import Check, Evidence, Explanation, all_passed, verify
+from app.feedback.verifier import Check, Evidence, Explanation, all_passed
 from app.schemas import ExplainResponse, ExplanationOut, SourceOut
 
 log = logging.getLogger("app.feedback")
@@ -51,7 +52,7 @@ def store(conn: Connection, ctx: ExplainContext, explanation: Explanation, chunk
         "claim": explanation.claim.strip(), "line": explanation.line,
         "line_text": line_text(ctx.code, explanation.line),
         "concept_id": explanation.concept_id, "hint_level": explanation.hint_level, "test_category": test.category,
-        "chunk_ids": chunk_ids,
+        "chunk_ids": chunk_ids, "example_input": explanation.example_input,
     }
     conn.execute(
         text(
@@ -64,11 +65,14 @@ def store(conn: Connection, ctx: ExplainContext, explanation: Explanation, chunk
 
 def check_against(
     conn: Connection, ctx: ExplainContext, payload: dict
-) -> tuple[Explanation | None, list[Check], list[SourceOut]]:
-    """Run the verifier on a stored explanation as if it had been written for this submission."""
+) -> tuple[Explanation | None, list[Check], list[SourceOut], ExampleRun | None]:
+    """Run the verifier on a stored explanation as if it had been written for this submission.
+
+    A stored example input is tried again on THIS student's code, so a student whose program already handles it is not
+    shown a claim that does not apply to them."""
     test = next((t for t in ctx.failed_tests if t.category == payload["test_category"]), None)
     if test is None:
-        return None, [Check("test_exists", False, f"no failed test in category {payload['test_category']}")], []
+        return None, [Check("test_exists", False, f"no failed test in category {payload['test_category']}")], [], None
     rows = conn.execute(
         text(
             "SELECT c.id, d.title, c.section, c.text FROM chunks c JOIN documents d ON d.id = c.document_id"
@@ -80,13 +84,15 @@ def check_against(
     raw = json.dumps({
         "failing_test_id": test.id, "line": payload["line"], "concept_id": payload["concept_id"],
         "claim": payload["claim"], "source_chunk_ids": payload["chunk_ids"], "hint_level": payload["hint_level"],
+        "example_input": payload.get("example_input", ""),
     })
     evidence = Evidence(
         code=ctx.code, reference_solution=ctx.reference_solution, failed_tests=ctx.failed_tests,
         error_concept_ids=ctx.error_concept_ids, retrieved_chunk_ids=frozenset(s.chunk_id for s in sources),
+        hidden_inputs=ctx.hidden_inputs,
     )
-    explanation, checks = verify(raw, evidence)
-    return explanation, checks, sources
+    explanation, checks, example = verify_with_example(raw, evidence)
+    return explanation, checks, sources, example
 
 
 def serve(conn: Connection, ctx: ExplainContext) -> ExplainResponse | None:
@@ -98,7 +104,7 @@ def serve(conn: Connection, ctx: ExplainContext) -> ExplainResponse | None:
     payload = entry.explanation_json
     if line_text(ctx.code, payload["line"]) != payload["line_text"]:
         return None
-    explanation, checks, sources = check_against(conn, ctx, payload)
+    explanation, checks, sources, example = check_against(conn, ctx, payload)
     if explanation is None or not all_passed(checks):
         log.info("stored explanation does not fit this submission", extra={"fields": {"entry": entry.id}})
         return None
@@ -119,5 +125,7 @@ def serve(conn: Connection, ctx: ExplainContext) -> ExplainResponse | None:
         explanation=ExplanationOut(
             claim=payload["claim"], line=payload["line"], concept=ctx.concepts.get(payload["concept_id"], ""),
             hint_level=payload["hint_level"], sources=[s for s in sources if s.chunk_id in set(payload["chunk_ids"])],
+            example_input=example.input if example else None,
+            example_output=example.student_output if example else None,
         ),
     )

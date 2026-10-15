@@ -371,6 +371,8 @@ class ExplanationOut(BaseModel):
     concept: str | None
     hint_level: int
     sources: list[SourceOut]
+    example_input: str | None = None  # an input on which the program was shown to go wrong (TR-L-05)
+    example_output: str | None = None  # what the student's own program printed for it, never the reference's output
 
 
 class ProbeOut(BaseModel):

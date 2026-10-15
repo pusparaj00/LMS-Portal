@@ -5,7 +5,7 @@ from app.feedback.context import ExplainContext
 from app.feedback.verifier import Check
 from app.retrieval.store import Source
 
-PROMPT_VERSION = "explain-v1"
+PROMPT_VERSION = "explain-v2"
 MAX_STDERR_CHARS = 500
 # Every data block any prompt uses; student text must never be able to open or close one.
 TAGS = (
@@ -27,7 +27,10 @@ Rules:
 4. concept_id must be one of the ids listed in <concept>.
 5. source_chunk_ids may only contain ids from <course_notes>. Use an empty list if none of them applies.
 6. hint_level: 1 = a hint about the concept, 2 = a hint that points at the place in the code.
-7. Reply with JSON only, matching the schema."""
+7. example_input is optional. If your claim says the program goes wrong on a specific input, give that input exactly
+   as it would be typed, and it must be an input on which the program really prints something different from the
+   correct program. Never use an input from a hidden test. Otherwise leave example_input empty.
+8. Reply with JSON only, matching the schema."""
 
 
 def neutralise(student_text: str) -> str:

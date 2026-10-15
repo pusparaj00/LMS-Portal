@@ -10,6 +10,7 @@ from app.feedback import leak
 MAX_CLAIM_CHARS = 400
 ALLOWED_HINT_LEVELS = {1, 2}  # level 3 is the worked example, which never comes from the model
 MIN_HIDDEN_TEXT = 4  # shorter hidden values (such as "0") would match ordinary words
+MAX_EXAMPLE_CHARS = 300  # an input a student could type; also keeps the sandbox runs small
 
 REQUIRED = {
     "failing_test_id": int,
@@ -29,6 +30,7 @@ JSON_SCHEMA = {
         "claim": {"type": "string"},
         "source_chunk_ids": {"type": "array", "items": {"type": "integer"}},
         "hint_level": {"type": "integer"},
+        "example_input": {"type": "string"},
     },
     "required": list(REQUIRED),
 }
@@ -53,6 +55,7 @@ class Evidence:
     failed_tests: list[FailedTest]
     error_concept_ids: frozenset[int]  # concepts linked to the run's error type, if it had one
     retrieved_chunk_ids: frozenset[int]
+    hidden_inputs: frozenset[str] = frozenset()  # every hidden test input of the problem, passed or failed
 
 
 @dataclass(frozen=True)
@@ -70,6 +73,7 @@ class Explanation:
     claim: str
     source_chunk_ids: list[int]
     hint_level: int
+    example_input: str = ""  # optional: an input on which the claim says the program goes wrong (TR-L-05)
 
 
 def parse(raw: str) -> tuple[Explanation | None, Check]:
@@ -85,7 +89,10 @@ def parse(raw: str) -> tuple[Explanation | None, Check]:
             return None, Check("json_valid", False, f"field '{key}' is missing or not a {kind.__name__}")
     if not all(isinstance(i, int) and not isinstance(i, bool) for i in data["source_chunk_ids"]):
         return None, Check("json_valid", False, "source_chunk_ids must be integers")
-    return Explanation(**{k: data[k] for k in REQUIRED}), Check("json_valid", True)
+    example = data.get("example_input")
+    if example is not None and not isinstance(example, str):
+        return None, Check("json_valid", False, "field 'example_input' must be text")
+    return Explanation(**{k: data[k] for k in REQUIRED}, example_input=example or ""), Check("json_valid", True)
 
 
 def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check]]:
@@ -101,8 +108,12 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
         if len(s.strip()) >= MIN_HIDDEN_TEXT
     ]
     leaked = [s for s in hidden_texts if s in explanation.claim]
+    example = explanation.example_input.strip()
+    if example and example in {h.strip() for h in evidence.hidden_inputs}:
+        leaked.append(example)  # the example would show a student a hidden test input
     guard = leak.check(explanation.claim, evidence.reference_solution)
     unknown_chunks = sorted(set(explanation.source_chunk_ids) - evidence.retrieved_chunk_ids)
+    example_ok = len(explanation.example_input) <= MAX_EXAMPLE_CHARS and "\x00" not in explanation.example_input
 
     checks = [
         parsed,
@@ -125,7 +136,12 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
             f"{len(explanation.claim.strip())} characters",
         ),
         Check("no_code_leak", guard.passed, guard.reason),
-        Check("no_hidden_test_leak", not leaked, "claim repeats hidden test data" if leaked else ""),
+        Check("no_hidden_test_leak", not leaked, "claim or example repeats hidden test data" if leaked else ""),
+        Check(
+            "example_input_ok",
+            example_ok,
+            "" if example_ok else f"example_input is longer than {MAX_EXAMPLE_CHARS} characters or holds a NUL",
+        ),
     ]
     return explanation, checks
 

@@ -64,7 +64,7 @@ def decide(conn: Connection, user: CurrentUser, signature: str, body: Explanatio
         if body.claim is not None:
             payload["claim"] = body.claim.strip()
         ctx = load_context(conn, row.source_submission_id, row.source_user)
-        explanation, checks, _ = check_against(conn, ctx, payload)
+        explanation, checks, _, _ = check_against(conn, ctx, payload)
         if explanation is None or not all_passed(checks):
             failed = ", ".join(f"{c.name} ({c.detail})" if c.detail else c.name for c in checks if not c.passed)
             raise ReviewError(422, f"the explanation does not pass the checks: {failed}")
