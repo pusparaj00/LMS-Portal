@@ -25,7 +25,7 @@ class Rule:
 RULES: dict[str, Rule] = {
     "login_email": Rule(10, 60),
     "login_ip": Rule(60, 60),
-    "register_ip": Rule(10, 3600),
+    "register_ip": Rule(100, 3600),  # a whole lab class often shares one campus address
     "run": Rule(60, 60),
     "submit": Rule(30, 60),
     "chat": Rule(30, 60),
