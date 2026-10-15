@@ -1,0 +1,51 @@
+message,label
+"Why did my last submission fail?",explain
+"I keep getting an IndexError and I don't understand where it comes from",explain
+"Can you explain why my loop skips the last number?",explain
+"What is wrong with my code on the countdown problem?",explain
+"My program prints the wrong answer for zero, what went wrong?",explain
+"Why does it say time limit exceeded?",explain
+"Explain this error message to me",explain
+"Three of my tests fail and I can't see why",explain
+"What does the traceback mean?",explain
+"Why is my function returning None?",explain
+"Tell me what is causing the failing hidden test",explain
+"I'm stuck, can I have a hint?",hint
+"Give me a small nudge for this problem",hint
+"I don't know how to start, any clue?",hint
+"Can I get a hint without the answer?",hint
+"Point me in the right direction please",hint
+"Just a little help with the next step",hint
+"I need a hint about what to try",hint
+"Could you give me a tip for this exercise?",hint
+"What should I look at first on this problem?",hint
+"One more hint please",hint
+"How am I doing in this course?",progress
+"What are my weakest topics?",progress
+"Show me my mastery levels",progress
+"Which concepts have I learned well so far?",progress
+"How much have I improved?",progress
+"What is my current level in recursion?",progress
+"Give me a summary of my progress",progress
+"Am I ready for the exam on lists?",progress
+"Where do I stand on dictionaries compared to my starting point?",progress
+"Tell me how my mastery changed this week",progress
+"What is the difference between a list and a tuple?",general
+"How do I read input in Python?",general
+"What does the range function do?",general
+"When should I use a dictionary instead of a list?",general
+"What is a recursive function?",general
+"Can you explain how try and except work?",general
+"How do I sort a list in Python?",general
+"What is the meaning of immutable?",general
+"How does string slicing work?",general
+"What should I practice next?",recommend
+"Recommend a problem for me to solve",recommend
+"Which exercise should I do after this one?",recommend
+"Suggest something to work on tomorrow",recommend
+"What topic should I study next to improve fastest?",recommend
+"When is the next assignment due?",lms
+"What is my grade in this course?",lms
+"Is the course project deadline extended?",lms
+"Which courses am I enrolled in?",lms
+"Has the instructor posted any announcements?",lms
