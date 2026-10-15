@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Session, loadSession, saveSession } from "./api";
+import { Session, api, loadSession, saveSession } from "./api";
 import { ChatPanel } from "./pages/ChatPanel";
 import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
@@ -10,6 +10,7 @@ import { NotesPage } from "./pages/NotesPage";
 import { InstructorPage } from "./pages/InstructorPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlacementPage } from "./pages/PlacementPage";
+import { ConsentState, PrivacyPage } from "./pages/PrivacyPage";
 import { ProblemPage } from "./pages/ProblemPage";
 
 function useHash(): string {
@@ -24,15 +25,29 @@ function useHash(): string {
 
 export function App() {
   const [session, setSession] = useState<Session | null>(loadSession);
+  const [consent, setConsent] = useState<ConsentState | null>(null);
+  const [consentError, setConsentError] = useState<string | null>(null);
   const hash = useHash();
 
   const update = (next: Session | null) => {
     saveSession(next);
     setSession(next);
+    setConsent(null);
     window.location.hash = next ? "#/courses" : "#/login";
   };
 
+  // A student's data is only processed after they agree to the privacy notice (TR-S-05).
+  useEffect(() => {
+    if (session?.role !== "student") return;
+    setConsentError(null);
+    api<ConsentState>("/consent", session)
+      .then(setConsent)
+      .catch((e: Error) => setConsentError(e.message));
+  }, [session?.token]);
+
   if (!session) return <LoginPage onSession={update} />;
+  const waitingForConsent = session.role === "student" && consent === null;
+  const mustAgree = session.role === "student" && consent !== null && !consent.accepted;
 
   const course = hash.match(/^#\/course\/(\d+)$/);
   const newProblem = hash.match(/^#\/course\/(\d+)\/problem\/new$/);
@@ -50,12 +65,21 @@ export function App() {
           Adaptive LMS
         </a>
         <span className="who">{session.role}</span>
+        <a href="#/privacy">Privacy</a>
         <button className="link" onClick={() => update(null)}>
           Log out
         </button>
       </header>
       <main>
-        {newProblem && session.role === "instructor" ? (
+        {consentError ? (
+          <p role="alert" className="error">
+            {consentError}
+          </p>
+        ) : waitingForConsent ? (
+          <p>Loading…</p>
+        ) : mustAgree || hash === "#/privacy" ? (
+          <PrivacyPage session={session} state={consent} gate={mustAgree} onChange={setConsent} />
+        ) : newProblem && session.role === "instructor" ? (
           <NewProblemPage session={session} courseId={Number(newProblem[1])} />
         ) : notes && session.role === "instructor" ? (
           <NotesPage session={session} courseId={Number(notes[1])} />
@@ -75,7 +99,7 @@ export function App() {
           <CoursesPage session={session} />
         )}
       </main>
-      <ChatPanel session={session} problemId={problem ? Number(problem[1]) : null} />
+      {!mustAgree && !waitingForConsent && <ChatPanel session={session} problemId={problem ? Number(problem[1]) : null} />}
     </>
   );
 }
