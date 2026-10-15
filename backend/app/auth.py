@@ -19,7 +19,10 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(password.encode(), password_hash.encode())
+    encoded = password.encode()
+    if len(encoded) > 72:  # bcrypt cannot have hashed it, so it cannot match
+        return False
+    return bcrypt.checkpw(encoded, password_hash.encode())
 
 
 def create_token(user_id: int, role: str) -> str:

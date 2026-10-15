@@ -1,6 +1,34 @@
-from typing import Literal
+import re
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MAX_PASSWORD_BYTES = 72  # bcrypt ignores or rejects anything longer
+
+
+def _no_nul(value: str) -> str:
+    if "\x00" in value:
+        raise ValueError("must not contain a NUL character")
+    return value
+
+
+def _email(value: str) -> str:
+    value = _no_nul(value).strip()
+    if len(value) > 254 or not EMAIL_PATTERN.match(value):
+        raise ValueError("must be an email address of at most 254 characters")
+    return value
+
+
+def _password(value: str) -> str:
+    if len(_no_nul(value).encode()) > MAX_PASSWORD_BYTES:
+        raise ValueError(f"must be at most {MAX_PASSWORD_BYTES} bytes")
+    return value
+
+
+Text = Annotated[str, AfterValidator(_no_nul)]  # Postgres text cannot hold NUL
+Email = Annotated[str, AfterValidator(_email)]
+Password = Annotated[str, Field(min_length=8), AfterValidator(_password)]
 
 
 class Mockable(BaseModel):
@@ -28,13 +56,13 @@ class HealthResponse(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    email: str = Field(examples=["student@example.com"])
-    password: str = Field(min_length=8, examples=["a-long-password"])
+    email: Email = Field(examples=["student@example.com"])
+    password: Password = Field(examples=["a-long-password"])
 
 
 class LoginRequest(BaseModel):
-    email: str = Field(examples=["student@example.com"])
-    password: str = Field(examples=["a-long-password"])
+    email: Text = Field(examples=["student@example.com"])
+    password: Text = Field(examples=["a-long-password"])
 
 
 class TokenResponse(BaseModel):
@@ -59,7 +87,7 @@ class Course(BaseModel):
 
 
 class CourseCreate(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
+    title: Text = Field(min_length=1, max_length=200)
 
 
 class Problem(Mockable):
@@ -110,26 +138,26 @@ class ProblemDetail(Problem):
 class TestCaseIn(BaseModel):
     __test__ = False
 
-    input: str
-    expected: str
+    input: Text
+    expected: Text
     hidden: bool
-    category: str
+    category: Text
 
 
 class ProblemCreate(BaseModel):
     course_id: int
-    title: str
-    statement: str
+    title: Text
+    statement: Text
     difficulty_b: float
     discrimination_a: float
     concepts: list[ConceptTag]
-    reference_solution: str
+    reference_solution: Text
     test_cases: list[TestCaseIn]
 
 
 class SubmissionCreate(BaseModel):
     problem_id: int
-    code: str = Field(max_length=50_000, examples=["print(sum(map(int, input().split())))"])
+    code: Text = Field(max_length=50_000, examples=["print(sum(map(int, input().split())))"])
 
 
 class MasteryChange(BaseModel):
@@ -205,7 +233,7 @@ class DiagnosticAnswerRequest(BaseModel):
     session_id: str
     problem_id: int
     option_id: int | None = None
-    code: str | None = Field(default=None, max_length=50_000)
+    code: Text | None = Field(default=None, max_length=50_000)
 
 
 class DiagnosticAnswerResponse(BaseModel):
@@ -252,7 +280,7 @@ class Dashboard(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(max_length=2000, examples=["Why does my loop skip the last item?"])
+    message: Text = Field(max_length=2000, examples=["Why does my loop skip the last item?"])
 
 
 class ChatResponse(Mockable):

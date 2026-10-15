@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import FastAPI, Request
 
-from app.errors import install_error_handlers
+from app.errors import error_response, install_error_handlers
 from app.logging import configure_logging, request_id_var
 from app.routers import (
     accounts,
@@ -30,7 +30,14 @@ async def request_context(request: Request, call_next):
     token = request_id_var.set(request_id)
     started = time.perf_counter()
     try:
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            # Handled here, not by Starlette, so the request ID is still known and the JSON shape holds.
+            log.exception("unhandled error", extra={"fields": {"path": request.url.path}})
+            response = error_response(
+                500, "internal_error", "Something went wrong on the server. Try again shortly."
+            )
         response.headers["X-Request-ID"] = request_id
         log.info(
             "request",
