@@ -9,10 +9,10 @@ API = "/api/v1"
 
 def purge_synthetic(owner):
     with owner.begin() as conn:
-        ids = "SELECT id FROM users WHERE email LIKE '%@synthetic.local'"
+        ids = "SELECT id FROM users WHERE email LIKE 'synthetic-%@synthetic.local'"
         for table in ("mastery_events", "mastery", "misconception_state", "enrollments"):
             conn.execute(text(f"DELETE FROM {table} WHERE user_id IN ({ids})"))
-        conn.execute(text("DELETE FROM users WHERE email LIKE '%@synthetic.local'"))
+        conn.execute(text("DELETE FROM users WHERE email LIKE 'synthetic-%@synthetic.local'"))
 
 
 @pytest.fixture(scope="module")
@@ -35,12 +35,12 @@ def test_the_seed_creates_labelled_students_whose_mastery_came_through_the_servi
     assert seeded["summary"]["students"] == 6 and seeded["summary"]["answers_applied"] > 0
     with owner.connect() as conn:
         users = conn.execute(
-            text("SELECT email, role FROM users WHERE email LIKE '%@synthetic.local' ORDER BY email")
+            text("SELECT email, role FROM users WHERE email LIKE 'synthetic-%@synthetic.local' ORDER BY email")
         ).all()
         events = conn.execute(
             text(
                 "SELECT count(*), count(*) FILTER (WHERE evidence_ref LIKE 'synthetic:%') FROM mastery_events e"
-                " JOIN users u ON u.id = e.user_id WHERE u.email LIKE '%@synthetic.local'"
+                " JOIN users u ON u.id = e.user_id WHERE u.email LIKE 'synthetic-%@synthetic.local'"
             )
         ).one()
     assert [u.email for u in users][:2] == ["synthetic-01@synthetic.local", "synthetic-02@synthetic.local"]
@@ -53,13 +53,28 @@ def test_synthetic_students_cannot_log_in(client, seeded):
     assert response.status_code == 401
 
 
+@pytest.mark.parametrize("email", ["someone@synthetic.local", "Synthetic-99@SYNTHETIC.LOCAL"])
+def test_nobody_can_register_on_the_reserved_synthetic_domain(client, email):
+    response = client.post(f"{API}/auth/register", json={"email": email, "password": "long-enough-1"})
+    assert response.status_code == 422 and "reserved" in response.text
+
+
+@pytest.mark.parametrize(
+    "email,expected",
+    [("synthetic-01@synthetic.local", True), ("synthetic-120@synthetic.local", True),
+     ("rating-ab12@synthetic.local", False), ("synthetic-01@synthetic.local.evil", False), ("synthetic-x@synthetic.local", False)],
+)
+def test_only_seeded_names_carry_the_synthetic_label(email, expected):
+    assert synthetic.is_synthetic(email) is expected
+
+
 def test_seeding_again_changes_nothing(seeded, owner, placement_course):
     def state():
         with owner.connect() as conn:
             return conn.execute(
                 text(
                     "SELECT count(*), COALESCE(sum(p_after), 0) FROM mastery_events e JOIN users u ON u.id = e.user_id"
-                    " WHERE u.email LIKE '%@synthetic.local'"
+                    " WHERE u.email LIKE 'synthetic-%@synthetic.local'"
                 )
             ).one()
 

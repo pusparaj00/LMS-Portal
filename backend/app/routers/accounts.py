@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from app import ratelimit
 from app.auth import Conn, create_token, hash_password, verify_password
 from app.schemas import LoginRequest, RegisterRequest, TokenResponse
+from app.synthetic import SYNTHETIC_DOMAIN
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -16,6 +17,8 @@ _DUMMY_HASH = hash_password("dummy-password-for-timing")
 def register(body: RegisterRequest, request: Request, conn: Conn):
     """Self-registration always creates a student; staff accounts come from app.manage."""
     ratelimit.check("register_ip", ratelimit.client_ip(request))
+    if body.email.lower().endswith(SYNTHETIC_DOMAIN):
+        raise HTTPException(422, "this email domain is reserved for the labelled synthetic class")
     try:
         user_id = conn.execute(
             text(

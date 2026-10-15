@@ -6,11 +6,11 @@ from sqlalchemy import text
 
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.schemas import ClassMastery, ClassMisconception, ClassStudent, ConceptMastery
+from app.synthetic import is_synthetic
 
 router = APIRouter(prefix="/courses/{course_id}", tags=["instructor"])
 Instructor = Annotated[CurrentUser, Depends(require_role("instructor", "admin"))]
 SUSPECTED_ABOVE = 0.3  # the same threshold the student dashboard uses
-SYNTHETIC_DOMAIN = "@synthetic.local"
 
 
 def _check(conn, user: CurrentUser, course_id: int) -> None:
@@ -45,7 +45,7 @@ def class_mastery(course_id: int, user: Instructor, conn: Conn):
         ClassStudent(
             student_id=s.id,
             label=s.email.split("@")[0],
-            synthetic=s.email.endswith(SYNTHETIC_DOMAIN),
+            synthetic=is_synthetic(s.email),
             mastery=[
                 ConceptMastery(concept_id=c.id, name=c.name, p_known=known.get((s.id, c.id), c.prior))
                 for c in concepts

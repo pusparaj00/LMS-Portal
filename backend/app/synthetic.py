@@ -1,12 +1,14 @@
 """A small, clearly labelled SYNTHETIC class for the instructor dashboard (F-61).
 
 Students are named synthetic-NN@synthetic.local, cannot log in (their password is random and discarded), and
-their mastery is written only by the mastery service, as simulated placement answers. The full demo seed
-comes in a later step.
+their mastery is written only by the mastery service, as simulated placement answers.
+The domain is reserved: nobody can register on it, so the "synthetic" label on the dashboard cannot be given to a
+real student. app.seed calls this for the demo.
 
 Usage: python -m app.synthetic --course-title "Python Fundamentals" --students 20
 """
 import argparse
+import re
 import secrets
 
 import numpy as np
@@ -19,8 +21,13 @@ from app.mastery import client as mastery
 from simulation import model
 
 SYNTHETIC_DOMAIN = "@synthetic.local"
+SYNTHETIC_NAME = re.compile(r"synthetic-\d{2,}@synthetic\.local")
 CODE_ITEMS_PER_STUDENT = 6
 SEED = 2026
+
+
+def is_synthetic(email: str) -> bool:
+    return SYNTHETIC_NAME.fullmatch(email) is not None
 
 
 def _items(conn: Connection, course_id: int) -> tuple[list[Item], list[int]]:
