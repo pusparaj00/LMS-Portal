@@ -14,7 +14,7 @@ student-uid process exists (the checker itself) and the sandbox still answers.
 | infinite loop | time_limit | 2073 |
 | sleep past wall clock | time_limit | 4232 |
 | memory bomb (one allocation) | memory_limit | 34 |
-| memory bomb (growing list) | memory_limit | 519 |
+| memory bomb (growing list) | memory_limit (time_limit in 1 of 10 runs) | 519 |
 | fork bomb | time_limit | 4510 |
 | network call | runtime_error (network unreachable) | 116 |
 | network call to loopback service | runtime_error (connection refused) | 116 |
@@ -48,3 +48,13 @@ Every problem is marked "needs human review".
 Headless Chromium drove the real UI: register, enrol, open "Sum of two numbers", submit.
 Correct code: Accepted, 5 of 5 tests. Wrong code: 2 of 5 failed in categories basic and
 negative_numbers. An infinite loop on Run: "Your code ran too long." (4170 ms).
+
+## Fixes after review (2026-10-15)
+
+- The runner crashed with `FileNotFoundError` when the API withdrew a queued job between the
+  directory scan and `stat()`. Reproduced once in 3 runs of
+  `test_sandbox_survives_jobs_withdrawn_while_queued` against the old runner; 0 crashes in 5
+  runs after the fix. All services now restart on failure.
+- The earlier unexplained flake was the growing-list memory bomb ending as `time_limit`
+  (CPU limit reached before the memory limit). Both outcomes are contained; the test accepts
+  either for that one attack. Full suite after the fixes: 74 passed, three runs in a row.
