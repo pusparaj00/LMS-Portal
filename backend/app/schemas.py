@@ -299,3 +299,75 @@ class ChatResponse(Mockable):
             ]
         }
     )
+
+
+class DocumentCreate(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
+    source_ref: Text | None = Field(default=None, max_length=200)
+    concept: Text | None = None
+    text: Text = Field(min_length=1, max_length=50_000)
+
+
+class DocumentOut(BaseModel):
+    id: int
+    title: str
+    concept: str | None
+    status: Literal["pending", "ready", "failed"]
+    detail: str | None
+
+
+class SourceOut(BaseModel):
+    chunk_id: int
+    title: str
+    section: str
+    text: str
+
+
+class ExplanationOut(BaseModel):
+    claim: str
+    line: int
+    concept: str | None
+    hint_level: int
+    sources: list[SourceOut]
+
+
+class ProbeOut(BaseModel):
+    problem_id: int
+    kind: Literal["code", "mcq"]
+    title: str
+    statement: str
+    options: list[OptionOut]
+
+
+class ExplainResponse(BaseModel):
+    status: Literal["verified", "fallback"]
+    attempts: int
+    explanation: ExplanationOut | None
+    fallback_text: str | None
+    fallback_sources: list[SourceOut]
+    probe: ProbeOut | None
+
+
+class HintResponse(BaseModel):
+    level: int
+    max_level: int
+    kind: Literal["concept", "location", "example"]
+    text: str
+    source_title: str | None = None
+    example_title: str | None = None
+    example_solution: str | None = None
+
+
+class ProbeAnswerRequest(BaseModel):
+    submission_id: int
+    option_id: int | None = None
+    code: Text | None = Field(default=None, max_length=50_000)
+
+
+class ProbeResult(BaseModel):
+    correct: bool
+    mastery_changes: list[MasteryChange]
+
+
+class ProblemPolicy(BaseModel):
+    max_hint_level: int = Field(ge=1, le=3)

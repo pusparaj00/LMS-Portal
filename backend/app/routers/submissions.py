@@ -89,7 +89,8 @@ def submit_code(body: SubmissionCreate, user: Student, conn: Conn):
     conn.execute(
         text(
             "INSERT INTO run_results (submission_id, status, passed, failed, error_type, stderr,"
-            " runtime_ms, failed_categories) VALUES (:s, :st, :p, :f, :e, :err, :ms, :cats)"
+            " runtime_ms, failed_categories, failed_test_ids)"
+            " VALUES (:s, :st, :p, :f, :e, :err, :ms, :cats, :ids)"
         ),
         {
             "s": submission_id,
@@ -100,6 +101,7 @@ def submit_code(body: SubmissionCreate, user: Student, conn: Conn):
             "err": g.stderr,
             "ms": g.runtime_ms,
             "cats": g.failed_categories,
+            "ids": g.failed_test_ids,
         },
     )
     conn.commit()  # the mastery service reads the stored run result, so it must be visible first

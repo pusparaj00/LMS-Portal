@@ -16,6 +16,8 @@ DEFAULT_PARAMS: dict[str, tuple[float, float]] = {
     "time_limit": (0.30, 0.20),
     "diagnostic_mcq": (0.10, 0.25),
     "diagnostic_code": (0.10, 0.20),
+    "probe_mcq": (0.10, 0.25),
+    "probe_code": (0.10, 0.20),
 }
 
 # Misconception evidence: how likely a student with / without the misconception picks its option.

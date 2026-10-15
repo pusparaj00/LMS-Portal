@@ -34,6 +34,10 @@ class Grade:
     stderr: str | None
     outcomes: list[TestOutcome]
 
+    @property
+    def failed_test_ids(self) -> list[int]:
+        return [o.test.id for o in self.outcomes if not o.passed and o.test.id is not None]
+
 
 def normalise(text: str) -> str:
     return "\n".join(line.rstrip() for line in text.rstrip().splitlines())

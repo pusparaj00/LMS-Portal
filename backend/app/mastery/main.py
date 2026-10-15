@@ -62,7 +62,7 @@ class AnswerEvidence(BaseModel):
     user_id: int
     problem_id: int
     correct: bool
-    evidence_type: Literal["diagnostic_mcq", "diagnostic_code"]
+    evidence_type: Literal["diagnostic_mcq", "diagnostic_code", "probe_mcq", "probe_code"]
     evidence_ref: str
     option_id: int | None = None
 

@@ -198,8 +198,9 @@ def record_answer(
     evidence_ref: str, option_id: int | None,
 ) -> list[Change]:
     """A diagnostic or probe answer: update the item's concepts and any tagged misconceptions (TR-M-04)."""
+    full_weight = evidence_type.startswith("probe")  # a probe is aimed at the weak concept: extra weight
     plan = {
-        c: Plan(evidence_type, min(1.0, w), correct)
+        c: Plan(evidence_type, 1.0 if full_weight else min(1.0, w), correct)
         for c, w in conn.execute(
             text("SELECT concept_id, weight FROM problem_concepts WHERE problem_id = :p"),
             {"p": problem_id},
