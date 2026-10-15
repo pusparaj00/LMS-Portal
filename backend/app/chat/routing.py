@@ -15,7 +15,6 @@ from app.llm.adapter import LLMAdapter, LLMError
 log = logging.getLogger("app.chat")
 
 ROUTES = ("explain", "hint", "progress", "recommend", "lms", "general")
-BUILT_ROUTES = ("explain", "hint", "progress", "general")
 MAX_MESSAGE_CHARS = 1000
 
 SCHEMA = {

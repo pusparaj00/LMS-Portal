@@ -31,14 +31,6 @@ Email = Annotated[str, AfterValidator(_email)]
 Password = Annotated[str, Field(min_length=8), AfterValidator(_password)]
 
 
-class Mockable(BaseModel):
-    """Mock endpoints return the first OpenAPI example, so contract and mock cannot drift."""
-
-    @classmethod
-    def mock(cls):
-        return cls.model_validate(cls.model_config["json_schema_extra"]["examples"][0])
-
-
 class ErrorBody(BaseModel):
     code: str
     message: str
@@ -90,7 +82,7 @@ class CourseCreate(BaseModel):
     title: Text = Field(min_length=1, max_length=200)
 
 
-class Problem(Mockable):
+class Problem(BaseModel):
     id: int
     course_id: int
     title: str

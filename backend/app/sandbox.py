@@ -22,7 +22,6 @@ class SandboxUnavailable(Exception):
 @dataclass(frozen=True)
 class RunOutcome:
     status: str
-    exit_code: int
     stdout: str
     stderr: str
     runtime_ms: int
@@ -41,7 +40,6 @@ def _parse(payload: object, expected: int) -> list[RunOutcome]:
         return [
             RunOutcome(
                 status=str(r["status"]),
-                exit_code=int(r["exit_code"]),
                 stdout=str(r["stdout"]),
                 stderr=str(r["stderr"]),
                 runtime_ms=int(r["runtime_ms"]),

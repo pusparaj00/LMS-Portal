@@ -128,7 +128,6 @@ def run_once(code: str, stdin: str) -> dict:
         stderr = _read_capped(run_dir / "stderr")
         return {
             "status": _classify(proc.returncode, timed_out, stdout_size, stderr),
-            "exit_code": proc.returncode,
             "stdout": _read_capped(run_dir / "stdout"),
             "stderr": stderr,
             "runtime_ms": runtime_ms,

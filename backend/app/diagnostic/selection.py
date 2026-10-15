@@ -108,7 +108,3 @@ def uncertain_enough_to_stop(mastery: dict[int, float], items_asked: int) -> boo
         return False
     top = sorted((entropy(p) for p in mastery.values()), reverse=True)[:3]
     return float(np.mean(top)) < UNCERTAINTY_STOP_BITS
-
-
-def finished(items_asked: int, mastery: dict[int, float]) -> bool:
-    return items_asked >= MAX_ITEMS or uncertain_enough_to_stop(mastery, items_asked)
