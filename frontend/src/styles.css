@@ -666,12 +666,85 @@ code {
   margin: 0;
 }
 
-textarea {
+textarea,
+select {
   font: inherit;
   padding: 0.5rem;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--panel);
   color: var(--ink);
+}
+
+textarea {
   resize: vertical;
+}
+
+textarea.code {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.inline-form {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+}
+
+.inline-form label {
+  flex: 1;
+}
+
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem 1rem 1rem;
+  background: var(--panel);
+}
+
+legend {
+  font-weight: 600;
+  padding: 0 0.4rem;
+}
+
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+}
+
+label.inline input[type="checkbox"] {
+  width: auto;
+}
+
+.concept-pick {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.2rem 0;
+}
+
+.concept-pick input[type="number"] {
+  width: 5rem;
+}
+
+.test-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 10rem auto auto;
+  gap: 0.6rem;
+  align-items: end;
+  margin: 0.5rem 0 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .test-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .inline-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

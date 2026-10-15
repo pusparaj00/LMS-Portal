@@ -21,10 +21,20 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
       </p>
       <h1>Problems</h1>
       {session.role !== "student" && (
-        <p>
+        <p className="actions">
           <a className="button" href={`#/class/${courseId}`}>
             Class overview
           </a>
+          {session.role === "instructor" && (
+            <>
+              <a className="button" href={`#/course/${courseId}/problem/new`}>
+                Add a problem
+              </a>
+              <a className="button" href={`#/course/${courseId}/notes`}>
+                Course notes
+              </a>
+            </>
+          )}
         </p>
       )}
       {session.role === "student" && (

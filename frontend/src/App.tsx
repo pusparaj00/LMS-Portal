@@ -5,6 +5,8 @@ import { ChatPanel } from "./pages/ChatPanel";
 import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { DashboardPage, WhyPage } from "./pages/DashboardPage";
+import { NewProblemPage } from "./pages/NewProblemPage";
+import { NotesPage } from "./pages/NotesPage";
 import { InstructorPage } from "./pages/InstructorPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlacementPage } from "./pages/PlacementPage";
@@ -33,6 +35,8 @@ export function App() {
   if (!session) return <LoginPage onSession={update} />;
 
   const course = hash.match(/^#\/course\/(\d+)$/);
+  const newProblem = hash.match(/^#\/course\/(\d+)\/problem\/new$/);
+  const notes = hash.match(/^#\/course\/(\d+)\/notes$/);
   const problem = hash.match(/^#\/problem\/(\d+)$/);
   const classView = hash.match(/^#\/class\/(\d+)$/);
   const placement = hash.match(/^#\/placement\/(\d+)$/);
@@ -51,7 +55,11 @@ export function App() {
         </button>
       </header>
       <main>
-        {classView ? (
+        {newProblem && session.role === "instructor" ? (
+          <NewProblemPage session={session} courseId={Number(newProblem[1])} />
+        ) : notes && session.role === "instructor" ? (
+          <NotesPage session={session} courseId={Number(notes[1])} />
+        ) : classView ? (
           <InstructorPage session={session} courseId={Number(classView[1])} />
         ) : why ? (
           <WhyPage session={session} courseId={Number(why[1])} conceptId={Number(why[2])} />
