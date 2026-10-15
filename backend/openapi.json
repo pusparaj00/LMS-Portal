@@ -8,8 +8,41 @@
               "Why does my loop skip the last item?"
             ],
             "maxLength": 2000,
+            "minLength": 1,
             "title": "Message",
             "type": "string"
+          },
+          "problem_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The problem the student has open, if any",
+            "title": "Problem Id"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "enum": [
+                  "explain",
+                  "hint",
+                  "progress",
+                  "recommend",
+                  "lms",
+                  "general"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when the student corrects the route",
+            "title": "Route"
           }
         },
         "required": [
@@ -19,14 +52,11 @@
         "type": "object"
       },
       "ChatResponse": {
-        "examples": [
-          {
-            "reply": "This is a canned reply from the stub LLM adapter.",
-            "route": "explain",
-            "sources": []
-          }
-        ],
         "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "integer"
+          },
           "reply": {
             "title": "Reply",
             "type": "string"
@@ -43,20 +73,121 @@
             "title": "Route",
             "type": "string"
           },
+          "router": {
+            "$ref": "#/components/schemas/RouterInfo"
+          },
           "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "tools": {
             "items": {
               "type": "string"
             },
-            "title": "Sources",
+            "title": "Tools",
             "type": "array"
           }
         },
         "required": [
+          "message_id",
           "reply",
           "route",
+          "router",
+          "tools",
           "sources"
         ],
         "title": "ChatResponse",
+        "type": "object"
+      },
+      "ClassMastery": {
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptMastery"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "students": {
+            "items": {
+              "$ref": "#/components/schemas/ClassStudent"
+            },
+            "title": "Students",
+            "type": "array"
+          }
+        },
+        "required": [
+          "concepts",
+          "students"
+        ],
+        "title": "ClassMastery",
+        "type": "object"
+      },
+      "ClassMisconception": {
+        "properties": {
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "mean_probability": {
+            "title": "Mean Probability",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "students": {
+            "title": "Students",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "concept",
+          "students",
+          "mean_probability"
+        ],
+        "title": "ClassMisconception",
+        "type": "object"
+      },
+      "ClassStudent": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mastery": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptMastery"
+            },
+            "title": "Mastery",
+            "type": "array"
+          },
+          "student_id": {
+            "title": "Student Id",
+            "type": "integer"
+          },
+          "synthetic": {
+            "title": "Synthetic",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "student_id",
+          "label",
+          "synthetic",
+          "mastery"
+        ],
+        "title": "ClassStudent",
         "type": "object"
       },
       "ConceptMastery": {
@@ -1306,6 +1437,53 @@
         "title": "RegisterRequest",
         "type": "object"
       },
+      "RouterInfo": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "how": {
+            "enum": [
+              "llm",
+              "keyword",
+              "student"
+            ],
+            "title": "How",
+            "type": "string"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "how",
+          "confidence",
+          "reason",
+          "provider"
+        ],
+        "title": "RouterInfo",
+        "type": "object"
+      },
       "SourceOut": {
         "properties": {
           "chunk_id": {
@@ -1694,7 +1872,6 @@
     },
     "/api/v1/chat": {
       "post": {
-        "description": "Placeholder until the chat router exists: a fixed reply, never an unchecked model reply.",
         "operationId": "chat_api_v1_chat_post",
         "requestBody": {
           "content": {
@@ -1810,6 +1987,53 @@
         "summary": "Create Course",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/class-mastery": {
+      "get": {
+        "operationId": "class_mastery_api_v1_courses__course_id__class_mastery_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassMastery"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Class Mastery",
+        "tags": [
+          "instructor"
         ]
       }
     },
@@ -1956,6 +2180,57 @@
         "summary": "Enroll",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/misconceptions": {
+      "get": {
+        "operationId": "misconceptions_api_v1_courses__course_id__misconceptions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClassMisconception"
+                  },
+                  "title": "Response Misconceptions Api V1 Courses  Course Id  Misconceptions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Misconceptions",
+        "tags": [
+          "instructor"
         ]
       }
     },

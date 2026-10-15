@@ -18,14 +18,6 @@ def test_openapi_file_is_frozen():
     )
 
 
-def test_chat_is_still_the_stub_adapter_behind_auth(make_user):
-    _, student = make_user("student")
-    response = client.post("/api/v1/chat", headers=student, json={"message": "hi"})
-    assert response.json() == {
-        "reply": "This is a canned reply from the stub LLM adapter.", "route": "general", "sources": [],
-    }
-
-
 def test_validation_error_uses_the_single_error_shape():
     response = client.post("/api/v1/auth/login", json={})
     assert response.status_code == 422
