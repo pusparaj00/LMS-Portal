@@ -1,0 +1,46 @@
+{
+  "generated": "2026-10-15",
+  "model": "gemini:gemini-3.5-flash-lite",
+  "about": "Produced by the real verified flow (each was accepted by the verifier on the first attempt) and re-verified against each submission before it is shown. The test number the model had quoted was removed by hand from the first claim, because test ids differ between databases.",
+  "entries": [
+    {
+      "problem": "Sum from 1 to n",
+      "code": "n = int(input())\ntotal = 0\nfor i in range(n):\n    total += i\nprint(total)\n",
+      "claim": "On line 3, `range(n)` generates values starting from 0 up to n-1 instead of including n, which makes some tests fail because it misses adding the final number n to the total.",
+      "line": 3,
+      "concept": "loops",
+      "sources": [
+        {
+          "title": "Loops and range",
+          "section": "Accumulating a result"
+        }
+      ]
+    },
+    {
+      "problem": "Countdown",
+      "code": "n = int(input())\nfor i in range(n, 0):\n    print(i)\nprint(\"Liftoff!\")\n",
+      "claim": "On line 2, your range function lacks a negative step argument, so it does not count down when given a positive start and stop.",
+      "line": 2,
+      "concept": "loops",
+      "sources": [
+        {
+          "title": "Loops and range",
+          "section": "How range works"
+        }
+      ]
+    },
+    {
+      "problem": "Reverse a string",
+      "code": "s = input()\ns.reverse()\nprint(s)\n",
+      "claim": "On line 2, you called the `reverse()` method on a string, but strings do not have a `reverse()` method.",
+      "line": 2,
+      "concept": "strings",
+      "sources": [
+        {
+          "title": "Strings",
+          "section": "Indexing and slicing"
+        }
+      ]
+    }
+  ]
+}

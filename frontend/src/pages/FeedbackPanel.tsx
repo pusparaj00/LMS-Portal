@@ -14,6 +14,7 @@ type Probe = {
 type Explanation = {
   status: "verified" | "fallback";
   attempts: number;
+  cached: boolean;
   explanation: { claim: string; line: number; concept: string | null; sources: Source[] } | null;
   fallback_text: string | null;
   fallback_sources: Source[];
@@ -104,7 +105,9 @@ export function FeedbackPanel({ session, submissionId }: { session: Session; sub
 
       {explanation?.explanation && (
         <div className="explanation verified">
-          <p className="badge">Checked against your test results</p>
+          <p className="badge">
+            {explanation.cached ? "Prepared demo explanation, checked against your test results" : "Checked against your test results"}
+          </p>
           <p>
             <Inline text={explanation.explanation.claim} />
           </p>

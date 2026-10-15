@@ -643,6 +643,11 @@
             "title": "Attempts",
             "type": "integer"
           },
+          "cached": {
+            "default": false,
+            "title": "Cached",
+            "type": "boolean"
+          },
           "explanation": {
             "anyOf": [
               {

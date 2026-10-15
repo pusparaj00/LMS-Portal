@@ -8,7 +8,7 @@ from sqlalchemy import Connection, text
 
 from app.config import get_settings
 from app.db import get_redis
-from app.feedback import hints, probe
+from app.feedback import demo_cache, hints, probe
 from app.feedback.context import ExplainContext, load_context
 from app.feedback.explain import Outcome, run_explain
 from app.llm.adapter import LLMAdapter
@@ -54,11 +54,16 @@ def explain_submission(conn: Connection, user_id: int, submission_id: int, adapt
     cached = redis.get(f"explain:{submission_id}")
     if cached:
         return ExplainResponse(**json.loads(cached))
-    outcome = run_explain(conn, ctx, adapter, get_settings().retrieval_min_score)
-    offered = probe.select_probe(conn, ctx)
+    cached_demo = demo_cache.serve(conn, ctx)
+    if cached_demo is not None:
+        response, offered = cached_demo, probe.select_probe(conn, ctx)
+        response.probe = _probe_out(offered)
+    else:
+        outcome = run_explain(conn, ctx, adapter, get_settings().retrieval_min_score)
+        offered = probe.select_probe(conn, ctx)
+        response = _response(outcome, offered)
     if offered is not None:
         probe.remember(redis, submission_id, offered.problem_id)
-    response = _response(outcome, offered)
     redis.set(f"explain:{submission_id}", response.model_dump_json(), ex=EXPLAIN_TTL_SECONDS)
     return response
 

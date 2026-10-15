@@ -1,0 +1,17 @@
+[
+  {
+    "problem": "Sum from 1 to n",
+    "note": "Off-by-one: range(n) stops before n. The main demo submission.",
+    "code": "n = int(input())\ntotal = 0\nfor i in range(n):\n    total += i\nprint(total)\n"
+  },
+  {
+    "problem": "Countdown",
+    "note": "range(n, 0) has no negative step, so it counts nothing.",
+    "code": "n = int(input())\nfor i in range(n, 0):\n    print(i)\nprint(\"Liftoff!\")\n"
+  },
+  {
+    "problem": "Reverse a string",
+    "note": "Strings have no reverse method: a runtime error rather than a wrong answer.",
+    "code": "s = input()\ns.reverse()\nprint(s)\n"
+  }
+]

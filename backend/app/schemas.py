@@ -337,6 +337,7 @@ class ProbeOut(BaseModel):
 class ExplainResponse(BaseModel):
     status: Literal["verified", "fallback"]
     attempts: int
+    cached: bool = False  # true for a prepared demo explanation; it is still verified against this submission
     explanation: ExplanationOut | None
     fallback_text: str | None
     fallback_sources: list[SourceOut]
