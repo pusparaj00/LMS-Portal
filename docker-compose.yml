@@ -1,0 +1,93 @@
+name: lms
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+psycopg://lms_api:${LMS_API_DB_PASSWORD:?set in .env}@db:5432/lms
+  REDIS_URL: redis://:${REDIS_PASSWORD:?set in .env}@redis:6379/0
+  LLM_PROVIDER: ${LLM_PROVIDER:-stub}
+  LLM_MODEL: ${LLM_MODEL:-stub}
+  LLM_TIMEOUT_S: ${LLM_TIMEOUT_S:-30}
+  LLM_MAX_RETRIES: ${LLM_MAX_RETRIES:-1}
+  LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.1}
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: lms_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: lms
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms_owner -d lms"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      OWNER_DATABASE_URL: postgresql+psycopg://lms_owner:${POSTGRES_PASSWORD:?set in .env}@db:5432/lms
+      LMS_API_DB_PASSWORD: ${LMS_API_DB_PASSWORD:?set in .env}
+      LMS_MASTERY_DB_PASSWORD: ${LMS_MASTERY_DB_PASSWORD:?set in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: ./backend
+    environment:
+      <<: *backend-env
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  test:
+    profiles: ["test"]
+    build: ./backend
+    command: ["sh", "-c", "ruff check . && pytest -q"]
+    environment:
+      <<: *backend-env
+      OWNER_DATABASE_URL: postgresql+psycopg://lms_owner:${POSTGRES_PASSWORD:?set in .env}@db:5432/lms
+      MASTERY_DATABASE_URL: postgresql+psycopg://lms_mastery:${LMS_MASTERY_DB_PASSWORD:?set in .env}@db:5432/lms
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
