@@ -15,7 +15,7 @@ router = APIRouter(prefix="/problems", tags=["problems"])
 @router.get("", response_model=ProblemList)
 def list_problems(course_id: int, user: Annotated[CurrentUser, Depends(current_user)], conn: Conn):
     if not can_access_course(conn, user, course_id):
-        raise HTTPException(403, "not enrolled in this course")
+        raise HTTPException(403, "you have no access to this course")
     return ProblemList(problems=repo.list_problems(conn, course_id))
 
 

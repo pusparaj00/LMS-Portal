@@ -7,6 +7,9 @@ from app.schemas import LoginRequest, RegisterRequest, TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Checked when the email is unknown, so a login takes the same time either way.
+_DUMMY_HASH = hash_password("dummy-password-for-timing")
+
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 def register(body: RegisterRequest, conn: Conn):
@@ -31,7 +34,10 @@ def login(body: LoginRequest, conn: Conn):
     row = conn.execute(
         text("SELECT id, password_hash, role FROM users WHERE email = lower(:e)"), {"e": body.email}
     ).first()
-    if row is None or not verify_password(body.password, row.password_hash):
+    if row is None:
+        verify_password(body.password, _DUMMY_HASH)
+        raise HTTPException(401, "wrong email or password")
+    if not verify_password(body.password, row.password_hash):
         raise HTTPException(401, "wrong email or password")
     return TokenResponse(
         access_token=create_token(row.id, row.role), token_type="bearer", role=row.role

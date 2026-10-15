@@ -75,9 +75,12 @@ def test_register_always_creates_a_student(client):
 
 @pytest.fixture(scope="module", autouse=True)
 def remove_registered_user(owner):
+    delete = text("DELETE FROM users WHERE email = 'reg-test@test.local'")
+    with owner.begin() as conn:
+        conn.execute(delete)
     yield
     with owner.begin() as conn:
-        conn.execute(text("DELETE FROM users WHERE email = 'reg-test@test.local'"))
+        conn.execute(delete)
 
 
 def test_login(client):
