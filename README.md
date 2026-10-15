@@ -44,6 +44,21 @@ contains no solution code. After two rejected attempts the student gets a templa
 `explanation_checks`. Embedding model weights are baked into the Docker image at build time (this needs network
 access once); running containers download nothing.
 
+## Assistant chat and the instructor view
+
+A chat panel on every student page routes each message to one capability: `explain` and `hint` use the verified
+feedback flow, `progress` reads the student's own mastery through a read-only database role, and `general` answers from
+the course notes with sources (or says no source was found). `recommend` and `lms` are recognised but not built. If the
+model is unavailable or unsure, keyword rules choose the route and the panel says so; the student can correct it.
+Instructors get a class mastery heatmap and misconception counts at `#/class/<course id>`.
+
+`LLM_FALLBACK=groq,deepseek,openai` lets the chat and feedback flows continue on another provider when the primary one
+is out of quota (each needs its own API key in `.env`). A small labelled synthetic class for the demo is created with:
+
+```sh
+docker compose exec api python -m app.synthetic --students 20
+```
+
 ## Sandbox
 
 Student code runs only in the `sandbox` container: no network interface, read-only root, no
