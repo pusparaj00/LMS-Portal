@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 
-import { HealthPage } from "./HealthPage";
+import { App } from "./App";
+import "./styles.css";
 
-createRoot(document.getElementById("root")!).render(<HealthPage />);
+createRoot(document.getElementById("root")!).render(<App />);
