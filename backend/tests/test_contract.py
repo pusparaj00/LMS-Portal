@@ -18,23 +18,20 @@ def test_openapi_file_is_frozen():
     )
 
 
-def test_mock_endpoints_return_openapi_examples():
-    assert client.post("/api/v1/auth/login", json={"email": "a@b.c", "password": "x"}).json()[
-        "token_type"
-    ] == "bearer"
-    assert client.get("/api/v1/problems", params={"course_id": 1}).json()["problems"][0]["id"] == 1
-    assert client.post("/api/v1/submissions", json={"problem_id": 1, "code": "x"}).json()[
-        "submission_id"
-    ] == 412
-    assert client.post("/api/v1/diagnostic/start").json()["max_items"] == 10
-    assert client.post(
-        "/api/v1/diagnostic/answer", json={"session_id": "s", "problem_id": 1, "answer": "a"}
-    ).json()["done"] is False
-    assert client.post("/api/v1/chat", json={"message": "hi"}).json()["route"] == "general"
+def test_remaining_mock_endpoints_return_openapi_examples(make_user):
+    _, student = make_user("student")
+    assert client.post("/api/v1/diagnostic/start", headers=student).json()["max_items"] == 10
+    answer = client.post(
+        "/api/v1/diagnostic/answer",
+        headers=student,
+        json={"session_id": "s", "problem_id": 1, "answer": "a"},
+    )
+    assert answer.json()["done"] is False
+    assert client.post("/api/v1/chat", headers=student, json={"message": "hi"}).json()["route"] == "general"
 
 
 def test_validation_error_uses_the_single_error_shape():
-    response = client.post("/api/v1/chat", json={})
+    response = client.post("/api/v1/auth/login", json={})
     assert response.status_code == 422
     error = response.json()["error"]
     assert error["code"] == "validation_error"

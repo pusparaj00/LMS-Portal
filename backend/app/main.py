@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 
 from app.errors import install_error_handlers
 from app.logging import configure_logging, request_id_var
-from app.routers import health, mock
+from app.routers import accounts, courses, health, mock, problems, submissions
 
 configure_logging()
 log = logging.getLogger("app.request")
@@ -40,4 +40,5 @@ async def request_context(request: Request, call_next):
 
 
 app.include_router(health.router, prefix="/api/v1")
-app.include_router(mock.router, prefix="/api/v1")
+for module in (accounts, courses, problems, submissions, mock):
+    app.include_router(module.router, prefix="/api/v1")

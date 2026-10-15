@@ -37,18 +37,12 @@ class LoginRequest(BaseModel):
     password: str = Field(examples=["a-long-password"])
 
 
-class TokenResponse(Mockable):
+class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"]
     role: Literal["student", "instructor", "admin"]
 
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {"access_token": "mock.jwt.token", "token_type": "bearer", "role": "student"}
-            ]
-        }
-    )
+
 
 
 class ConceptTag(BaseModel):
@@ -57,14 +51,27 @@ class ConceptTag(BaseModel):
     weight: float
 
 
+class Course(BaseModel):
+    id: int
+    title: str
+    instructor_id: int
+    enrolled: bool
+
+
+class CourseCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+
+
 class Problem(Mockable):
     id: int
     course_id: int
     title: str
     statement: str
     language: str
+    kind: Literal["code", "mcq"]
     difficulty_b: float
     discrimination_a: float
+    review_status: Literal["needs human review", "reviewed"]
     concepts: list[ConceptTag]
 
     model_config = ConfigDict(
@@ -74,10 +81,12 @@ class Problem(Mockable):
                     "id": 1,
                     "course_id": 1,
                     "title": "Sum of a list",
-                    "statement": "Write sum_list(xs) that returns the sum of the numbers in xs.",
+                    "statement": "Read n, then n numbers. Print their sum.",
                     "language": "python",
+                    "kind": "code",
                     "difficulty_b": -0.5,
                     "discrimination_a": 1.0,
+                    "review_status": "needs human review",
                     "concepts": [{"concept_id": 1, "name": "loops", "weight": 1.0}],
                 }
             ]
@@ -85,12 +94,17 @@ class Problem(Mockable):
     )
 
 
-class ProblemList(Mockable):
+class ProblemList(BaseModel):
     problems: list[Problem]
 
-    model_config = ConfigDict(
-        json_schema_extra={"examples": [{"problems": [Problem.mock().model_dump()]}]}
-    )
+
+class Example(BaseModel):
+    input: str
+    expected: str
+
+
+class ProblemDetail(Problem):
+    examples: list[Example]
 
 
 class TestCaseIn(BaseModel):
@@ -106,16 +120,16 @@ class ProblemCreate(BaseModel):
     course_id: int
     title: str
     statement: str
-    language: str = "python"
     difficulty_b: float
     discrimination_a: float
     concepts: list[ConceptTag]
+    reference_solution: str
     test_cases: list[TestCaseIn]
 
 
 class SubmissionCreate(BaseModel):
     problem_id: int
-    code: str = Field(examples=["def sum_list(xs):\n    return sum(xs)\n"])
+    code: str = Field(max_length=50_000, examples=["print(sum(map(int, input().split())))"])
 
 
 class MasteryChange(BaseModel):
@@ -124,30 +138,25 @@ class MasteryChange(BaseModel):
     after: float
 
 
-class SubmissionResult(Mockable):
-    submission_id: int
+class VisibleTest(BaseModel):
+    input: str
+    expected: str
+    actual: str
+    passed: bool
+    status: str
+
+
+class SubmissionResult(BaseModel):
+    submission_id: int | None
+    problem_id: int
     status: Literal["passed", "failed", "error"]
     passed: int
     failed: int
     error_type: str | None
     failed_categories: list[str]
+    runtime_ms: int
+    visible_tests: list[VisibleTest]
     mastery_changes: list[MasteryChange]
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "submission_id": 412,
-                    "status": "failed",
-                    "passed": 3,
-                    "failed": 2,
-                    "error_type": None,
-                    "failed_categories": ["empty_input", "large_input"],
-                    "mastery_changes": [{"concept": "loops", "before": 0.62, "after": 0.55}],
-                }
-            ]
-        }
-    )
 
 
 class DiagnosticStartResponse(Mockable):

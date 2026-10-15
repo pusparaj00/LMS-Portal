@@ -82,6 +82,49 @@
         "title": "ConceptTag",
         "type": "object"
       },
+      "Course": {
+        "properties": {
+          "enrolled": {
+            "title": "Enrolled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "instructor_id": {
+            "title": "Instructor Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "instructor_id",
+          "enrolled"
+        ],
+        "title": "Course",
+        "type": "object"
+      },
+      "CourseCreate": {
+        "properties": {
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "CourseCreate",
+        "type": "object"
+      },
       "DiagnosticAnswerRequest": {
         "properties": {
           "answer": {
@@ -125,8 +168,10 @@
               "difficulty_b": -0.5,
               "discrimination_a": 1.0,
               "id": 1,
+              "kind": "code",
               "language": "python",
-              "statement": "Write sum_list(xs) that returns the sum of the numbers in xs.",
+              "review_status": "needs human review",
+              "statement": "Read n, then n numbers. Print their sum.",
               "title": "Sum of a list"
             },
             "session_id": "mock-session"
@@ -185,8 +230,10 @@
               "difficulty_b": -0.5,
               "discrimination_a": 1.0,
               "id": 1,
+              "kind": "code",
               "language": "python",
-              "statement": "Write sum_list(xs) that returns the sum of the numbers in xs.",
+              "review_status": "needs human review",
+              "statement": "Read n, then n numbers. Print their sum.",
               "title": "Sum of a list"
             },
             "session_id": "mock-session"
@@ -216,6 +263,24 @@
           "problem"
         ],
         "title": "DiagnosticStartResponse",
+        "type": "object"
+      },
+      "Example": {
+        "properties": {
+          "expected": {
+            "title": "Expected",
+            "type": "string"
+          },
+          "input": {
+            "title": "Input",
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "expected"
+        ],
+        "title": "Example",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -327,8 +392,10 @@
             "difficulty_b": -0.5,
             "discrimination_a": 1.0,
             "id": 1,
+            "kind": "code",
             "language": "python",
-            "statement": "Write sum_list(xs) that returns the sum of the numbers in xs.",
+            "review_status": "needs human review",
+            "statement": "Read n, then n numbers. Print their sum.",
             "title": "Sum of a list"
           }
         ],
@@ -356,8 +423,24 @@
             "title": "Id",
             "type": "integer"
           },
+          "kind": {
+            "enum": [
+              "code",
+              "mcq"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "language": {
             "title": "Language",
+            "type": "string"
+          },
+          "review_status": {
+            "enum": [
+              "needs human review",
+              "reviewed"
+            ],
+            "title": "Review Status",
             "type": "string"
           },
           "statement": {
@@ -375,8 +458,10 @@
           "title",
           "statement",
           "language",
+          "kind",
           "difficulty_b",
           "discrimination_a",
+          "review_status",
           "concepts"
         ],
         "title": "Problem",
@@ -403,9 +488,8 @@
             "title": "Discrimination A",
             "type": "number"
           },
-          "language": {
-            "default": "python",
-            "title": "Language",
+          "reference_solution": {
+            "title": "Reference Solution",
             "type": "string"
           },
           "statement": {
@@ -431,34 +515,110 @@
           "difficulty_b",
           "discrimination_a",
           "concepts",
+          "reference_solution",
           "test_cases"
         ],
         "title": "ProblemCreate",
         "type": "object"
       },
-      "ProblemList": {
+      "ProblemDetail": {
         "examples": [
           {
-            "problems": [
+            "concepts": [
               {
-                "concepts": [
-                  {
-                    "concept_id": 1,
-                    "name": "loops",
-                    "weight": 1.0
-                  }
-                ],
-                "course_id": 1,
-                "difficulty_b": -0.5,
-                "discrimination_a": 1.0,
-                "id": 1,
-                "language": "python",
-                "statement": "Write sum_list(xs) that returns the sum of the numbers in xs.",
-                "title": "Sum of a list"
+                "concept_id": 1,
+                "name": "loops",
+                "weight": 1.0
               }
-            ]
+            ],
+            "course_id": 1,
+            "difficulty_b": -0.5,
+            "discrimination_a": 1.0,
+            "id": 1,
+            "kind": "code",
+            "language": "python",
+            "review_status": "needs human review",
+            "statement": "Read n, then n numbers. Print their sum.",
+            "title": "Sum of a list"
           }
         ],
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptTag"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "difficulty_b": {
+            "title": "Difficulty B",
+            "type": "number"
+          },
+          "discrimination_a": {
+            "title": "Discrimination A",
+            "type": "number"
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/Example"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "code",
+              "mcq"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "review_status": {
+            "enum": [
+              "needs human review",
+              "reviewed"
+            ],
+            "title": "Review Status",
+            "type": "string"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "course_id",
+          "title",
+          "statement",
+          "language",
+          "kind",
+          "difficulty_b",
+          "discrimination_a",
+          "review_status",
+          "concepts",
+          "examples"
+        ],
+        "title": "ProblemDetail",
+        "type": "object"
+      },
+      "ProblemList": {
         "properties": {
           "problems": {
             "items": {
@@ -503,8 +663,9 @@
         "properties": {
           "code": {
             "examples": [
-              "def sum_list(xs):\n    return sum(xs)\n"
+              "print(sum(map(int, input().split())))"
             ],
+            "maxLength": 50000,
             "title": "Code",
             "type": "string"
           },
@@ -521,25 +682,6 @@
         "type": "object"
       },
       "SubmissionResult": {
-        "examples": [
-          {
-            "failed": 2,
-            "failed_categories": [
-              "empty_input",
-              "large_input"
-            ],
-            "mastery_changes": [
-              {
-                "after": 0.55,
-                "before": 0.62,
-                "concept": "loops"
-              }
-            ],
-            "passed": 3,
-            "status": "failed",
-            "submission_id": 412
-          }
-        ],
         "properties": {
           "error_type": {
             "anyOf": [
@@ -574,6 +716,14 @@
             "title": "Passed",
             "type": "integer"
           },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "runtime_ms": {
+            "title": "Runtime Ms",
+            "type": "integer"
+          },
           "status": {
             "enum": [
               "passed",
@@ -584,17 +734,34 @@
             "type": "string"
           },
           "submission_id": {
-            "title": "Submission Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Id"
+          },
+          "visible_tests": {
+            "items": {
+              "$ref": "#/components/schemas/VisibleTest"
+            },
+            "title": "Visible Tests",
+            "type": "array"
           }
         },
         "required": [
           "submission_id",
+          "problem_id",
           "status",
           "passed",
           "failed",
           "error_type",
           "failed_categories",
+          "runtime_ms",
+          "visible_tests",
           "mastery_changes"
         ],
         "title": "SubmissionResult",
@@ -629,13 +796,6 @@
         "type": "object"
       },
       "TokenResponse": {
-        "examples": [
-          {
-            "access_token": "mock.jwt.token",
-            "role": "student",
-            "token_type": "bearer"
-          }
-        ],
         "properties": {
           "access_token": {
             "title": "Access Token",
@@ -703,6 +863,45 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VisibleTest": {
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "expected": {
+            "title": "Expected",
+            "type": "string"
+          },
+          "input": {
+            "title": "Input",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "expected",
+          "actual",
+          "passed",
+          "status"
+        ],
+        "title": "VisibleTest",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
       }
     }
   },
@@ -755,6 +954,7 @@
     },
     "/api/v1/auth/register": {
       "post": {
+        "description": "Self-registration always creates a student; staff accounts come from app.manage.",
         "operationId": "register_api_v1_auth_register_post",
         "requestBody": {
           "content": {
@@ -829,9 +1029,128 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Chat",
         "tags": [
           "chat"
+        ]
+      }
+    },
+    "/api/v1/courses": {
+      "get": {
+        "operationId": "list_courses_api_v1_courses_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Course"
+                  },
+                  "title": "Response List Courses Api V1 Courses Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Courses",
+        "tags": [
+          "courses"
+        ]
+      },
+      "post": {
+        "operationId": "create_course_api_v1_courses_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Course",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/enroll": {
+      "post": {
+        "operationId": "enroll_api_v1_courses__course_id__enroll_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Enroll",
+        "tags": [
+          "courses"
         ]
       }
     },
@@ -870,6 +1189,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Diagnostic Answer",
         "tags": [
           "diagnostic"
@@ -891,6 +1215,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Diagnostic Start",
         "tags": [
           "diagnostic"
@@ -954,6 +1283,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List Problems",
         "tags": [
           "problems"
@@ -993,7 +1327,59 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Create Problem",
+        "tags": [
+          "problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{problem_id}": {
+      "get": {
+        "operationId": "get_problem_api_v1_problems__problem_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Problem",
         "tags": [
           "problems"
         ]
@@ -1001,7 +1387,7 @@
     },
     "/api/v1/submissions": {
       "post": {
-        "operationId": "create_submission_api_v1_submissions_post",
+        "operationId": "submit_code_api_v1_submissions_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1034,7 +1420,106 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Create Submission",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Code",
+        "tags": [
+          "submissions"
+        ]
+      }
+    },
+    "/api/v1/submissions/run": {
+      "post": {
+        "description": "Run against the visible examples only; nothing is stored.",
+        "operationId": "run_code_api_v1_submissions_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmissionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Run Code",
+        "tags": [
+          "submissions"
+        ]
+      }
+    },
+    "/api/v1/submissions/{submission_id}": {
+      "get": {
+        "operationId": "get_submission_api_v1_submissions__submission_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "title": "Submission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Submission",
         "tags": [
           "submissions"
         ]
