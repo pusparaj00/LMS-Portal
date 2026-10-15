@@ -1,0 +1,179 @@
+# Gap report: project plan against current status
+
+Audit date 2026-10-15, branch `step-7-cache-stretch` (commit at the time of writing: the Step 7 push, CI green, 409 tests).
+Sources compared: `docs/plan.md`, `docs/PRD.md` (34 features), `docs/TRD.md` (81 requirements), `docs/DRD.md`, the code and
+tests in the repository, and the measured results in `docs/results/`. Every status below was checked in the code, the
+tests or a measured result; where a status could not be checked it says so.
+
+## 1. Summary
+
+The system is a working, tested prototype of the whole demo flow in the plan (phases 0 to 5, gates G0 to G4 passed, the
+technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
+
+1. **Features not built or only partly built:** 4 of 34 PRD features not built, 4 partly built.
+2. **Requirements not met:** of 69 implementation requirements, 41 done, 9 partly done, 10 not built or not run, 9 not
+   applicable by design (the sandbox is a custom runner, not Judge0). Compliance (consent, retention, breach procedure) is
+   the largest untouched area.
+3. **Validation targets missed or unproven:** of 12 validation tests, 7 pass, 1 fails (adaptive selection, in simulation
+   only), 2 are partly met, 2 are not run (they need human raters or a local model).
+4. **Gate G5 items that only people can do:** the explanation ratings, the backup video, the report, two rehearsals and the
+   IPR conversation.
+
+| Gate | Plan's condition | Status | Evidence |
+| --- | --- | --- | --- |
+| G0 | One-command start, frozen contracts, sandbox host chosen | Pass | Compose stack, `backend/openapi.json`, custom runner chosen (see section 6) |
+| G1 | Student submits in the browser, adversarial suite passes, 30+ validated problems | Pass | 47 problems validated; `step-2-g1.md` |
+| G2 | 10-item placement test, ledger rows, 5-item sanity test passes | Pass with a caveat | Sanity test beats the mean on tested concepts only (`diagnostic.md`) |
+| G3 | 10 verified or fallback explanations, logs, zero leaks in 50 prompts | Pass | 10 of 10 verified; guarded 0 of 50 leaked (`feedback.md`) |
+| G4 | 90% routing, heatmap with seeded class | Pass | 50 of 50 routed; heatmap with 20 synthetic students (`router.md`) |
+| G5 | 10 clean demo runs, backup video, updated report, IPR conversation | Technical part passes; people part open | 10 of 10 runs, 0 failed steps (`integration.md`); video, report, IPR not done |
+
+## 2. Product features (PRD)
+
+Status of all 34 features. P0, P1 and P2 are the PRD's priorities.
+
+| Status | Features |
+| --- | --- |
+| Done (26) | F-01, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61 |
+| Partly built (4) | **F-02** (P0) instructors can create courses and problems only through the API and import scripts, there is no screen. **F-03** (P0) Markdown notes only, loaded by script; no PDF, no upload screen. **F-52** (P0) four of six routes work; `recommend` and `lms` answer "not available" by design. **F-62** (P1) the hint limit is per problem and approval of stored explanations works, but the leak threshold is global, not per problem. |
+| Not built (4) | **F-04** assignments with due dates and a gradebook (P1). **F-05** announcements (P2). **F-23** difficulty estimates for new items from text and tags (P2). **F-70** LTI 1.3 launch from Moodle or Canvas (P2). |
+
+The two P0 gaps, F-02 and F-03, matter most: a teacher cannot use the system without a developer loading content.
+
+## 3. Technical requirements (TRD), excluding validation
+
+69 requirements in groups A (architecture), M (mastery), X (sandbox), L (LLM), D (data), S (security and privacy), P
+(performance).
+
+| Group | Done | Partly done | Not built or not run | Not applicable |
+| --- | --- | --- | --- | --- |
+| A architecture (9) | 6 | 2 | 1 | 0 |
+| M mastery (12) | 7 | 3 | 0 | 2 |
+| X sandbox (9) | 2 | 0 | 0 | 7 |
+| L LLM (12) | 11 | 0 | 1 | 0 |
+| D data (8) | 6 | 0 | 2 | 0 |
+| S security and privacy (10) | 4 | 1 | 5 | 0 |
+| P performance (9) | 5 | 3 | 1 | 0 |
+| **Total (69)** | **41** | **9** | **10** | **9** |
+
+### 3.1 Partly done
+
+| ID (priority) | What is missing | Detail |
+| --- | --- | --- |
+| TR-A-04 (P0) | Local model without code changes | The adapter supports Gemini and OpenAI-compatible hosts, but the host addresses are fixed in the code, so pointing it at a local server (for example Ollama) needs a code change. |
+| TR-A-08 (P1) | Request ID in the sandbox | Structured logs carry the request ID through the API, router and model calls; it is not passed into the sandbox container. |
+| TR-M-05 (P1) | Refitting item parameters | Difficulty and discrimination are stored with a source flag (`prior`), but there is no refit from pilot answers. It needs real answers first. |
+| TR-M-08 (P2) | Chat questions as a mastery signal | The route is stored with each chat message; the concept tag is not. |
+| TR-M-10 (P0) | 5-item test beats the mean | True on the concepts the five items tested (10 of 10 seeds); true on all 12 concepts in only 3 of 10 seeds. |
+| TR-S-06 (P1) | No direct identifiers in prompts | Explanation prompts hold no email or name (checked); chat prompts also carry none by construction, but no test enforces it. |
+| TR-P-03 (P0) | Explanation within 15 s | Median 4.04 s, but worst cases 14.75 s and 15.31 s in two measured runs; earlier runs reached 23 s. |
+| TR-P-05 (P1) | Busy sandbox: show a message and retry | A down sandbox returns "try again shortly" (HTTP 503); there is no queue and no automatic retry. |
+| TR-P-08 (P1) | Report LLM calls per 100 submissions and the cache share | At most one call plus one retry is enforced and logged in `explanation_checks`, but no report computes the numbers. |
+
+### 3.2 Not built or not run
+
+| ID (priority) | Requirement | Note |
+| --- | --- | --- |
+| TR-A-09 (P2) | LTI 1.3 launch | Same as F-70. Planned for phase 7. |
+| TR-L-05 (P1) | Run the student's code on an input named in a claim and confirm the output differs | Not built. The verifier does not execute anything. |
+| TR-D-05 (P2) | Offline experiments on CodeWorkout or FalconCode | Not started; licences not checked. Planned for phase 6. |
+| TR-D-07 (P1) | Export mastery vectors and events as CSV or JSON | Not built. |
+| TR-S-05 (P1) | Consent notice with a timestamp; withdrawal | Not built. |
+| TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Not built. |
+| TR-S-08 (P1) | Breach detection logs and a written breach procedure | Logs exist; the written procedure does not. |
+| TR-S-09 (P1) | Full demo on a local model | Not run (same as TR-V-12). |
+| TR-S-10 (P2) | Adult confirmation or parental consent | Not built. |
+| TR-P-09 (P1) | Works in Chrome and Edge at 1366 px | Not tested. Screenshots were taken at 1100 px and 390 px only. |
+
+### 3.3 Not applicable by design
+
+TR-X-01 to TR-X-06 and TR-X-09 are Judge0-specific (pinned release, credentials, network setting, compiler options, GPL
+licence). The system uses the custom runner that TR-X-08 allows, so they do not apply literally. The equivalent controls
+(no network, read-only root, non-root user, explicit limits, structured result only) are covered by TR-X-07, TR-X-08 and the
+adversarial suite TR-V-01. TR-M-11 (DINA fit) and TR-M-12 (code-aware tracing) are "not to be used" and "future work"
+statements and need no code.
+
+## 4. Validation tests (TR-V)
+
+| ID | Target | Measured | Status |
+| --- | --- | --- | --- |
+| TR-V-01 | Every sandbox attack contained | All contained, host clean | Pass |
+| TR-V-02 | Every reference passes; each wrong solution fails in the expected category | 47 of 47 references pass; of 21 wrong solutions, 20 fail and 1 passes ("Most common letter": no test checks ties); expected categories not checked one by one | Partly met |
+| TR-V-03 | Verified flow has more correct claims than plain, rated by two reviewers | Blinded sheet of 20 prepared, not rated | **Not run: needs two people** |
+| TR-V-04 | Zero full-solution leaks in 50 requests | Guarded 0 of 50; plain model 44 of 50 | Pass (the n-gram guard itself never fired in this test) |
+| TR-V-05 | Adaptive reaches the error threshold in 30% fewer items; mastery within 0.15 of truth after 15 submissions | 10% fewer; mean error 0.27 after 10 items; concept-level AUC 0.61 against 0.68 for an ability-only baseline | **Fail** (simulation only) |
+| TR-V-06 | 5-item test beats the population mean | Yes on tested concepts, 3 of 10 seeds on all concepts | Partly met |
+| TR-V-07 | Each role reaches only its own endpoints | 25 routes by 4 roles, a new route without a rule fails the test | Pass |
+| TR-V-08 | 90% routed correctly | 50 of 50 (keyword rules alone: 41 of 50) | Pass |
+| TR-V-09 | Right chunk in top 3 for 80% | 17 of 20 (85%) | Pass |
+| TR-V-10 | 10 concurrent, 10 consecutive, restart | 0 of 210 steps failed in each; sessions survived restarts | Pass |
+| TR-V-11 | Stored explanation under 1 s, no model call | 0.02 to 0.04 s for 5 of 5 later students | Pass (6 students, one problem) |
+| TR-V-12 | Full demo on a local model | Not run | **Not run** |
+
+## 5. Plan tasks and gate items that are still open
+
+| Plan item (phase) | Status |
+| --- | --- |
+| Concepts and misconceptions "reviewed by a second person" (0) | Open. A person must review the 12 concepts and 13 misconceptions. |
+| Problems "written by the three teammates, checked by hand" (1) | The 47 items were drafted and validated by the agent. Every one is flagged "needs human review"; no person has reviewed them. |
+| Course notes (3) | 8 notes written, corrected after an outside review, flagged "needs human review". |
+| Instructor approval, gradebook, announcements (4, stretch, in this order) | Approval done (F-62); gradebook and announcements not built. |
+| Rate 20 explanations with two reviewers (5) | Open. Sheet and scoring script are ready. |
+| Backup video of the whole flow (5) | Open. |
+| Run the whole flow on a local model "if time allows" (5) | Not run (a decision in Step 6). |
+| Rewrite the project report around the new scope with an honest status table (5) | Open. This document can supply the status table. |
+| Rehearse the 8-minute demo twice (5) | Open. |
+| IPR search and conversation (5, IP track) | Open. Nothing should be demoed publicly before it. |
+| Phases 6 to 8 (after the review): real-data evaluation, pilot, hardening and compliance, C and Java, generated probes, recommender | Not started, as planned. |
+
+## 6. Deviations from the plan
+
+| Deviation | Why | Consequence |
+| --- | --- | --- |
+| Custom Docker runner instead of Judge0 CE | The plan names this as the cut line (TR-X-08) because Judge0 is unreliable on Windows hosts. | The Judge0 hardening list (TR-X-01 to X-06) is replaced by the runner's own limits. `CLAUDE.md` still says "a patched Judge0 version"; this should be confirmed as accepted. |
+| One person and one agent instead of three streams | Team size. | No second reviewer exists for any content or code; the review items in section 5 are all open for that reason. |
+| Failure-signature cache built (plan: "if time allows") | Requested. | Done and measured (TR-V-11). |
+| Second Gemini key added, DeepSeek removed | Requested. | The new key is refused by Google (403 project denied for Flash models, 429 quota for Pro), so all live answers come from the original key. |
+| Repository has no `main` branch; steps are stacked branches | GitHub blocked creating `main` from this session. | No pull request exists. The default branch on GitHub is `step-2-execution-core`. |
+
+## 7. Quality and delivery risks
+
+1. **Everything is synthetic or self-generated.** The class heatmap uses 20 synthetic students; item parameters are priors;
+   the question bank, notes, test messages and rating submissions were written by the agent. Results show the system works,
+   not that it works for learners.
+2. **Small samples.** Most measurements use 10 to 50 items (the retrieval test has 20, the cache test 6 students). None
+   should be quoted as a rate without saying so.
+3. **The core diagnostic claim is not supported yet.** Adaptive selection saves 10% of items (target 30%) and the
+   concept-level mastery model predicts worse than a single ability number. The report must describe the model as a prototype.
+4. **Leak guard unproven in isolation.** In the 50-prompt test the verifier's structure already kept code out, so the
+   n-gram guard never fired; its own effect is unmeasured.
+5. **Explanation latency near the limit.** The 15 s target is met at the median and missed or touched at the worst case.
+   The demo relies on prepared and stored explanations.
+6. **Tests share the app's database.** Running them removes the synthetic class; the seed must be run again before a demo.
+7. **Compliance not started.** No consent, retention, deletion or breach procedure. TR-S-05 to S-08 are P1 and are needed
+   before any use by real students.
+8. **No second reviewer.** The CI is green on every branch, but code and content have had one author.
+
+## 8. Recommended next actions, in order
+
+**Before the review (people):**
+1. Two reviewers rate `data/eval/rating_sheet.csv`; then run `python -m evaluation.rating_sheet compute` (TR-V-03).
+2. Review the concept list, the question bank and the notes (flagged "needs human review").
+3. Record the backup video; rehearse the demo twice; write the status section of the report from this document.
+4. Speak to the IPR cell before any public demo.
+5. Fix the Gemini Pro key in Google's console, or confirm the original key alone is enough.
+6. Open the pull request into `main`.
+
+**Small engineering items, each under a day (my suggestion for the next step):**
+7. TR-A-04: make the model host address configurable, so a local server works without code changes (also unlocks TR-V-12).
+8. TR-P-09: test the interface at 1366 px in Chrome and Edge.
+9. TR-P-08: a small report of model calls per 100 submissions and the cache share, from existing logs.
+10. TR-P-05: a short queue and automatic retry when the sandbox is busy.
+11. TR-D-07: CSV and JSON export of mastery and events.
+12. F-02 and F-03: instructor screens to create problems and upload notes (and PDF text extraction), the two P0 gaps.
+
+**After the review (the plan's phases 6 to 8):** consent, retention and breach procedure (TR-S-05 to S-08), a pilot with real
+students and refitting item parameters (TR-M-05, TR-D-05), then F-04, F-05, LTI and the extensions.
+
+Gradebook and announcements (F-04, F-05) are in the plan only as stretch items after the other gates; I recommend doing items
+7 to 12 first, because they close P0 and P1 requirements that F-04 and F-05 do not.
