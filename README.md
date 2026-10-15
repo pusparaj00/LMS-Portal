@@ -49,6 +49,16 @@ browser; they come with the question bank import. Instructors can export mastery
 CSV or JSON (`GET /api/v1/courses/<id>/export/mastery` and `/export/mastery-events`, `?format=json`), with student numbers
 instead of emails.
 
+## Privacy notice and consent
+
+A student sees a privacy notice at first login and must agree before their code, answers or messages are processed (run,
+submit, placement test, explanations, hints, probes, chat); until then those endpoints answer 403. The notice lists the model
+providers that are actually configured. Students can read it again and withdraw from **Privacy** in the top bar, which stops
+the processing at once and keeps the record (`consents` table). Changing `CONSENT_VERSION` in `backend/app/consent.py` asks
+everyone again. The text is a draft that still needs review by the institution's data protection contact, and deleting data on
+request is not built yet. The seeded demo student starts without agreement, so the first login shows the notice; scripts that
+create their own students call `evaluation/consent.py`.
+
 ## Stored explanations
 
 A verified explanation is stored under the failure's signature (problem, failed test categories, error type, error
