@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
+from app.errors import sandbox_error
 from app.sandbox import SandboxUnavailable
 from app.schemas import Problem, ProblemCreate, ProblemDetail, ProblemList
 from app.services import problems as repo
@@ -50,8 +51,8 @@ def create_problem(
             reference_solution=body.reference_solution,
             tests=tests,
         )
-    except SandboxUnavailable:
-        raise HTTPException(503, "sandbox unavailable") from None
+    except SandboxUnavailable as exc:
+        raise sandbox_error(exc) from None
     if errors:
         raise HTTPException(422, "; ".join(errors))
     problem_id, _ = repo.save_problem(

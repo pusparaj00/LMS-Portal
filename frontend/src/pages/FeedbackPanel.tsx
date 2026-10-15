@@ -1,7 +1,7 @@
 import Editor from "@monaco-editor/react";
 import { useState } from "react";
 
-import { ApiError, Session, api } from "../api";
+import { ApiError, BUSY_RETRIES, Session, api } from "../api";
 
 type Source = { chunk_id: number; title: string; section: string; text: string };
 type Probe = {
@@ -188,6 +188,7 @@ function ProbeCard({ session, submissionId, probe }: { session: Session; submiss
   const [code, setCode] = useState("# Read from input(), print the answer.\n");
   const [result, setResult] = useState<ProbeResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
@@ -196,11 +197,13 @@ function ProbeCard({ session, submissionId, probe }: { session: Session; submiss
     try {
       const body =
         probe.kind === "mcq" ? { submission_id: submissionId, option_id: option } : { submission_id: submissionId, code };
-      setResult(await api<ProbeResult>(`/probes/${probe.problem_id}/answer`, session, { body }));
+      const onBusy = (attempt: number) => setNotice(`The sandbox is busy, trying again (${attempt} of ${BUSY_RETRIES})…`);
+      setResult(await api<ProbeResult>(`/probes/${probe.problem_id}/answer`, session, { body, onBusy }));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "The server could not be reached.");
     } finally {
       setBusy(false);
+      setNotice(null);
     }
   }
 
@@ -242,7 +245,8 @@ function ProbeCard({ session, submissionId, probe }: { session: Session; submiss
           )}
           <button className="primary" onClick={submit} disabled={busy || !ready}>
             {busy ? "Checking…" : "Answer"}
-          </button>
+          </button>{" "}
+          {notice && <span role="status">{notice}</span>}
         </>
       )}
       {result && (

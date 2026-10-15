@@ -66,19 +66,29 @@ export class ApiError extends Error {
   }
 }
 
+export const BUSY_RETRIES = 3;
+
+/** A 503 with Retry-After means the sandbox queue is full and the request was not started, so it is safe to repeat. */
 export async function api<T>(
   path: string,
   session: Session | null,
-  init: { method?: string; body?: unknown } = {},
+  init: { method?: string; body?: unknown; onBusy?: (attempt: number) => void } = {},
 ): Promise<T> {
-  const response = await fetch(`/api/v1${path}`, {
-    method: init.method ?? (init.body ? "POST" : "GET"),
-    headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
-    },
-    body: init.body ? JSON.stringify(init.body) : undefined,
-  });
+  let response: Response;
+  for (let attempt = 1; ; attempt++) {
+    response = await fetch(`/api/v1${path}`, {
+      method: init.method ?? (init.body ? "POST" : "GET"),
+      headers: {
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
+      },
+      body: init.body ? JSON.stringify(init.body) : undefined,
+    });
+    const retryAfter = Number(response.headers.get("Retry-After"));
+    if (response.status !== 503 || !retryAfter || attempt > BUSY_RETRIES) break;
+    init.onBusy?.(attempt);
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+  }
   if (response.status === 204) return undefined as T;
   const data = await response.json().catch(() => null);
   if (!response.ok) {

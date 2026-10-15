@@ -10,6 +10,7 @@ from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.db import get_redis
 from app.diagnostic import selection
+from app.errors import sandbox_error
 from app.grading import TestSpec, grade
 from app.mastery import client as mastery
 from app.sandbox import SandboxUnavailable
@@ -167,8 +168,8 @@ def _grade_answer(conn: Connection, body: DiagnosticAnswerRequest, kind: str) ->
     ]
     try:
         return grade(body.code, tests).status == "passed", None
-    except SandboxUnavailable:
-        raise HTTPException(503, "sandbox unavailable, try again shortly") from None
+    except SandboxUnavailable as exc:
+        raise sandbox_error(exc) from None
 
 
 @router.post("/answer", response_model=DiagnosticAnswerResponse)

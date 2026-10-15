@@ -1,7 +1,7 @@
 import Editor from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 
-import { ApiError, ProblemDetail, Session, SubmissionResult, api } from "../api";
+import { ApiError, BUSY_RETRIES, ProblemDetail, Session, SubmissionResult, api } from "../api";
 import { FeedbackPanel } from "./FeedbackPanel";
 
 const STARTER = "# Read from input(), print the answer.\n";
@@ -44,6 +44,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,6 +64,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
       const path = kind === "run" ? "/submissions/run" : "/submissions";
       const r = await api<SubmissionResult>(path, session, {
         body: { problem_id: problemId, code },
+        onBusy: (attempt) => setNotice(`The sandbox is busy, trying again (${attempt} of ${BUSY_RETRIES})…`),
       });
       setResult(r);
       setSubmitted(kind === "submit");
@@ -70,6 +72,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
       setError(e instanceof ApiError ? e.message : "The server could not be reached.");
     } finally {
       setBusy(false);
+      setNotice(null);
     }
   }
 
@@ -125,7 +128,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
             <button className="primary" onClick={() => execute("submit")} disabled={busy || !isStudent}>
               Submit
             </button>
-            {busy && <span role="status">Running in the sandbox…</span>}
+            {busy && <span role="status">{notice ?? "Running in the sandbox…"}</span>}
             {!isStudent && <span>Only students can run code.</span>}
           </div>
           {error && <p role="alert" className="error">{error}</p>}

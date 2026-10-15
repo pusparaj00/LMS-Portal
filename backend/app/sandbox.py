@@ -13,10 +13,17 @@ from pathlib import Path
 POLL_SECONDS = 0.05
 SECONDS_PER_RUN = 12  # the runner stops a run after 10 s wall time, plus startup
 SLACK_SECONDS = 15
+MAX_QUEUED_JOBS = 20  # the runner takes one job at a time; this many waiting means a wait of many seconds (TR-P-05)
+QUEUE_WAIT_SECONDS = 3  # a short queue is waited out before the caller is told to retry
+RETRY_AFTER_SECONDS = 2
 
 
 class SandboxUnavailable(Exception):
     pass
+
+
+class SandboxBusy(SandboxUnavailable):
+    """The runner is up but its queue is full: the request was not lost, it was not started. Retry shortly."""
 
 
 @dataclass(frozen=True)
@@ -50,8 +57,19 @@ def _parse(payload: object, expected: int) -> list[RunOutcome]:
         raise SandboxUnavailable("sandbox returned a malformed result") from exc
 
 
+def _wait_for_room(jobs: Path) -> None:
+    """Return when the queue has room; raise SandboxBusy if it stays full for QUEUE_WAIT_SECONDS."""
+    queue = jobs / "in"
+    deadline = time.monotonic() + QUEUE_WAIT_SECONDS
+    while sum(1 for p in queue.glob("*.json")) >= MAX_QUEUED_JOBS:
+        if time.monotonic() >= deadline:
+            raise SandboxBusy("the sandbox queue is full")
+        time.sleep(POLL_SECONDS)
+
+
 def run_batch(code: str, stdins: list[str]) -> list[RunOutcome]:
     jobs = _jobs_dir()
+    _wait_for_room(jobs)
     job_id = uuid.uuid4().hex
     tmp = jobs / "in" / f"{job_id}.json.tmp"
     try:

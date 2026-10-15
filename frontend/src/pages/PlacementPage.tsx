@@ -1,7 +1,7 @@
 import Editor from "@monaco-editor/react";
 import { useState } from "react";
 
-import { ApiError, Session, api } from "../api";
+import { ApiError, BUSY_RETRIES, Session, api } from "../api";
 import { DiagnosticItem, DiagnosticResult, DiagnosticStart, DiagnosticStep } from "../types";
 import { MasteryBars, Misconceptions } from "./MasteryBars";
 
@@ -16,7 +16,9 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
   const [code, setCode] = useState(STARTER);
   const [result, setResult] = useState<DiagnosticResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const onBusy = (attempt: number) => setNotice(`The sandbox is busy, trying again (${attempt} of ${BUSY_RETRIES})…`);
 
   async function call<T>(run: () => Promise<T>): Promise<T | null> {
     setBusy(true);
@@ -28,6 +30,7 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
       return null;
     } finally {
       setBusy(false);
+      setNotice(null);
     }
   }
 
@@ -48,7 +51,7 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
       item.kind === "mcq"
         ? { session_id: sessionId, problem_id: item.problem_id, option_id: option }
         : { session_id: sessionId, problem_id: item.problem_id, code };
-    const step = await call(() => api<DiagnosticStep>("/diagnostic/answer", session, { body }));
+    const step = await call(() => api<DiagnosticStep>("/diagnostic/answer", session, { body, onBusy }));
     if (!step) return;
     setOption(null);
     setCode(STARTER);
@@ -139,7 +142,8 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
       <p>
         <button className="primary" onClick={submit} disabled={busy || !ready}>
           {busy ? "Checking…" : "Next question"}
-        </button>
+        </button>{" "}
+        {notice && <span role="status">{notice}</span>}
       </p>
     </>
   );

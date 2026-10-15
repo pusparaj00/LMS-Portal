@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
+from app.errors import sandbox_error
 from app.grading import Grade, TestSpec, grade
 from app.mastery import client as mastery
 from app.sandbox import SandboxUnavailable
@@ -38,8 +39,8 @@ def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) ->
 def _grade(code: str, tests: list[TestSpec]) -> Grade:
     try:
         return grade(code, tests)
-    except SandboxUnavailable:
-        raise HTTPException(503, "sandbox unavailable, try again shortly") from None
+    except SandboxUnavailable as exc:
+        raise sandbox_error(exc) from None
 
 
 def _result(submission_id: int | None, problem_id: int, g: Grade) -> SubmissionResult:

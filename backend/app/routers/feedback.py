@@ -8,6 +8,7 @@ from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.config import get_settings
 from app.db import get_redis
+from app.errors import sandbox_error
 from app.feedback import hints, probe, review, service
 from app.feedback.context import NotExplainable, load_context
 from app.grading import TestSpec, grade
@@ -93,8 +94,8 @@ def answer_probe(problem_id: int, body: ProbeAnswerRequest, user: Student, conn:
         ]
         try:
             correct = grade(body.code, tests).status == "passed"
-        except SandboxUnavailable:
-            raise HTTPException(503, "sandbox unavailable, try again shortly") from None
+        except SandboxUnavailable as exc:
+            raise sandbox_error(exc) from None
     try:
         changes = mastery.record_answer(
             user_id=user.id, problem_id=problem_id, correct=correct,
