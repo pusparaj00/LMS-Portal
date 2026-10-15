@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 30
     llm_max_retries: int = 1
     llm_temperature: float = 0.1
+    llm_thinking_budget: int = 0
+    gemini_api_key: str = ""
+    retrieval_min_score: float = 0.67
 
 
 @lru_cache
