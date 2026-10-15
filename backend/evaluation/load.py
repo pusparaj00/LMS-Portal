@@ -112,7 +112,11 @@ def demo_flow(label: str, cached: bool, admin: dict) -> Flow:
         flow.timed("probe answer", lambda: client.post(f"{API}/probes/{probe['problem_id']}/answer", headers=headers, json={"submission_id": sid, **answer}), ok())
     flow.timed("chat: hint", lambda: client.post(f"{API}/chat", headers=headers, json={"message": "I am stuck, can I have a hint?", "problem_id": problem}), lambda r: r.status_code == 200 and r.json()["route"] == "hint")
     flow.timed("chat: progress", lambda: client.post(f"{API}/chat", headers=headers, json={"message": "How am I doing?"}), lambda r: r.status_code == 200 and r.json()["route"] == "progress")
-    flow.timed("instructor heatmap", lambda: client.get(f"{API}/courses/{course}/class-mastery", headers=admin), lambda r: r.status_code == 200 and len(r.json()["students"]) >= 20)
+    flow.timed(
+        "instructor heatmap", lambda: client.get(f"{API}/courses/{course}/class-mastery", headers=admin),
+        lambda r: r.status_code == 200 and email.split("@")[0] in {s["label"] for s in r.json()["students"]}
+        and any(s["synthetic"] for s in r.json()["students"]),
+    )
     return flow
 
 
