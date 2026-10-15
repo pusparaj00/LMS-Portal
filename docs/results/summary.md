@@ -1,0 +1,29 @@
+# Validation summary (TR-V-01 to TR-V-12)
+
+All results were measured on 2026-10-15 on the local Docker Compose stack. The model is `gemini-3.5-flash-lite` unless a
+row says otherwise. The detail and full command output are in the linked file. Small samples are marked as such and
+should not be quoted as rates.
+
+| ID | What was run | Command | Measured result | Target | Status |
+| --- | --- | --- | --- | --- | --- |
+| TR-V-01 | Sandbox adversarial suite | `pytest tests/test_sandbox_adversarial.py` ([step-2-g1](step-2-g1.md)) | Every attack contained with a structured error; host checks clean | Each stopped within limits, host unchanged | Pass |
+| TR-V-02 | Reference and wrong solutions | `python -m app.bank_import data/bank --dry-run`; feedback and rating runs | 47 of 47 references pass. Of 21 wrong solutions written for the rating sheet, 20 failed and 1 passed ("Most common letter": the tests do not check ties) | Every reference passes; each wrong solution fails in the expected category | Partly met: one wrong solution is not caught; failure categories not checked one by one |
+| TR-V-03 | Two reviewers rate verified and plain explanations | `python -m evaluation.rating_sheet generate` then `compute` ([integration](integration.md)) | Blinded sheet of 20 failing submissions prepared (`data/eval/rating_sheet.csv`, key separate). Verified flow: 19 of 20 accepted on attempt 1, 1 template | Verified share of correct claims higher than plain | Not run: needs two human reviewers |
+| TR-V-04 | 50 adversarial help requests | `python -m evaluation.real_feedback leak` ([feedback](feedback.md)) | Guarded 0 of 50 leaked; plain model 44 of 50 | Zero with the guard | Pass (the leak guard itself never fired in this test, so its own effect is unmeasured) |
+| TR-V-05 | Adaptive vs random selection; mastery vs baselines | `python -m simulation.run --students 500 --seed 2026` ([diagnostic](diagnostic.md)) | Adaptive 10% fewer items than random; mastery error 0.27 after 10 items; AUC 0.61 vs ability-only 0.68 | 30% fewer items; within 0.15 | Fail (simulation only) |
+| TR-V-06 | 5-item test vs population mean | same ([diagnostic](diagnostic.md)) | Beats the mean on the tested concepts in 10 of 10 seeds; on all 12 concepts in 3 of 10 | Lower error than the mean | Partly met |
+| TR-V-07 | Every endpoint as every role | `pytest tests/test_access_matrix.py` | 25 routes x 4 roles (anonymous, student, instructor, admin) match the written policy; a route without a rule fails the test | Each role reaches only its endpoints | Pass |
+| TR-V-08 | Route 50 labelled messages | `python -m evaluation.router_eval routing` ([router](router.md)) | 50 of 50 (keyword rules alone 41 of 50) | At least 90% | Pass |
+| TR-V-09 | 20 questions with a known source chunk | `python -m evaluation.retrieval` ([feedback](feedback.md)) | 17 of 20 (85%) in the top 3 after the notes revision | At least 80% | Pass |
+| TR-V-10 | 10 concurrent students, 10 consecutive demo runs, restarts | `python -m evaluation.load concurrent 10`, `runs 10`, `prepare` / `verify` ([integration](integration.md)) | Concurrent: 0 of 210 steps failed. Consecutive: 0 of 210 failed (after the commit-order fix). Session survived an API and Redis restart and a full restart | No failed requests, no repair, no lost session | Pass |
+| TR-V-11 | Same failing submission for a second student | none | The failure-signature cache (F-46, TR-L-09) is not built. The demo's prepared explanations answer in 0.04 s median, but they are a separate mechanism | Stored explanation in under 1 s, no LLM call | Not run (feature not built) |
+| TR-V-12 | Full demo on a local model | none | Not run, by decision in Step 6 | Completes with no hosted call | Not run |
+
+## Timing targets (TR-P)
+
+| ID | Measured (median / 95th percentile / max) | Target | Status |
+| --- | --- | --- | --- |
+| TR-P-01 sandbox run | 0.17 / 0.39 / 0.44 s, n = 20 | within 5 s | Pass |
+| TR-P-02 next diagnostic item | 0.1 / 0.2 / 9.3 ms, n = 200 | under 1 s | Pass |
+| TR-P-03 new verified explanation | 4.04 / 14.75 / 14.75 s, n = 8; and 2.32 s median, 15.31 s max, n = 10 in the provider comparison | within 15 s | Not reliably met: the worst case sits at or just over 15 s |
+| TR-P-03 prepared demo explanation | 0.04 / 0.07 / 0.07 s, n = 5 | within 1 s | Pass |
