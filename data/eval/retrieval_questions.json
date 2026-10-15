@@ -1,0 +1,22 @@
+[
+  {"question": "Why does my loop skip the last number when I use range(n)?", "note": "Loops and range", "section": "How range works"},
+  {"question": "How do I count down from 10 to 1 in a loop?", "note": "Loops and range", "section": "How range works"},
+  {"question": "My program never finishes and seems stuck repeating forever", "note": "Loops and range", "section": "The while loop"},
+  {"question": "My running total keeps resetting to zero on every pass", "note": "Loops and range", "section": "Accumulating a result"},
+  {"question": "Both of my if blocks print, but I only wanted one of them to run", "note": "Conditionals", "section": "Separate if statements are independent"},
+  {"question": "Why does a score of exactly 90 not get an A in my grade program?", "note": "Conditionals", "section": "Boundaries"},
+  {"question": "I called upper() on my string but the text did not change", "note": "Strings", "section": "Strings are immutable"},
+  {"question": "How do I reverse a string?", "note": "Strings", "section": "Indexing and slicing"},
+  {"question": "How do I split a sentence into separate words?", "note": "Strings", "section": "Useful methods"},
+  {"question": "Why can't I add 1 to the number I read with input()?", "note": "Strings", "section": "Reading input"},
+  {"question": "What is the difference between append and extend?", "note": "Lists", "section": "Changing a list"},
+  {"question": "I changed list b and list a changed as well", "note": "Lists", "section": "Assignment does not copy"},
+  {"question": "How do I get the second to last element of a list?", "note": "Lists", "section": "Indexing"},
+  {"question": "I get a KeyError when I read a key that is not in my dictionary", "note": "Dictionaries", "section": "Missing keys"},
+  {"question": "How do I count how many times each word appears?", "note": "Dictionaries", "section": "Counting with a dictionary"},
+  {"question": "My function prints the answer but the variable I assign it to is None", "note": "Functions and return values", "section": "Return is not print"},
+  {"question": "The list I pass as a default argument keeps growing between calls", "note": "Functions and return values", "section": "Default arguments"},
+  {"question": "My recursive function returns None instead of the sum", "note": "Recursion", "section": "Returning the recursive result"},
+  {"question": "I get RecursionError: maximum recursion depth exceeded", "note": "Recursion", "section": "Base case and recursive case"},
+  {"question": "How do I handle the error when converting text to an int fails?", "note": "Exceptions", "section": "try and except"}
+]

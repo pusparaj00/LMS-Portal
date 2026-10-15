@@ -1,0 +1,27 @@
+{
+  "note": "Separate from retrieval_questions.json. Used only to choose RETRIEVAL_MIN_SCORE, never to report accuracy.",
+  "on_topic": [
+    "the stop value of range is not included",
+    "write a loop that adds numbers together",
+    "elif compared with a second if statement",
+    "strip and replace give back a new string",
+    "take part of a list with a start and an end index",
+    "dictionary get with a default value",
+    "define a function that takes parameters",
+    "what is a base case in a recursive function",
+    "catch a ZeroDivisionError",
+    "using a negative index on a list"
+  ],
+  "off_topic": [
+    "What is the capital of France?",
+    "How do I bake sourdough bread?",
+    "Explain the rules of football",
+    "What will the weather be like tomorrow?",
+    "Who won the 1998 world cup?",
+    "How do I change a flat tyre on a car?",
+    "Recommend a good film for the weekend",
+    "What is the share price of a large technology company?",
+    "How should I train for a marathon?",
+    "Translate good morning into Spanish"
+  ]
+}
