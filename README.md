@@ -1,6 +1,6 @@
 # Adaptive AI-Powered LMS
 
-Step 1 foundation: frontend, API, PostgreSQL with pgvector and Redis, started by Docker Compose.
+Frontend, API, PostgreSQL with pgvector, Redis and an isolated Python sandbox, started by Docker Compose.
 Requirements and design are in `docs/` (read `docs/plan.md` first).
 
 ## Run
@@ -18,6 +18,22 @@ docker compose up --build --wait
 
 The `migrate` service creates the schema and the `lms_api` and `lms_mastery` database roles
 before the API starts. The API holds no owner credentials.
+
+## First-time data
+
+```sh
+NEW_USER_PASSWORD='choose-a-password' docker compose exec -e NEW_USER_PASSWORD api   python -m app.manage create-user instructor@example.com instructor
+docker compose exec api python -m app.bank_import data/bank --instructor instructor@example.com
+```
+
+`bank_import` runs every reference solution in the sandbox first and loads only problems that
+pass; add `--dry-run` to validate without loading. Students register themselves in the browser.
+
+## Sandbox
+
+Student code runs only in the `sandbox` container: no network interface, read-only root, no
+listening port, explicit CPU, wall-time, memory, process and output limits, and a throwaway
+unprivileged uid. The API talks to it through job files on a shared tmpfs volume.
 
 ## Lint and test
 
