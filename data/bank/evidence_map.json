@@ -1,0 +1,74 @@
+[
+  {
+    "category": "*",
+    "error": "syntax_error",
+    "concept": "variables_io",
+    "weight": 1.0
+  },
+  {
+    "category": "*",
+    "error": "time_limit",
+    "concept": "loops",
+    "weight": 1.0
+  },
+  {
+    "category": "*",
+    "error": "memory_limit",
+    "concept": "loops",
+    "weight": 1.0
+  },
+  {
+    "category": "*",
+    "error": "output_limit",
+    "concept": "loops",
+    "weight": 1.0
+  },
+  {
+    "category": "base_case",
+    "error": "*",
+    "concept": "recursion",
+    "weight": 1.0
+  },
+  {
+    "category": "zero_divisor",
+    "error": "*",
+    "concept": "exceptions",
+    "weight": 1.0
+  },
+  {
+    "category": "invalid_token",
+    "error": "*",
+    "concept": "exceptions",
+    "weight": 1.0
+  },
+  {
+    "category": "missing_key",
+    "error": "*",
+    "concept": "dictionaries",
+    "weight": 1.0
+  },
+  {
+    "category": "duplicate_key",
+    "error": "*",
+    "concept": "dictionaries",
+    "weight": 1.0
+  },
+  {
+    "category": "overdraw",
+    "error": "*",
+    "concept": "classes",
+    "weight": 1.0
+  },
+  {
+    "category": "century",
+    "error": "*",
+    "concept": "conditionals",
+    "weight": 1.0
+  },
+  {
+    "category": "boundary",
+    "error": "*",
+    "concept": "conditionals",
+    "weight": 1.0
+  }
+]

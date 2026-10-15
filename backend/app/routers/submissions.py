@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,9 +6,11 @@ from sqlalchemy import text
 
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.grading import Grade, TestSpec, grade
+from app.mastery import client as mastery
 from app.sandbox import SandboxUnavailable
 from app.schemas import SubmissionCreate, SubmissionResult, VisibleTest
 
+log = logging.getLogger("app.submissions")
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 Student = Annotated[CurrentUser, Depends(require_role("student"))]
 
@@ -99,7 +102,14 @@ def submit_code(body: SubmissionCreate, user: Student, conn: Conn):
             "cats": g.failed_categories,
         },
     )
-    return _result(submission_id, body.problem_id, g)
+    conn.commit()  # the mastery service reads the stored run result, so it must be visible first
+    result = _result(submission_id, body.problem_id, g)
+    try:
+        result.mastery_changes = mastery.record_submission(submission_id)
+    except mastery.MasteryUnavailable:
+        # The submission is stored. The evidence call is idempotent, so it can be replayed.
+        log.error("mastery update failed", extra={"fields": {"submission_id": submission_id}})
+    return result
 
 
 @router.get("/{submission_id}", response_model=SubmissionResult)

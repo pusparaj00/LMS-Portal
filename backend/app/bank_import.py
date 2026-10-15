@@ -13,6 +13,7 @@ from pathlib import Path
 from sqlalchemy import Connection, text
 
 from app.db import get_engine
+from app.mastery.core import DEFAULT_PARAMS
 from app.services.problems import save_problem
 from app.services.validation import validate_code_problem, validate_mcq_item
 
@@ -22,6 +23,7 @@ class Bank:
     course_title: str
     concepts: list[dict]
     misconceptions: list[dict]
+    evidence_map: list[dict]
     problems: list[dict]
     items: list[dict]
 
@@ -46,6 +48,7 @@ def load_bank(root: Path) -> Bank:
         course_title=json.loads((root / "course.json").read_text())["title"],
         concepts=json.loads((root / "concepts.json").read_text()),
         misconceptions=json.loads((root / "misconceptions.json").read_text()),
+        evidence_map=json.loads((root / "evidence_map.json").read_text()),
         problems=problems,
         items=[_with_statement(i) for i in json.loads((root / "items.json").read_text())],
     )
@@ -93,6 +96,28 @@ def _concept_ids(conn: Connection, course_id: int, concepts: list[dict]) -> dict
     return ids
 
 
+def _seed_mastery_config(conn: Connection, bank: Bank, concept_ids: dict[str, int]) -> None:
+    """Default slip and guess per concept and evidence type (kept if already tuned), and the map."""
+    for concept_id in concept_ids.values():
+        for evidence_type, (slip, guess) in DEFAULT_PARAMS.items():
+            conn.execute(
+                text(
+                    "INSERT INTO mastery_params (concept_id, evidence_type, slip, guess)"
+                    " VALUES (:c, :e, :s, :g) ON CONFLICT DO NOTHING"
+                ),
+                {"c": concept_id, "e": evidence_type, "s": slip, "g": guess},
+            )
+    for row in bank.evidence_map:
+        conn.execute(
+            text(
+                "INSERT INTO evidence_concept_map (test_category, error_type, concept_id, weight)"
+                " VALUES (:c, :e, :k, :w) ON CONFLICT (test_category, error_type, concept_id)"
+                " DO UPDATE SET weight = excluded.weight"
+            ),
+            {"c": row["category"], "e": row["error"], "k": concept_ids[row["concept"]], "w": row["weight"]},
+        )
+
+
 def import_bank(
     conn: Connection, bank: Bank, valid_titles: set[str], instructor_email: str
 ) -> dict:
@@ -123,6 +148,8 @@ def import_bank(
             ),
             {"c": concept_ids[m["concept"]], "n": m["name"], "d": m["description"]},
         ).scalar_one()
+
+    _seed_mastery_config(conn, bank, concept_ids)
 
     created = updated = 0
     for kind, entries in (("code", bank.problems), ("mcq", bank.items)):
