@@ -8,7 +8,7 @@ from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.config import get_settings
 from app.db import get_redis
-from app.feedback import hints, probe, service
+from app.feedback import hints, probe, review, service
 from app.feedback.context import NotExplainable, load_context
 from app.grading import TestSpec, grade
 from app.llm.adapter import LLMAdapter, build_adapter
@@ -16,11 +16,13 @@ from app.mastery import client as mastery
 from app.sandbox import SandboxUnavailable
 from app.schemas import (
     ExplainResponse,
+    ExplanationDecision,
     HintResponse,
     ProbeAnswerRequest,
     ProbeResult,
     Problem,
     ProblemPolicy,
+    StoredExplanation,
 )
 
 router = APIRouter(tags=["feedback"])
@@ -118,3 +120,15 @@ def set_policy(
         text("UPDATE problems SET max_hint_level = :m WHERE id = :p"), {"m": body.max_hint_level, "p": problem_id}
     )
     return problem
+
+
+@router.post("/explanations/{signature}/approve", response_model=StoredExplanation)
+def decide_explanation(
+    signature: str, body: ExplanationDecision, conn: Conn,
+    user: Annotated[CurrentUser, Depends(require_role("instructor"))],
+):
+    """Approve a stored explanation, approve an edited claim, or reject it (F-62)."""
+    try:
+        return review.decide(conn, user, signature, body)
+    except review.ReviewError as exc:
+        raise HTTPException(exc.status, str(exc)) from None

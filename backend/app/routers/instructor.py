@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
 from app.auth import Conn, CurrentUser, can_access_course, require_role
-from app.schemas import ClassMastery, ClassMisconception, ClassStudent, ConceptMastery
+from app.feedback import review
+from app.schemas import ClassMastery, ClassMisconception, ClassStudent, ConceptMastery, StoredExplanation
 from app.synthetic import is_synthetic
 
 router = APIRouter(prefix="/courses/{course_id}", tags=["instructor"])
@@ -80,3 +81,10 @@ def misconceptions(course_id: int, user: Instructor, conn: Conn):
         {"course": course_id, "min": SUSPECTED_ABOVE},
     ).mappings()
     return [ClassMisconception(**r) for r in rows]
+
+
+@router.get("/explanations", response_model=list[StoredExplanation])
+def stored_explanations(course_id: int, user: Instructor, conn: Conn):
+    """The course's failure-signature cache, most used first, for review (F-62)."""
+    _check(conn, user, course_id)
+    return review.list_entries(conn, course_id)

@@ -706,6 +706,37 @@
         "title": "ExplainResponse",
         "type": "object"
       },
+      "ExplanationDecision": {
+        "properties": {
+          "claim": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "an edited claim, approve only",
+            "title": "Claim"
+          },
+          "decision": {
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "ExplanationDecision",
+        "type": "object"
+      },
       "ExplanationOut": {
         "properties": {
           "claim": {
@@ -1517,6 +1548,95 @@
         "title": "SourceOut",
         "type": "object"
       },
+      "StoredExplanation": {
+        "description": "One failure-signature cache entry, for instructor review (F-62).",
+        "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "claim": {
+            "title": "Claim",
+            "type": "string"
+          },
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "hit_count": {
+            "title": "Hit Count",
+            "type": "integer"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          },
+          "line_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Text"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "problem_title": {
+            "title": "Problem Title",
+            "type": "string"
+          },
+          "signature": {
+            "title": "Signature",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "auto_verified",
+              "instructor_approved",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "test_category": {
+            "title": "Test Category",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "signature",
+          "problem_id",
+          "problem_title",
+          "claim",
+          "line",
+          "line_text",
+          "concept",
+          "test_category",
+          "status",
+          "hit_count",
+          "approved_by",
+          "updated_at"
+        ],
+        "title": "StoredExplanation",
+        "type": "object"
+      },
       "SubmissionCreate": {
         "properties": {
           "code": {
@@ -2188,6 +2308,58 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/explanations": {
+      "get": {
+        "description": "The course's failure-signature cache, most used first, for review (F-62).",
+        "operationId": "stored_explanations_api_v1_courses__course_id__explanations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StoredExplanation"
+                  },
+                  "title": "Response Stored Explanations Api V1 Courses  Course Id  Explanations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Stored Explanations",
+        "tags": [
+          "instructor"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/misconceptions": {
       "get": {
         "operationId": "misconceptions_api_v1_courses__course_id__misconceptions_get",
@@ -2328,6 +2500,64 @@
         "summary": "Start",
         "tags": [
           "diagnostic"
+        ]
+      }
+    },
+    "/api/v1/explanations/{signature}/approve": {
+      "post": {
+        "description": "Approve a stored explanation, approve an edited claim, or reject it (F-62).",
+        "operationId": "decide_explanation_api_v1_explanations__signature__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "signature",
+            "required": true,
+            "schema": {
+              "title": "Signature",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplanationDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoredExplanation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Decide Explanation",
+        "tags": [
+          "feedback"
         ]
       }
     },
