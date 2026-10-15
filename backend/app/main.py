@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import FastAPI, Request
 
+from app.bodylimit import BodySizeLimit
 from app.errors import error_response, install_error_handlers
 from app.logging import configure_logging, request_id_var
 from app.routers import (
@@ -24,6 +25,7 @@ configure_logging()
 log = logging.getLogger("app.request")
 
 app = FastAPI(title="Adaptive AI-Powered LMS API", version="1.0.0")
+app.add_middleware(BodySizeLimit)
 install_error_handlers(app)
 
 

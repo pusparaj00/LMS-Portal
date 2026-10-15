@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
+from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.config import get_settings
 from app.db import get_redis
@@ -39,6 +40,7 @@ def explain(
     submission_id: int, user: Student, conn: Conn, adapter: Annotated[LLMAdapter, Depends(llm_adapter)]
 ):
     """Runs generation and verification to completion before answering, so no unchecked text is ever shown."""
+    ratelimit.check("explain", user.id)
     try:
         return service.explain_submission(conn, user.id, submission_id, adapter)
     except NotExplainable as exc:
@@ -47,6 +49,7 @@ def explain(
 
 @router.post("/submissions/{submission_id}/hint", response_model=HintResponse)
 def hint(submission_id: int, user: Student, conn: Conn):
+    ratelimit.check("hint", user.id)
     try:
         return service.next_hint(conn, user.id, submission_id)
     except NotExplainable as exc:
@@ -57,6 +60,7 @@ def hint(submission_id: int, user: Student, conn: Conn):
 
 @router.post("/probes/{problem_id}/answer", response_model=ProbeResult)
 def answer_probe(problem_id: int, body: ProbeAnswerRequest, user: Student, conn: Conn):
+    ratelimit.check("probe", user.id)
     try:
         ctx = load_context(conn, body.submission_id, user.id)
     except NotExplainable as exc:

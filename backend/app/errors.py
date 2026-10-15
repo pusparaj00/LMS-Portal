@@ -17,7 +17,9 @@ def error_response(status: int, code: str, message: str) -> JSONResponse:
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-        return error_response(exc.status_code, "http_error", str(exc.detail))
+        response = error_response(exc.status_code, "http_error", str(exc.detail))
+        response.headers.update(exc.headers or {})
+        return response
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:

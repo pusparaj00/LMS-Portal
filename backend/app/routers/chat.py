@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
+from app import ratelimit
 from app.auth import Conn, CurrentUser, require_role
 from app.chat import handlers, history, routing
 from app.config import get_settings
@@ -34,6 +35,7 @@ def chat(
     chat_conn: Annotated[Connection, Depends(chat_connection)],
     adapter: Annotated[LLMAdapter, Depends(llm_adapter)],
 ):
+    ratelimit.check("chat", user.id)
     settings = get_settings()
     r = get_redis()
     past = history.window(r, user.id, body.problem_id, settings.chat_history_turns)

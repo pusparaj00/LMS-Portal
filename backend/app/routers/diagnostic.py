@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
+from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.db import get_redis
 from app.diagnostic import selection
@@ -172,6 +173,7 @@ def _grade_answer(conn: Connection, body: DiagnosticAnswerRequest, kind: str) ->
 
 @router.post("/answer", response_model=DiagnosticAnswerResponse)
 def answer(body: DiagnosticAnswerRequest, user: Student, conn: Conn):
+    ratelimit.check("diagnostic_answer", user.id)
     # A double click or a retry must not run the same answer twice, so one answer per session at a time.
     lock = _key(body.session_id) + ":lock"
     if not get_redis().set(lock, "1", nx=True, ex=LOCK_TTL_SECONDS):

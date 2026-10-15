@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
+from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.grading import Grade, TestSpec, grade
 from app.mastery import client as mastery
@@ -71,12 +72,14 @@ def _result(submission_id: int | None, problem_id: int, g: Grade) -> SubmissionR
 @router.post("/run", response_model=SubmissionResult)
 def run_code(body: SubmissionCreate, user: Student, conn: Conn):
     """Run against the visible examples only; nothing is stored."""
+    ratelimit.check("run", user.id)
     tests = _load_tests(conn, body.problem_id, user, visible_only=True)
     return _result(None, body.problem_id, _grade(body.code, tests))
 
 
 @router.post("", response_model=SubmissionResult)
 def submit_code(body: SubmissionCreate, user: Student, conn: Conn):
+    ratelimit.check("submit", user.id)
     tests = _load_tests(conn, body.problem_id, user, visible_only=False)
     g = _grade(body.code, tests)
     submission_id = conn.execute(

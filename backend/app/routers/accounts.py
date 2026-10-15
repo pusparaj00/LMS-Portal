@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+from app import ratelimit
 from app.auth import Conn, create_token, hash_password, verify_password
 from app.schemas import LoginRequest, RegisterRequest, TokenResponse
 
@@ -12,8 +13,9 @@ _DUMMY_HASH = hash_password("dummy-password-for-timing")
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
-def register(body: RegisterRequest, conn: Conn):
+def register(body: RegisterRequest, request: Request, conn: Conn):
     """Self-registration always creates a student; staff accounts come from app.manage."""
+    ratelimit.check("register_ip", ratelimit.client_ip(request))
     try:
         user_id = conn.execute(
             text(
@@ -30,7 +32,9 @@ def register(body: RegisterRequest, conn: Conn):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(body: LoginRequest, conn: Conn):
+def login(body: LoginRequest, request: Request, conn: Conn):
+    ratelimit.check("login_ip", ratelimit.client_ip(request))
+    ratelimit.check("login_email", body.email.strip().lower()[:254])
     row = conn.execute(
         text("SELECT id, password_hash, role FROM users WHERE email = lower(:e)"), {"e": body.email}
     ).first()
