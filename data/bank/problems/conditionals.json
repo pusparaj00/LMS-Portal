@@ -1,0 +1,153 @@
+[
+  {
+    "title": "Even or odd",
+    "statement": "Read an integer. Print `even` if it is even, otherwise `odd`.",
+    "concepts": [
+      {
+        "name": "conditionals",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -1.2,
+    "discrimination_a": 1.1,
+    "reference_solution": "n = int(input())\nprint(\"even\" if n % 2 == 0 else \"odd\")\n",
+    "tests": [
+      {
+        "input": "4\n",
+        "expected": "even\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "7\n",
+        "expected": "odd\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "0\n",
+        "expected": "even\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "-3\n",
+        "expected": "odd\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "-8\n",
+        "expected": "even\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      }
+    ]
+  },
+  {
+    "title": "Grade letter",
+    "statement": "Read a score from 0 to 100. Print A for 90 and above, B for 80 and above, C for 70 and above, D for 60 and above, otherwise F.",
+    "concepts": [
+      {
+        "name": "conditionals",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.5,
+    "discrimination_a": 1.2,
+    "reference_solution": "score = int(input())\nif score >= 90:\n    print(\"A\")\nelif score >= 80:\n    print(\"B\")\nelif score >= 70:\n    print(\"C\")\nelif score >= 60:\n    print(\"D\")\nelse:\n    print(\"F\")\n",
+    "tests": [
+      {
+        "input": "95\n",
+        "expected": "A\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "72\n",
+        "expected": "C\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "90\n",
+        "expected": "A\n",
+        "hidden": true,
+        "category": "boundary"
+      },
+      {
+        "input": "89\n",
+        "expected": "B\n",
+        "hidden": true,
+        "category": "boundary"
+      },
+      {
+        "input": "60\n",
+        "expected": "D\n",
+        "hidden": true,
+        "category": "boundary"
+      },
+      {
+        "input": "59\n",
+        "expected": "F\n",
+        "hidden": true,
+        "category": "boundary"
+      },
+      {
+        "input": "0\n",
+        "expected": "F\n",
+        "hidden": true,
+        "category": "zero"
+      }
+    ]
+  },
+  {
+    "title": "Leap year",
+    "statement": "Read a year. Print `leap` if it is a leap year (divisible by 4, except centuries unless divisible by 400), otherwise `common`.",
+    "concepts": [
+      {
+        "name": "conditionals",
+        "weight": 0.8
+      },
+      {
+        "name": "variables_io",
+        "weight": 0.2
+      }
+    ],
+    "difficulty_b": 0.0,
+    "discrimination_a": 1.2,
+    "reference_solution": "y = int(input())\nprint(\"leap\" if (y % 4 == 0 and y % 100 != 0) or y % 400 == 0 else \"common\")\n",
+    "tests": [
+      {
+        "input": "2024\n",
+        "expected": "leap\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "2023\n",
+        "expected": "common\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1900\n",
+        "expected": "common\n",
+        "hidden": true,
+        "category": "century"
+      },
+      {
+        "input": "2000\n",
+        "expected": "leap\n",
+        "hidden": true,
+        "category": "century"
+      },
+      {
+        "input": "2100\n",
+        "expected": "common\n",
+        "hidden": true,
+        "category": "century"
+      }
+    ]
+  }
+]

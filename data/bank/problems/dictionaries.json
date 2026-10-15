@@ -1,0 +1,141 @@
+[
+  {
+    "title": "Word frequency",
+    "statement": "Read a line of words. For each distinct word, in alphabetical order, print the word and how many times it appears, separated by a space, one word per line. Print nothing for an empty line.",
+    "concepts": [
+      {
+        "name": "dictionaries",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.2,
+    "discrimination_a": 1.2,
+    "reference_solution": "counts = {}\nfor word in input().split():\n    counts[word] = counts.get(word, 0) + 1\nfor word in sorted(counts):\n    print(word, counts[word])\n",
+    "tests": [
+      {
+        "input": "a b a\n",
+        "expected": "a 2\nb 1\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "hello\n",
+        "expected": "hello 1\n",
+        "hidden": false,
+        "category": "single_item"
+      },
+      {
+        "input": "\n",
+        "expected": "",
+        "hidden": true,
+        "category": "empty_input"
+      },
+      {
+        "input": "to be or not to be\n",
+        "expected": "be 2\nnot 1\nor 1\nto 2\n",
+        "hidden": true,
+        "category": "ordering"
+      },
+      {
+        "input": "b a c b a b\n",
+        "expected": "a 2\nb 3\nc 1\n",
+        "hidden": true,
+        "category": "ordering"
+      }
+    ]
+  },
+  {
+    "title": "Most common letter",
+    "statement": "Read a non-empty line of lowercase letters. Print the letter that appears most often; if several tie, print the alphabetically first.",
+    "concepts": [
+      {
+        "name": "dictionaries",
+        "weight": 0.8
+      },
+      {
+        "name": "strings",
+        "weight": 0.2
+      }
+    ],
+    "difficulty_b": 0.5,
+    "discrimination_a": 1.2,
+    "reference_solution": "text = input()\ncounts = {}\nfor ch in text:\n    counts[ch] = counts.get(ch, 0) + 1\nprint(min(counts, key=lambda c: (-counts[c], c)))\n",
+    "tests": [
+      {
+        "input": "banana\n",
+        "expected": "a\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "zzz\n",
+        "expected": "z\n",
+        "hidden": false,
+        "category": "single_item"
+      },
+      {
+        "input": "abcabc\n",
+        "expected": "a\n",
+        "hidden": true,
+        "category": "tie"
+      },
+      {
+        "input": "xyzzy\n",
+        "expected": "y\n",
+        "hidden": true,
+        "category": "tie"
+      },
+      {
+        "input": "mississippi\n",
+        "expected": "i\n",
+        "hidden": true,
+        "category": "tie"
+      }
+    ]
+  },
+  {
+    "title": "Phone book",
+    "statement": "Line 1 has n. The next n lines each have a name and a number separated by a space. The last line has a name to look up. Print its number, or `not found`. If a name repeats, the last number wins.",
+    "concepts": [
+      {
+        "name": "dictionaries",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.7,
+    "discrimination_a": 1.1,
+    "reference_solution": "n = int(input())\nbook = {}\nfor _ in range(n):\n    name, number = input().split()\n    book[name] = number\nprint(book.get(input(), \"not found\"))\n",
+    "tests": [
+      {
+        "input": "2\nann 111\nbob 222\nbob\n",
+        "expected": "222\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1\nann 111\nzed\n",
+        "expected": "not found\n",
+        "hidden": false,
+        "category": "missing_key"
+      },
+      {
+        "input": "3\na 1\nb 2\na 3\na\n",
+        "expected": "3\n",
+        "hidden": true,
+        "category": "duplicate_key"
+      },
+      {
+        "input": "1\nx 5\nx\n",
+        "expected": "5\n",
+        "hidden": true,
+        "category": "single_item"
+      },
+      {
+        "input": "0\nany\n",
+        "expected": "not found\n",
+        "hidden": true,
+        "category": "empty_input"
+      }
+    ]
+  }
+]

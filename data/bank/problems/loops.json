@@ -1,0 +1,176 @@
+[
+  {
+    "title": "Sum from 1 to n",
+    "statement": "Read an integer n. Print the sum 1 + 2 + ... + n (0 if n is 0).",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -1.0,
+    "discrimination_a": 1.1,
+    "reference_solution": "n = int(input())\ntotal = 0\nfor i in range(1, n + 1):\n    total += i\nprint(total)\n",
+    "tests": [
+      {
+        "input": "5\n",
+        "expected": "15\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1\n",
+        "expected": "1\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "10\n",
+        "expected": "55\n",
+        "hidden": true,
+        "category": "basic"
+      },
+      {
+        "input": "0\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "1000\n",
+        "expected": "500500\n",
+        "hidden": true,
+        "category": "large_input"
+      }
+    ]
+  },
+  {
+    "title": "Factorial",
+    "statement": "Read an integer n from 0 to 12. Print n! (0! is 1).",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.5,
+    "discrimination_a": 1.1,
+    "reference_solution": "n = int(input())\nresult = 1\nfor i in range(2, n + 1):\n    result *= i\nprint(result)\n",
+    "tests": [
+      {
+        "input": "5\n",
+        "expected": "120\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1\n",
+        "expected": "1\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "0\n",
+        "expected": "1\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "10\n",
+        "expected": "3628800\n",
+        "hidden": true,
+        "category": "basic"
+      },
+      {
+        "input": "12\n",
+        "expected": "479001600\n",
+        "hidden": true,
+        "category": "large_input"
+      }
+    ]
+  },
+  {
+    "title": "Countdown",
+    "statement": "Read an integer n. Print n, n-1, ..., 1 each on its own line, then `Liftoff!`.",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.8,
+    "discrimination_a": 1.0,
+    "reference_solution": "n = int(input())\nfor i in range(n, 0, -1):\n    print(i)\nprint(\"Liftoff!\")\n",
+    "tests": [
+      {
+        "input": "3\n",
+        "expected": "3\n2\n1\nLiftoff!\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1\n",
+        "expected": "1\nLiftoff!\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "0\n",
+        "expected": "Liftoff!\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "5\n",
+        "expected": "5\n4\n3\n2\n1\nLiftoff!\n",
+        "hidden": true,
+        "category": "basic"
+      }
+    ]
+  },
+  {
+    "title": "Multiplication row",
+    "statement": "Read an integer n. Print n*1, n*2, ..., n*10 on one line separated by spaces.",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.3,
+    "discrimination_a": 1.0,
+    "reference_solution": "n = int(input())\nprint(\" \".join(str(n * i) for i in range(1, 11)))\n",
+    "tests": [
+      {
+        "input": "3\n",
+        "expected": "3 6 9 12 15 18 21 24 27 30\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1\n",
+        "expected": "1 2 3 4 5 6 7 8 9 10\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "0\n",
+        "expected": "0 0 0 0 0 0 0 0 0 0\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "-2\n",
+        "expected": "-2 -4 -6 -8 -10 -12 -14 -16 -18 -20\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "12\n",
+        "expected": "12 24 36 48 60 72 84 96 108 120\n",
+        "hidden": true,
+        "category": "basic"
+      }
+    ]
+  }
+]

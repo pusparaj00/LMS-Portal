@@ -1,0 +1,72 @@
+[
+  {
+    "name": "variables_io",
+    "parents": []
+  },
+  {
+    "name": "conditionals",
+    "parents": [
+      "variables_io"
+    ]
+  },
+  {
+    "name": "loops",
+    "parents": [
+      "conditionals"
+    ]
+  },
+  {
+    "name": "strings",
+    "parents": [
+      "variables_io"
+    ]
+  },
+  {
+    "name": "lists",
+    "parents": [
+      "loops"
+    ]
+  },
+  {
+    "name": "tuples_sets",
+    "parents": [
+      "lists"
+    ]
+  },
+  {
+    "name": "dictionaries",
+    "parents": [
+      "lists"
+    ]
+  },
+  {
+    "name": "functions",
+    "parents": [
+      "variables_io"
+    ]
+  },
+  {
+    "name": "recursion",
+    "parents": [
+      "functions"
+    ]
+  },
+  {
+    "name": "comprehensions",
+    "parents": [
+      "lists"
+    ]
+  },
+  {
+    "name": "exceptions",
+    "parents": [
+      "functions"
+    ]
+  },
+  {
+    "name": "classes",
+    "parents": [
+      "functions"
+    ]
+  }
+]

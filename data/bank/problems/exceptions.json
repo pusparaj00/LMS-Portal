@@ -1,0 +1,96 @@
+[
+  {
+    "title": "Safe division",
+    "statement": "Read two integers a and b. Print a // b, or `division by zero` if b is 0.",
+    "concepts": [
+      {
+        "name": "exceptions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.0,
+    "discrimination_a": 1.1,
+    "reference_solution": "a, b = map(int, input().split())\ntry:\n    print(a // b)\nexcept ZeroDivisionError:\n    print(\"division by zero\")\n",
+    "tests": [
+      {
+        "input": "10 2\n",
+        "expected": "5\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "7 0\n",
+        "expected": "division by zero\n",
+        "hidden": false,
+        "category": "zero_divisor"
+      },
+      {
+        "input": "0 5\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "-7 2\n",
+        "expected": "-4\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "5 0\n",
+        "expected": "division by zero\n",
+        "hidden": true,
+        "category": "zero_divisor"
+      }
+    ]
+  },
+  {
+    "title": "Sum the valid integers",
+    "statement": "Read a line of tokens. Print the sum of the tokens that are valid integers, ignoring the others (for example `3.5` or `x`).",
+    "concepts": [
+      {
+        "name": "exceptions",
+        "weight": 0.8
+      },
+      {
+        "name": "loops",
+        "weight": 0.2
+      }
+    ],
+    "difficulty_b": 0.6,
+    "discrimination_a": 1.2,
+    "reference_solution": "total = 0\nfor token in input().split():\n    try:\n        total += int(token)\n    except ValueError:\n        pass\nprint(total)\n",
+    "tests": [
+      {
+        "input": "1 2 3\n",
+        "expected": "6\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "10 x 20\n",
+        "expected": "30\n",
+        "hidden": false,
+        "category": "invalid_token"
+      },
+      {
+        "input": "a b c\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "all_invalid"
+      },
+      {
+        "input": "-5 3.5 8\n",
+        "expected": "3\n",
+        "hidden": true,
+        "category": "invalid_token"
+      },
+      {
+        "input": "\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "empty_input"
+      }
+    ]
+  }
+]

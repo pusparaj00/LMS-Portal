@@ -1,0 +1,131 @@
+[
+  {
+    "title": "Sum of two numbers",
+    "statement": "Read two integers on one line, separated by a space. Print their sum.",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -1.5,
+    "discrimination_a": 1.0,
+    "reference_solution": "a, b = map(int, input().split())\nprint(a + b)\n",
+    "tests": [
+      {
+        "input": "3 4\n",
+        "expected": "7\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "10 -4\n",
+        "expected": "6\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "-5 -7\n",
+        "expected": "-12\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "0 0\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "1000000000 1000000000\n",
+        "expected": "2000000000\n",
+        "hidden": true,
+        "category": "large_input"
+      }
+    ]
+  },
+  {
+    "title": "Average of three",
+    "statement": "Read three integers, one per line. Print their average rounded to 2 decimal places.",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -1.0,
+    "discrimination_a": 1.0,
+    "reference_solution": "a = int(input())\nb = int(input())\nc = int(input())\nprint(f\"{(a + b + c) / 3:.2f}\")\n",
+    "tests": [
+      {
+        "input": "1\n2\n3\n",
+        "expected": "2.00\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "2\n2\n2\n",
+        "expected": "2.00\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "10\n20\n25\n",
+        "expected": "18.33\n",
+        "hidden": true,
+        "category": "rounding"
+      },
+      {
+        "input": "0\n0\n0\n",
+        "expected": "0.00\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "-3\n-3\n-3\n",
+        "expected": "-3.00\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      }
+    ]
+  },
+  {
+    "title": "Name and age",
+    "statement": "Read a name and an age on one line, separated by a space. Print `<name> is <age> years old`.",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -1.2,
+    "discrimination_a": 0.9,
+    "reference_solution": "name, age = input().split()\nprint(f\"{name} is {age} years old\")\n",
+    "tests": [
+      {
+        "input": "Asha 20\n",
+        "expected": "Asha is 20 years old\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "Ben 7\n",
+        "expected": "Ben is 7 years old\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "Zed 100\n",
+        "expected": "Zed is 100 years old\n",
+        "hidden": true,
+        "category": "three_digit_value"
+      },
+      {
+        "input": "Li 0\n",
+        "expected": "Li is 0 years old\n",
+        "hidden": true,
+        "category": "zero"
+      }
+    ]
+  }
+]

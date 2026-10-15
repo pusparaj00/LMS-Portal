@@ -1,0 +1,161 @@
+[
+  {
+    "title": "Prime check",
+    "statement": "Read an integer n (at least 1). Print `prime` if it is prime, otherwise `not prime`.",
+    "concepts": [
+      {
+        "name": "functions",
+        "weight": 0.6
+      },
+      {
+        "name": "loops",
+        "weight": 0.4
+      }
+    ],
+    "difficulty_b": 0.5,
+    "discrimination_a": 1.3,
+    "reference_solution": "def is_prime(n):\n    if n < 2:\n        return False\n    for d in range(2, int(n ** 0.5) + 1):\n        if n % d == 0:\n            return False\n    return True\n\nprint(\"prime\" if is_prime(int(input())) else \"not prime\")\n",
+    "tests": [
+      {
+        "input": "7\n",
+        "expected": "prime\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "10\n",
+        "expected": "not prime\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1\n",
+        "expected": "not prime\n",
+        "hidden": true,
+        "category": "boundary"
+      },
+      {
+        "input": "2\n",
+        "expected": "prime\n",
+        "hidden": true,
+        "category": "boundary"
+      },
+      {
+        "input": "97\n",
+        "expected": "prime\n",
+        "hidden": true,
+        "category": "large_input"
+      },
+      {
+        "input": "100\n",
+        "expected": "not prime\n",
+        "hidden": true,
+        "category": "large_input"
+      },
+      {
+        "input": "49\n",
+        "expected": "not prime\n",
+        "hidden": true,
+        "category": "square"
+      }
+    ]
+  },
+  {
+    "title": "Greatest common divisor",
+    "statement": "Read two non-negative integers on one line. Print their greatest common divisor.",
+    "concepts": [
+      {
+        "name": "functions",
+        "weight": 0.7
+      },
+      {
+        "name": "loops",
+        "weight": 0.3
+      }
+    ],
+    "difficulty_b": 0.8,
+    "discrimination_a": 1.2,
+    "reference_solution": "def gcd(a, b):\n    while b:\n        a, b = b, a % b\n    return a\n\na, b = map(int, input().split())\nprint(gcd(a, b))\n",
+    "tests": [
+      {
+        "input": "12 18\n",
+        "expected": "6\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "7 13\n",
+        "expected": "1\n",
+        "hidden": false,
+        "category": "coprime"
+      },
+      {
+        "input": "0 5\n",
+        "expected": "5\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "100 10\n",
+        "expected": "10\n",
+        "hidden": true,
+        "category": "basic"
+      },
+      {
+        "input": "17 17\n",
+        "expected": "17\n",
+        "hidden": true,
+        "category": "equal_values"
+      }
+    ]
+  },
+  {
+    "title": "Power with a function",
+    "statement": "Read a base and a non-negative exponent on one line. Define a function that computes base to the power of exponent using a loop (no ** operator), and print the result.",
+    "concepts": [
+      {
+        "name": "functions",
+        "weight": 0.7
+      },
+      {
+        "name": "loops",
+        "weight": 0.3
+      }
+    ],
+    "difficulty_b": 0.2,
+    "discrimination_a": 1.1,
+    "reference_solution": "def power(base, exp):\n    result = 1\n    for _ in range(exp):\n        result *= base\n    return result\n\nbase, exp = map(int, input().split())\nprint(power(base, exp))\n",
+    "tests": [
+      {
+        "input": "2 10\n",
+        "expected": "1024\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "3 3\n",
+        "expected": "27\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "5 0\n",
+        "expected": "1\n",
+        "hidden": true,
+        "category": "zero_exponent"
+      },
+      {
+        "input": "0 5\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "10 9\n",
+        "expected": "1000000000\n",
+        "hidden": true,
+        "category": "large_input"
+      }
+    ]
+  }
+]

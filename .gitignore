@@ -15,4 +15,4 @@ build/
 *.pth
 *.bin
 *.safetensors
-data/
+/data/datasets/

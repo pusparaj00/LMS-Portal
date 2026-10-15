@@ -1,0 +1,192 @@
+[
+  {
+    "title": "Reverse a string",
+    "statement": "Read a line of text. Print it reversed.",
+    "concepts": [
+      {
+        "name": "strings",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -1.0,
+    "discrimination_a": 1.0,
+    "reference_solution": "print(input()[::-1])\n",
+    "tests": [
+      {
+        "input": "hello\n",
+        "expected": "olleh\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "a\n",
+        "expected": "a\n",
+        "hidden": false,
+        "category": "single_char"
+      },
+      {
+        "input": "\n",
+        "expected": "\n",
+        "hidden": true,
+        "category": "empty_input"
+      },
+      {
+        "input": "racecar\n",
+        "expected": "racecar\n",
+        "hidden": true,
+        "category": "palindrome"
+      },
+      {
+        "input": "Hello World\n",
+        "expected": "dlroW olleH\n",
+        "hidden": true,
+        "category": "spaces"
+      }
+    ]
+  },
+  {
+    "title": "Count vowels",
+    "statement": "Read a line of text. Print how many vowels (a, e, i, o, u, in either case) it contains.",
+    "concepts": [
+      {
+        "name": "strings",
+        "weight": 0.8
+      },
+      {
+        "name": "loops",
+        "weight": 0.2
+      }
+    ],
+    "difficulty_b": -0.5,
+    "discrimination_a": 1.1,
+    "reference_solution": "text = input().lower()\nprint(sum(1 for ch in text if ch in \"aeiou\"))\n",
+    "tests": [
+      {
+        "input": "hello\n",
+        "expected": "2\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "sky\n",
+        "expected": "0\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "AEIOU\n",
+        "expected": "5\n",
+        "hidden": true,
+        "category": "uppercase"
+      },
+      {
+        "input": "\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "empty_input"
+      },
+      {
+        "input": "Programming is fun\n",
+        "expected": "5\n",
+        "hidden": true,
+        "category": "spaces"
+      }
+    ]
+  },
+  {
+    "title": "Palindrome check",
+    "statement": "Read a word. Print `yes` if it reads the same backwards, ignoring case, otherwise `no`.",
+    "concepts": [
+      {
+        "name": "strings",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.3,
+    "discrimination_a": 1.2,
+    "reference_solution": "word = input().strip().lower()\nprint(\"yes\" if word == word[::-1] else \"no\")\n",
+    "tests": [
+      {
+        "input": "level\n",
+        "expected": "yes\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "python\n",
+        "expected": "no\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "Racecar\n",
+        "expected": "yes\n",
+        "hidden": true,
+        "category": "uppercase"
+      },
+      {
+        "input": "a\n",
+        "expected": "yes\n",
+        "hidden": true,
+        "category": "single_char"
+      },
+      {
+        "input": "ab\n",
+        "expected": "no\n",
+        "hidden": true,
+        "category": "basic"
+      },
+      {
+        "input": "\n",
+        "expected": "yes\n",
+        "hidden": true,
+        "category": "empty_input"
+      }
+    ]
+  },
+  {
+    "title": "Word count",
+    "statement": "Read a line of text. Print the number of words in it (words are separated by whitespace).",
+    "concepts": [
+      {
+        "name": "strings",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.8,
+    "discrimination_a": 1.0,
+    "reference_solution": "print(len(input().split()))\n",
+    "tests": [
+      {
+        "input": "the quick brown fox\n",
+        "expected": "4\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "hello\n",
+        "expected": "1\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "empty_input"
+      },
+      {
+        "input": "  spaced   out  \n",
+        "expected": "2\n",
+        "hidden": true,
+        "category": "whitespace"
+      },
+      {
+        "input": "a b c d e f g h i j\n",
+        "expected": "10\n",
+        "hidden": true,
+        "category": "large_input"
+      }
+    ]
+  }
+]

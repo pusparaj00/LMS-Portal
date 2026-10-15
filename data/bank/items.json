@@ -1,0 +1,401 @@
+[
+  {
+    "title": "Trace: range sum",
+    "question": "What does this program print?",
+    "code": "total = 0\nfor i in range(4):\n    total += i\nprint(total)\n",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.5,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "6",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "10",
+        "correct": false,
+        "misconception": "off_by_one_range"
+      },
+      {
+        "text": "3",
+        "correct": false,
+        "misconception": "off_by_one_range"
+      },
+      {
+        "text": "4",
+        "correct": false,
+        "misconception": "counter_vs_sum"
+      }
+    ]
+  },
+  {
+    "title": "Trace: true division",
+    "question": "What does this program print?",
+    "code": "x = 7 / 2\nprint(x * 2)\n",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.8,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "7.0",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "integer_division_float"
+      },
+      {
+        "text": "7",
+        "correct": false,
+        "misconception": "integer_division_float"
+      },
+      {
+        "text": "6.0",
+        "correct": false,
+        "misconception": "integer_division_float"
+      }
+    ]
+  },
+  {
+    "title": "Trace: separate ifs",
+    "question": "What does this program print?",
+    "code": "x = 5\nif x > 3:\n    print(\"A\")\nif x > 4:\n    print(\"B\")\nelse:\n    print(\"C\")\n",
+    "concepts": [
+      {
+        "name": "conditionals",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.2,
+    "discrimination_a": 1.1,
+    "options": [
+      {
+        "text": "A\nB",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "A",
+        "correct": false,
+        "misconception": "if_elif_confusion"
+      },
+      {
+        "text": "B",
+        "correct": false,
+        "misconception": "if_elif_confusion"
+      },
+      {
+        "text": "A\nB\nC",
+        "correct": false,
+        "misconception": "if_elif_confusion"
+      }
+    ]
+  },
+  {
+    "title": "Trace: upper without assignment",
+    "question": "What does this program print?",
+    "code": "s = \"hello\"\ns.upper()\nprint(s)\n",
+    "concepts": [
+      {
+        "name": "strings",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.4,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "hello",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "HELLO",
+        "correct": false,
+        "misconception": "string_methods_in_place"
+      },
+      {
+        "text": "Hello",
+        "correct": false,
+        "misconception": "string_methods_in_place"
+      },
+      {
+        "text": "None",
+        "correct": false,
+        "misconception": "string_methods_in_place"
+      }
+    ]
+  },
+  {
+    "title": "Trace: list alias",
+    "question": "What does this program print?",
+    "code": "a = [1, 2]\nb = a\nb.append(3)\nprint(a)\n",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.3,
+    "discrimination_a": 1.2,
+    "options": [
+      {
+        "text": "[1, 2, 3]",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "[1, 2]",
+        "correct": false,
+        "misconception": "list_alias_copy"
+      },
+      {
+        "text": "[3]",
+        "correct": false,
+        "misconception": "list_alias_copy"
+      }
+    ]
+  },
+  {
+    "title": "Trace: append a list",
+    "question": "What does this program print?",
+    "code": "a = [1, 2]\na.append([3, 4])\nprint(len(a))\n",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.5,
+    "discrimination_a": 1.1,
+    "options": [
+      {
+        "text": "3",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "4",
+        "correct": false,
+        "misconception": "append_vs_extend"
+      },
+      {
+        "text": "2",
+        "correct": false,
+        "misconception": "append_vs_extend"
+      }
+    ]
+  },
+  {
+    "title": "Trace: negative index",
+    "question": "What does this program print?",
+    "code": "nums = [10, 20, 30, 40]\nprint(nums[-2])\n",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.3,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "30",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "20",
+        "correct": false,
+        "misconception": "negative_index_confusion"
+      },
+      {
+        "text": "40",
+        "correct": false,
+        "misconception": "negative_index_confusion"
+      },
+      {
+        "text": "10",
+        "correct": false,
+        "misconception": "negative_index_confusion"
+      }
+    ]
+  },
+  {
+    "title": "Trace: missing key",
+    "question": "What does this program print?",
+    "code": "d = {\"a\": 1}\ntry:\n    print(d[\"b\"])\nexcept KeyError:\n    print(\"missing\")\n",
+    "concepts": [
+      {
+        "name": "dictionaries",
+        "weight": 0.7
+      },
+      {
+        "name": "exceptions",
+        "weight": 0.3
+      }
+    ],
+    "difficulty_b": 0.4,
+    "discrimination_a": 1.1,
+    "options": [
+      {
+        "text": "missing",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "None",
+        "correct": false,
+        "misconception": "dict_missing_key_none"
+      },
+      {
+        "text": "0",
+        "correct": false,
+        "misconception": "dict_missing_key_none"
+      }
+    ]
+  },
+  {
+    "title": "Trace: tuple assignment",
+    "question": "What does this program print?",
+    "code": "t = (1, 2, 3)\ntry:\n    t[0] = 9\nexcept TypeError:\n    print(\"error\")\nprint(t)\n",
+    "concepts": [
+      {
+        "name": "tuples_sets",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.2,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "error\n(1, 2, 3)",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "(9, 2, 3)",
+        "correct": false,
+        "misconception": "tuple_mutable"
+      },
+      {
+        "text": "error\n(9, 2, 3)",
+        "correct": false,
+        "misconception": "tuple_mutable"
+      }
+    ]
+  },
+  {
+    "title": "Trace: print versus return",
+    "question": "What does this program print?",
+    "code": "def f(x):\n    print(x * 2)\n\ny = f(4)\nprint(y)\n",
+    "concepts": [
+      {
+        "name": "functions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.3,
+    "discrimination_a": 1.2,
+    "options": [
+      {
+        "text": "8\nNone",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "8\n8",
+        "correct": false,
+        "misconception": "return_vs_print"
+      },
+      {
+        "text": "None",
+        "correct": false,
+        "misconception": "return_vs_print"
+      },
+      {
+        "text": "8",
+        "correct": false,
+        "misconception": "return_vs_print"
+      }
+    ]
+  },
+  {
+    "title": "Trace: default list",
+    "question": "What does this program print?",
+    "code": "def add(x, items=[]):\n    items.append(x)\n    return items\n\nadd(1)\nprint(add(2))\n",
+    "concepts": [
+      {
+        "name": "functions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.9,
+    "discrimination_a": 1.3,
+    "options": [
+      {
+        "text": "[1, 2]",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "[2]",
+        "correct": false,
+        "misconception": "mutable_default_arg"
+      },
+      {
+        "text": "[1]",
+        "correct": false,
+        "misconception": "mutable_default_arg"
+      }
+    ]
+  },
+  {
+    "title": "Trace: missing return",
+    "question": "What does this program print?",
+    "code": "def total(n):\n    if n == 0:\n        return 0\n    total(n - 1)\n\nprint(total(3))\n",
+    "concepts": [
+      {
+        "name": "recursion",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.7,
+    "discrimination_a": 1.2,
+    "options": [
+      {
+        "text": "None",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "missing_recursive_return"
+      },
+      {
+        "text": "3",
+        "correct": false,
+        "misconception": "missing_recursive_return"
+      },
+      {
+        "text": "0",
+        "correct": false,
+        "misconception": "missing_recursive_return"
+      }
+    ]
+  }
+]

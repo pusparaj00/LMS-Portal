@@ -1,0 +1,67 @@
+[
+  {
+    "name": "off_by_one_range",
+    "concept": "loops",
+    "description": "Believes range(n) includes n or starts at 1."
+  },
+  {
+    "name": "counter_vs_sum",
+    "concept": "loops",
+    "description": "Confuses the number of loop iterations with the accumulated total."
+  },
+  {
+    "name": "integer_division_float",
+    "concept": "variables_io",
+    "description": "Believes / performs integer division."
+  },
+  {
+    "name": "if_elif_confusion",
+    "concept": "conditionals",
+    "description": "Believes separate if statements are mutually exclusive, or that else runs after any true if."
+  },
+  {
+    "name": "string_methods_in_place",
+    "concept": "strings",
+    "description": "Believes string methods modify the string in place."
+  },
+  {
+    "name": "negative_index_confusion",
+    "concept": "lists",
+    "description": "Misreads negative list indexes."
+  },
+  {
+    "name": "list_alias_copy",
+    "concept": "lists",
+    "description": "Believes assigning a list to a new name copies it."
+  },
+  {
+    "name": "append_vs_extend",
+    "concept": "lists",
+    "description": "Confuses append (adds one element) with extend (adds each element)."
+  },
+  {
+    "name": "dict_missing_key_none",
+    "concept": "dictionaries",
+    "description": "Believes indexing a missing dictionary key returns None or 0."
+  },
+  {
+    "name": "tuple_mutable",
+    "concept": "tuples_sets",
+    "description": "Believes tuple items can be assigned."
+  },
+  {
+    "name": "return_vs_print",
+    "concept": "functions",
+    "description": "Confuses printing a value with returning it."
+  },
+  {
+    "name": "mutable_default_arg",
+    "concept": "functions",
+    "description": "Believes a default list argument is created fresh on every call."
+  },
+  {
+    "name": "missing_recursive_return",
+    "concept": "recursion",
+    "description": "Forgets that a recursive call's value must be returned."
+  }
+]

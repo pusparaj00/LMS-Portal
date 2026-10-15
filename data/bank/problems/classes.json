@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Bank account",
+    "statement": "Line 1 is the opening balance. Line 2 is n. The next n lines are `deposit X` or `withdraw X`. A withdrawal larger than the balance is ignored. Print the final balance. Use a class.",
+    "concepts": [
+      {
+        "name": "classes",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.9,
+    "discrimination_a": 1.2,
+    "reference_solution": "class Account:\n    def __init__(self, balance):\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance += amount\n\n    def withdraw(self, amount):\n        if amount <= self.balance:\n            self.balance -= amount\n\n\nacct = Account(int(input()))\nfor _ in range(int(input())):\n    action, amount = input().split()\n    getattr(acct, action)(int(amount))\nprint(acct.balance)\n",
+    "tests": [
+      {
+        "input": "100\n2\ndeposit 50\nwithdraw 30\n",
+        "expected": "120\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "10\n1\nwithdraw 20\n",
+        "expected": "10\n",
+        "hidden": false,
+        "category": "overdraw"
+      },
+      {
+        "input": "0\n0\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "no_commands"
+      },
+      {
+        "input": "50\n3\nwithdraw 50\ndeposit 5\nwithdraw 5\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "basic"
+      },
+      {
+        "input": "5\n2\ndeposit 5\ndeposit 5\n",
+        "expected": "15\n",
+        "hidden": true,
+        "category": "basic"
+      }
+    ]
+  },
+  {
+    "title": "Rectangle",
+    "statement": "Read a width and a height on one line. Using a class, print the area and the perimeter separated by a space.",
+    "concepts": [
+      {
+        "name": "classes",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.5,
+    "discrimination_a": 1.1,
+    "reference_solution": "class Rectangle:\n    def __init__(self, w, h):\n        self.w = w\n        self.h = h\n\n    def area(self):\n        return self.w * self.h\n\n    def perimeter(self):\n        return 2 * (self.w + self.h)\n\n\nw, h = map(int, input().split())\nr = Rectangle(w, h)\nprint(r.area(), r.perimeter())\n",
+    "tests": [
+      {
+        "input": "3 4\n",
+        "expected": "12 14\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1 1\n",
+        "expected": "1 4\n",
+        "hidden": false,
+        "category": "square"
+      },
+      {
+        "input": "0 5\n",
+        "expected": "0 10\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "10 10\n",
+        "expected": "100 40\n",
+        "hidden": true,
+        "category": "square"
+      },
+      {
+        "input": "7 2\n",
+        "expected": "14 18\n",
+        "hidden": true,
+        "category": "basic"
+      }
+    ]
+  }
+]

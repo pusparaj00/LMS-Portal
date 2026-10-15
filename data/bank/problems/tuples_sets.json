@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Common elements",
+    "statement": "Two lines of integers. Print the distinct values that appear in both lines, sorted ascending and separated by spaces, or `none` if there are no common values.",
+    "concepts": [
+      {
+        "name": "tuples_sets",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.4,
+    "discrimination_a": 1.1,
+    "reference_solution": "a = set(map(int, input().split()))\nb = set(map(int, input().split()))\ncommon = sorted(a & b)\nprint(\" \".join(map(str, common)) if common else \"none\")\n",
+    "tests": [
+      {
+        "input": "1 2 3 4\n3 4 5 6\n",
+        "expected": "3 4\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1 2\n3 4\n",
+        "expected": "none\n",
+        "hidden": false,
+        "category": "no_overlap"
+      },
+      {
+        "input": "1 1 2 2\n2 2 3\n",
+        "expected": "2\n",
+        "hidden": true,
+        "category": "duplicates"
+      },
+      {
+        "input": "-1 0 5\n5 -1\n",
+        "expected": "-1 5\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "7\n7\n",
+        "expected": "7\n",
+        "hidden": true,
+        "category": "single_item"
+      }
+    ]
+  },
+  {
+    "title": "Distinct values",
+    "statement": "Read a line of integers. Print how many different values it contains.",
+    "concepts": [
+      {
+        "name": "tuples_sets",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.6,
+    "discrimination_a": 1.0,
+    "reference_solution": "print(len(set(input().split())))\n",
+    "tests": [
+      {
+        "input": "1 2 2 3\n",
+        "expected": "3\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "5\n",
+        "expected": "1\n",
+        "hidden": false,
+        "category": "single_item"
+      },
+      {
+        "input": "1 1 1 1\n",
+        "expected": "1\n",
+        "hidden": true,
+        "category": "all_same"
+      },
+      {
+        "input": "10 20 30 40 50\n",
+        "expected": "5\n",
+        "hidden": true,
+        "category": "no_duplicates"
+      },
+      {
+        "input": "-1 1 -1 1\n",
+        "expected": "2\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      }
+    ]
+  }
+]

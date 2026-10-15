@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Squares of evens",
+    "statement": "Line 1 has n. Line 2 has n integers. Print the squares of the even numbers, in order, separated by spaces. Print an empty line if there are none.",
+    "concepts": [
+      {
+        "name": "comprehensions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.1,
+    "discrimination_a": 1.1,
+    "reference_solution": "n = int(input())\nxs = list(map(int, input().split()))\nprint(*[x * x for x in xs if x % 2 == 0])\n",
+    "tests": [
+      {
+        "input": "5\n1 2 3 4 5\n",
+        "expected": "4 16\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "3\n1 3 5\n",
+        "expected": "\n",
+        "hidden": false,
+        "category": "no_matches"
+      },
+      {
+        "input": "1\n0\n",
+        "expected": "0\n",
+        "hidden": true,
+        "category": "zero"
+      },
+      {
+        "input": "4\n-2 -4 6 8\n",
+        "expected": "4 16 36 64\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "6\n10 11 12 13 14 15\n",
+        "expected": "100 144 196\n",
+        "hidden": true,
+        "category": "basic"
+      }
+    ]
+  },
+  {
+    "title": "Word lengths",
+    "statement": "Read a line of words. Print the length of each word, in order, separated by spaces.",
+    "concepts": [
+      {
+        "name": "comprehensions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.2,
+    "discrimination_a": 1.0,
+    "reference_solution": "print(*[len(w) for w in input().split()])\n",
+    "tests": [
+      {
+        "input": "hi there\n",
+        "expected": "2 5\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "a\n",
+        "expected": "1\n",
+        "hidden": false,
+        "category": "single_item"
+      },
+      {
+        "input": "\n",
+        "expected": "\n",
+        "hidden": true,
+        "category": "empty_input"
+      },
+      {
+        "input": "python is fun\n",
+        "expected": "6 2 3\n",
+        "hidden": true,
+        "category": "basic"
+      },
+      {
+        "input": "  x   yy  \n",
+        "expected": "1 2\n",
+        "hidden": true,
+        "category": "whitespace"
+      }
+    ]
+  }
+]

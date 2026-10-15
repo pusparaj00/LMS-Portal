@@ -1,0 +1,186 @@
+[
+  {
+    "title": "Sum and maximum",
+    "statement": "Line 1 has n. Line 2 has n integers. Print their sum and their maximum on one line, separated by a space.",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.8,
+    "discrimination_a": 1.0,
+    "reference_solution": "n = int(input())\nxs = list(map(int, input().split()))\nprint(sum(xs), max(xs))\n",
+    "tests": [
+      {
+        "input": "3\n1 2 3\n",
+        "expected": "6 3\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "1\n5\n",
+        "expected": "5 5\n",
+        "hidden": false,
+        "category": "single_item"
+      },
+      {
+        "input": "4\n-1 -2 -3 -4\n",
+        "expected": "-10 -1\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "5\n3 3 3 3 3\n",
+        "expected": "15 3\n",
+        "hidden": true,
+        "category": "duplicates"
+      },
+      {
+        "input": "6\n10 20 30 40 50 60\n",
+        "expected": "210 60\n",
+        "hidden": true,
+        "category": "basic"
+      }
+    ]
+  },
+  {
+    "title": "Second largest",
+    "statement": "Line 1 has n. Line 2 has n integers with at least two distinct values. Print the second largest distinct value.",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 0.8
+      },
+      {
+        "name": "tuples_sets",
+        "weight": 0.2
+      }
+    ],
+    "difficulty_b": 0.2,
+    "discrimination_a": 1.2,
+    "reference_solution": "n = int(input())\nvalues = sorted(set(map(int, input().split())))\nprint(values[-2])\n",
+    "tests": [
+      {
+        "input": "5\n4 9 2 7 1\n",
+        "expected": "7\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "2\n1 2\n",
+        "expected": "1\n",
+        "hidden": false,
+        "category": "two_items"
+      },
+      {
+        "input": "4\n5 5 3 3\n",
+        "expected": "3\n",
+        "hidden": true,
+        "category": "duplicates"
+      },
+      {
+        "input": "3\n-1 -5 -3\n",
+        "expected": "-3\n",
+        "hidden": true,
+        "category": "negative_numbers"
+      },
+      {
+        "input": "6\n10 10 10 9 9 8\n",
+        "expected": "9\n",
+        "hidden": true,
+        "category": "duplicates"
+      }
+    ]
+  },
+  {
+    "title": "Remove duplicates",
+    "statement": "Line 1 has n. Line 2 has n integers. Print the values with duplicates removed, keeping the first occurrence of each and the original order, separated by spaces.",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.3,
+    "discrimination_a": 1.1,
+    "reference_solution": "n = int(input())\nseen = []\nfor x in input().split():\n    if x not in seen:\n        seen.append(x)\nprint(\" \".join(seen))\n",
+    "tests": [
+      {
+        "input": "5\n1 2 2 3 1\n",
+        "expected": "1 2 3\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "3\n4 5 6\n",
+        "expected": "4 5 6\n",
+        "hidden": false,
+        "category": "no_duplicates"
+      },
+      {
+        "input": "1\n7\n",
+        "expected": "7\n",
+        "hidden": true,
+        "category": "single_item"
+      },
+      {
+        "input": "6\n2 2 2 2 2 2\n",
+        "expected": "2\n",
+        "hidden": true,
+        "category": "all_same"
+      },
+      {
+        "input": "7\n3 1 3 2 1 2 4\n",
+        "expected": "3 1 2 4\n",
+        "hidden": true,
+        "category": "order"
+      }
+    ]
+  },
+  {
+    "title": "Rotate left",
+    "statement": "Line 1 has n and k. Line 2 has n integers. Print the list rotated left by k positions (k may be larger than n), separated by spaces.",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.6,
+    "discrimination_a": 1.2,
+    "reference_solution": "n, k = map(int, input().split())\nxs = input().split()\nk %= n\nprint(\" \".join(xs[k:] + xs[:k]))\n",
+    "tests": [
+      {
+        "input": "5 2\n1 2 3 4 5\n",
+        "expected": "3 4 5 1 2\n",
+        "hidden": false,
+        "category": "basic"
+      },
+      {
+        "input": "3 0\n1 2 3\n",
+        "expected": "1 2 3\n",
+        "hidden": false,
+        "category": "zero"
+      },
+      {
+        "input": "3 3\n1 2 3\n",
+        "expected": "1 2 3\n",
+        "hidden": true,
+        "category": "k_equals_n"
+      },
+      {
+        "input": "4 6\n1 2 3 4\n",
+        "expected": "3 4 1 2\n",
+        "hidden": true,
+        "category": "k_larger_than_n"
+      },
+      {
+        "input": "1 5\n9\n",
+        "expected": "9\n",
+        "hidden": true,
+        "category": "single_item"
+      }
+    ]
+  }
+]
