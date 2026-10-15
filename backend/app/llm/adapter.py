@@ -132,6 +132,8 @@ OPENAI_COMPATIBLE = {
     "groq": ("https://api.groq.com/openai/v1", "groqcloud_api_key", "llm_model_groq"),
     "deepseek": ("https://api.deepseek.com", "deepseek_api_key", "llm_model_deepseek"),
     "openai": ("https://api.openai.com/v1", "openai_api_key", "llm_model_openai"),
+    "mistral": ("https://api.mistral.ai/v1", "mistral_api_key", "llm_model_mistral"),
+    "openrouter": ("https://openrouter.ai/api/v1", "openrouter_api_key", "llm_model_openrouter"),
 }
 
 

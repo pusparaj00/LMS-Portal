@@ -52,7 +52,7 @@ the course notes with sources (or says no source was found). `recommend` and `lm
 model is unavailable or unsure, keyword rules choose the route and the panel says so; the student can correct it.
 Instructors get a class mastery heatmap and misconception counts at `#/class/<course id>`.
 
-`LLM_FALLBACK=groq,deepseek,openai` lets the chat and feedback flows continue on another provider when the primary one
+`LLM_FALLBACK=groq,openrouter,mistral,deepseek,openai` (Groq, Mistral, OpenAI, DeepSeek and OpenRouter keys are optional) lets the chat and feedback flows continue on another provider when the primary one
 is out of quota (each needs its own API key in `.env`). A small labelled synthetic class for the demo is created with:
 
 ```sh

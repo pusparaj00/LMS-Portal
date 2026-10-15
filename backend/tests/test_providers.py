@@ -178,3 +178,14 @@ def test_a_plain_rate_limit_429_is_still_retried(post):
     answers += [(429, {"error": {"message": "Rate limit reached, slow down"}}), completion("ok")]
     config = LLMConfig("groq", "m", 5, 2, 0.1)
     assert OpenAICompatibleAdapter(config, SECRET, "https://x/v1").complete("s", "u") == "ok" and len(calls) == 2
+
+
+def test_mistral_and_openrouter_join_the_chain_with_their_own_endpoints_and_models():
+    chain = build_adapter(
+        settings(llm_fallback="mistral,openrouter", mistral_api_key="m-key", openrouter_api_key="or-key")
+    )
+    assert [(a.config.provider, a.config.model) for a in chain.adapters] == [
+        ("gemini", "gemini-test"), ("mistral", "mistral-small-2603"), ("openrouter", "nvidia/nemotron-3-super-120b-a12b:free"),
+    ]
+    assert chain.adapters[1]._url == "https://api.mistral.ai/v1/chat/completions"
+    assert chain.adapters[2]._url == "https://openrouter.ai/api/v1/chat/completions"

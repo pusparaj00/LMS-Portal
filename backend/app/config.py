@@ -24,9 +24,13 @@ class Settings(BaseSettings):
     groqcloud_api_key: str = ""
     deepseek_api_key: str = ""
     openai_api_key: str = ""
+    mistral_api_key: str = ""
+    openrouter_api_key: str = ""
     llm_model_groq: str = "openai/gpt-oss-20b"
     llm_model_deepseek: str = "deepseek-flash"
     llm_model_openai: str = "gpt-4.1-mini"
+    llm_model_mistral: str = "mistral-small-2603"
+    llm_model_openrouter: str = "nvidia/nemotron-3-super-120b-a12b:free"
     chat_database_url: str = ""
     router_min_confidence: float = 0.6
     chat_history_turns: int = 6
