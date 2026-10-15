@@ -30,3 +30,6 @@ should not be quoted as rates.
 | TR-P-05 busy sandbox | Queue limit 20, 3 s wait, 503 with Retry-After, automatic retry; tested and shown in a browser ([step-8](step-8.md)) | A busy message and a retry, no drop | Pass |
 | TR-P-08 model calls per 100 | 85.7 calls per 100 failed submissions, 21% served without a call (dev data, [step-8](step-8.md)); at most 2 calls for any submission | At most one call plus one retry; reported | Pass (dev data) |
 | TR-P-09 1366 px | 12 screens at 1366 x 768 in Chromium, no overflow or console errors; Edge 155 login page only ([step-8](step-8.md)) | Works in Chrome and Edge | Pass for Chromium; Edge and Chrome themselves not fully driven |
+| TR-S-05 consent | Notice before first use, recorded agreement and withdrawal, 403 on processing without agreement; 12 tests and a browser run ([step-9](step-9.md)) | Notice, recorded consent, withdrawal stops processing | Pass (text is a draft, deletion not built) |
+| TR-S-06 prompts | A test checks the explanation and chat prompts hold no email or local part ([step-9](step-9.md)) | No direct identifiers | Pass |
+| TR-L-05 claimed input | Example input tried in the sandbox on both programs; 13 tests; live: 7 of 8 replies named one, all confirmed ([step-9](step-9.md)) | Output must differ from the reference | Pass (small live sample) |

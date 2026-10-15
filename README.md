@@ -89,7 +89,7 @@ docker compose up -d --wait
 A failed submission can be explained. The explanation is produced by the configured LLM
 (`LLM_PROVIDER=gemini` with `GEMINI_API_KEY`, or the stub), then checked by deterministic code before the student
 sees it: the cited test failed, the line exists, the concept matches, the cited notes were retrieved, and the reply
-contains no solution code. After two rejected attempts the student gets a template hint. Every attempt is stored in
+contains no solution code. If the explanation names an input on which the program goes wrong, the sandbox runs the student's program and the reference solution on it and the explanation is accepted only if their outputs differ (the student then sees that input and their own output). After two rejected attempts the student gets a template hint. Every attempt is stored in
 `explanation_checks`. Embedding model weights are baked into the Docker image at build time (this needs network
 access once); running containers download nothing.
 

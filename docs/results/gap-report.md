@@ -1,7 +1,8 @@
 # Gap report: project plan against current status
 
 Audit date 2026-10-15, first written on branch `step-7-cache-stretch` (409 tests) and **updated after Step 8** on branch
-`step-8-gap-closure` (450 tests); the statuses below are the updated ones, and section 9 lists what Step 8 closed.
+`step-8-gap-closure` (450 tests), then after Step 9 on `step-9-concepts-consent-claims` (493 tests); the statuses below
+are the updated ones, and sections 9 and 10 list what Steps 8 and 9 closed.
 Sources compared: `docs/plan.md`, `docs/PRD.md` (34 features), `docs/TRD.md` (81 requirements), `docs/DRD.md`, the code and
 tests in the repository, and the measured results in `docs/results/`. Every status below was checked in the code, the
 tests or a measured result; where a status could not be checked it says so.
@@ -11,8 +12,8 @@ tests or a measured result; where a status could not be checked it says so.
 The system is a working, tested prototype of the whole demo flow in the plan (phases 0 to 5, gates G0 to G4 passed, the
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
-1. **Features not built or only partly built:** 4 of 34 PRD features not built, 3 partly built.
-2. **Requirements not met:** of 69 implementation requirements, 46 done, 6 partly done, 8 not built or not run, 9 not
+1. **Features not built or only partly built:** 4 of 34 PRD features not built, 2 partly built.
+2. **Requirements not met:** of 69 implementation requirements, 49 done, 5 partly done, 6 not built or not run, 9 not
    applicable by design (the sandbox is a custom runner, not Judge0). Compliance (consent, retention, breach procedure) is
    the largest untouched area.
 3. **Validation targets missed or unproven:** of 12 validation tests, 7 pass, 1 fails (adaptive selection, in simulation
@@ -35,12 +36,12 @@ Status of all 34 features. P0, P1 and P2 are the PRD's priorities.
 
 | Status | Features |
 | --- | --- |
-| Done (27) | F-01, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61 |
-| Partly built (3) | **F-02** (P0) instructors can create courses and problems in the browser, but a new course has no concepts and they cannot be created there; they come with the question bank import. **F-52** (P0) four of six routes work; `recommend` and `lms` answer "not available" by design. **F-62** (P1) the hint limit is per problem and approval of stored explanations works, but the leak threshold is global, not per problem. |
+| Done (28) | F-01, F-02, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61 |
+| Partly built (2) | **F-52** (P0) four of six routes work; `recommend` and `lms` answer "not available" by design. **F-62** (P1) the hint limit is per problem and approval of stored explanations works, but the leak threshold is global, not per problem. |
 | Not built (4) | **F-04** assignments with due dates and a gradebook (P1). **F-05** announcements (P2). **F-23** difficulty estimates for new items from text and tags (P2). **F-70** LTI 1.3 launch from Moodle or Canvas (P2). |
 
-F-03 is closed (notes as text, Markdown or PDF, with an upload screen). The remaining F-02 gap matters most: a teacher can
-set up a course with a problem and notes, but only a course that already has concepts can take new problems.
+F-02 and F-03 are closed: a teacher can create a course and its concepts, add problems and upload notes (text, Markdown or
+PDF) in the browser.
 
 ## 3. Technical requirements (TRD), excluding validation
 
@@ -52,13 +53,13 @@ set up a course with a problem and notes, but only a course that already has con
 | A architecture (9) | 7 | 1 | 1 | 0 |
 | M mastery (12) | 7 | 3 | 0 | 2 |
 | X sandbox (9) | 2 | 0 | 0 | 7 |
-| L LLM (12) | 11 | 0 | 1 | 0 |
+| L LLM (12) | 12 | 0 | 0 | 0 |
 | D data (8) | 7 | 0 | 1 | 0 |
-| S security and privacy (10) | 4 | 1 | 5 | 0 |
+| S security and privacy (10) | 6 | 0 | 4 | 0 |
 | P performance (9) | 8 | 1 | 0 | 0 |
-| **Total (69)** | **46** | **6** | **8** | **9** |
+| **Total (69)** | **49** | **5** | **6** | **9** |
 
-### 3.1 Partly done (6)
+### 3.1 Partly done (5)
 
 | ID (priority) | What is missing | Detail |
 | --- | --- | --- |
@@ -66,17 +67,14 @@ set up a course with a problem and notes, but only a course that already has con
 | TR-M-05 (P1) | Refitting item parameters | Difficulty and discrimination are stored with a source flag (`prior`), but there is no refit from pilot answers. It needs real answers first. |
 | TR-M-08 (P2) | Chat questions as a mastery signal | The route is stored with each chat message; the concept tag is not. |
 | TR-M-10 (P0) | 5-item test beats the mean | True on the concepts the five items tested (10 of 10 seeds); true on all 12 concepts in only 3 of 10 seeds. |
-| TR-S-06 (P1) | No direct identifiers in prompts | Explanation prompts hold no email or name (checked); chat prompts also carry none by construction, but no test enforces it. |
 | TR-P-03 (P0) | Explanation within 15 s | Median 4.04 s, but worst cases 14.75 s and 15.31 s in two measured runs; earlier runs reached 23 s. |
 
-### 3.2 Not built or not run (8)
+### 3.2 Not built or not run (6)
 
 | ID (priority) | Requirement | Note |
 | --- | --- | --- |
 | TR-A-09 (P2) | LTI 1.3 launch | Same as F-70. Planned for phase 7. |
-| TR-L-05 (P1) | Run the student's code on an input named in a claim and confirm the output differs | Not built. The verifier does not execute anything. |
 | TR-D-05 (P2) | Offline experiments on CodeWorkout or FalconCode | Not started; licences not checked. Planned for phase 6. |
-| TR-S-05 (P1) | Consent notice with a timestamp; withdrawal | Not built. |
 | TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Not built. |
 | TR-S-08 (P1) | Breach detection logs and a written breach procedure | Logs exist; the written procedure does not. |
 | TR-S-09 (P1) | Full demo on a local model | Not run (same as TR-V-12). The `local` provider now exists (TR-A-04); what is missing is a model installed on this machine. |
@@ -172,8 +170,8 @@ statements and need no code.
 **After the review (the plan's phases 6 to 8):** consent, retention and breach procedure (TR-S-05 to S-08), a pilot with real
 students and refitting item parameters (TR-M-05, TR-D-05), then F-04, F-05, LTI and the extensions.
 
-Gradebook and announcements (F-04, F-05) are the remaining stretch items. Suggested next, before them: creating concepts in the browser (finishes F-02),
-a small consent notice (TR-S-05), and the explanation check that runs the claimed input (TR-L-05); all close P0 or P1 requirements, which F-04 and F-05 do not.
+Gradebook and announcements (F-04, F-05) are the remaining stretch items. The three suggested items before them were done
+in Step 9 (section 10).
 
 ## 9. What Step 8 closed (2026-10-15)
 
@@ -191,3 +189,19 @@ Measured results and commands are in `docs/results/step-8.md`.
 
 Two defects found and fixed on the way: the JSON export first included email addresses (caught by its own test), and the
 validator's message for a wrong reference solution was cryptic.
+
+## 10. What Step 9 closed (2026-10-16)
+
+Measured results and commands are in `docs/results/step-9.md`.
+
+| Item | Before | After |
+| --- | --- | --- |
+| F-02 concepts | A new course had no concepts and none could be created in the browser | Concepts are added inside the problem form; a new concept needs no other setup (mastery uses the prior and default rates) |
+| TR-S-05 consent | None | A privacy notice before first use (providers read from the live configuration), recorded agreement with timestamps, withdrawal that stops processing at once, and 403 on every processing endpoint without agreement |
+| TR-S-06 no identifiers in prompts | Not enforced by a test | A test checks the explanation and chat prompts contain neither the email nor its local part |
+| TR-L-05 claimed input | The verifier ran nothing | An example input named in a claim is run on the student's program and the reference in the sandbox; accepted only if the outputs differ; never a hidden test input; the student sees their own output only |
+
+Defects found and fixed on the way: the problem page overflowed a 390 px phone; a passing check stored failure wording as
+its detail. Still open from the audit: TR-S-07 (deletion and retention), TR-S-08 (breach procedure), TR-S-09 and TR-V-12 (a
+local-model demo, which needs a model installed), TR-S-10, TR-A-09, TR-D-05, F-04, F-05, F-23, F-70, and the people items in
+section 5. The consent text is a draft awaiting the data protection contact.
