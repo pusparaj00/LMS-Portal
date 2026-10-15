@@ -27,6 +27,7 @@ from app.schemas import (
 router = APIRouter(prefix="/diagnostic", tags=["diagnostic"])
 Student = Annotated[CurrentUser, Depends(require_role("student"))]
 SESSION_TTL_SECONDS = 2 * 60 * 60
+LOCK_TTL_SECONDS = 60
 TOP_MISCONCEPTIONS = 3
 SUSPECTED_ABOVE = 0.3  # a single tagged wrong pick takes a 0.1 prior to about 0.37
 
@@ -171,6 +172,17 @@ def _grade_answer(conn: Connection, body: DiagnosticAnswerRequest, kind: str) ->
 
 @router.post("/answer", response_model=DiagnosticAnswerResponse)
 def answer(body: DiagnosticAnswerRequest, user: Student, conn: Conn):
+    # A double click or a retry must not run the same answer twice, so one answer per session at a time.
+    lock = _key(body.session_id) + ":lock"
+    if not get_redis().set(lock, "1", nx=True, ex=LOCK_TTL_SECONDS):
+        raise HTTPException(409, "your previous answer is still being checked")
+    try:
+        return _answer(body, user, conn)
+    finally:
+        get_redis().delete(lock)
+
+
+def _answer(body: DiagnosticAnswerRequest, user: CurrentUser, conn: Connection) -> DiagnosticAnswerResponse:
     state = _load_state(body.session_id, user)
     if body.problem_id != state["current"]:
         raise HTTPException(409, "this is not the current placement item")
