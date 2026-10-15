@@ -16,6 +16,11 @@ TRANSIENT_STATUS = {429, 500, 502, 503, 504}
 BACKOFF_SECONDS = 1.5
 MAX_PROVIDER_WAIT_SECONDS = 90  # a per-minute limit is worth waiting for; a per-day limit is not
 MIN_USEFUL_SECONDS = 1.0  # a call with less time left than this cannot finish
+PERMANENT_STATUS = {401, 403, 404}  # bad key, project denied, model gone: retrying soon cannot help
+REJECTED_COOLDOWN_SECONDS = 600
+QUOTA_COOLDOWN_SECONDS = 60  # when the provider does not say how long to wait
+# provider and model -> time.monotonic() until which it goes to the back of the chain
+_cooling: dict[tuple[str, str], float] = {}
 # The moment (time.monotonic) by which the whole chain must have answered; set by FallbackChain.
 _deadline: ContextVar[float | None] = ContextVar("llm_deadline", default=None)
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -43,7 +48,25 @@ def _is_billing_error(response: httpx.Response) -> bool:
 
 
 class LLMError(Exception):
-    """The model could not be reached or returned nothing usable."""
+    """The model could not be reached or returned nothing usable.
+
+    `cooldown_s` > 0 says the provider will keep failing for a while (rejected key, exhausted quota), so the chain
+    tries the others first until then.
+    """
+
+    def __init__(self, message: str, cooldown_s: float = 0.0) -> None:
+        super().__init__(message)
+        self.cooldown_s = cooldown_s
+
+
+def _cooldown_for(response: httpx.Response) -> float:
+    status = response.status_code
+    if status in PERMANENT_STATUS:
+        return REJECTED_COOLDOWN_SECONDS
+    if status == 429 and _is_billing_error(response):
+        wait = _provider_retry_delay(response)
+        return min(wait, REJECTED_COOLDOWN_SECONDS) if wait else QUOTA_COOLDOWN_SECONDS
+    return 0.0
 
 
 def _time_left(timeout_s: float) -> float:
@@ -96,7 +119,7 @@ class StubAdapter:
 class GeminiAdapter:
     def __init__(self, config: LLMConfig, api_key: str) -> None:
         if not api_key:
-            raise LLMError("GEMINI_API_KEY is not set")
+            raise LLMError(f"no API key for {config.provider}")
         self.config = config
         self._api_key = api_key
 
@@ -134,12 +157,12 @@ class GeminiAdapter:
                     return text
                 last_error = LLMError("the model returned no text")
             except httpx.HTTPStatusError as exc:
-                last_error = LLMError(f"HTTP {exc.response.status_code} from the model")
-                if exc.response.status_code not in TRANSIENT_STATUS:
-                    break  # a rejected request will not succeed on retry
                 wait = _provider_retry_delay(exc.response)
-                if wait is not None and wait > MAX_PROVIDER_WAIT_SECONDS:
-                    break  # quota used up for the day: waiting is pointless
+                daily = wait is not None and wait > MAX_PROVIDER_WAIT_SECONDS
+                cooldown = REJECTED_COOLDOWN_SECONDS if daily else _cooldown_for(exc.response)
+                last_error = LLMError(f"HTTP {exc.response.status_code} from {self.config.provider}", cooldown)
+                if exc.response.status_code not in TRANSIENT_STATUS or cooldown:
+                    break  # rejected, or out of quota: the next provider is the better use of the time
                 if wait is not None and attempt < self.config.max_retries:
                     _pause(wait)
                     continue
@@ -153,7 +176,6 @@ class GeminiAdapter:
 
 OPENAI_COMPATIBLE = {
     "groq": ("https://api.groq.com/openai/v1", "groqcloud_api_key", "llm_model_groq"),
-    "deepseek": ("https://api.deepseek.com", "deepseek_api_key", "llm_model_deepseek"),
     "openai": ("https://api.openai.com/v1", "openai_api_key", "llm_model_openai"),
     "mistral": ("https://api.mistral.ai/v1", "mistral_api_key", "llm_model_mistral"),
     "openrouter": ("https://openrouter.ai/api/v1", "openrouter_api_key", "llm_model_openrouter"),
@@ -161,7 +183,7 @@ OPENAI_COMPATIBLE = {
 
 
 class OpenAICompatibleAdapter:
-    """Chat-completions API shared by OpenAI, Groq and DeepSeek."""
+    """Chat-completions API shared by Groq, OpenRouter, Mistral and OpenAI."""
 
     def __init__(self, config: LLMConfig, api_key: str, base_url: str) -> None:
         if not api_key:
@@ -199,8 +221,9 @@ class OpenAICompatibleAdapter:
                     return text
                 last_error = LLMError("the model returned no text")
             except httpx.HTTPStatusError as exc:
-                last_error = LLMError(f"HTTP {exc.response.status_code} from {self.config.provider}")
-                if exc.response.status_code not in TRANSIENT_STATUS or _is_billing_error(exc.response):
+                cooldown = _cooldown_for(exc.response)
+                last_error = LLMError(f"HTTP {exc.response.status_code} from {self.config.provider}", cooldown)
+                if exc.response.status_code not in TRANSIENT_STATUS or cooldown:
                     break
             except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
                 last_error = LLMError(f"{type(exc).__name__}: {str(exc)[:120]}".replace(self._api_key, "<key>"))
@@ -210,7 +233,11 @@ class OpenAICompatibleAdapter:
 
 
 class FallbackChain:
-    """Tries each provider in order; the next one is used when one fails or has no quota left."""
+    """Tries each provider in order; the next one is used when one fails or has no quota left.
+
+    A provider that recently rejected the key or ran out of quota is tried last until its cooldown ends, so a dead
+    key does not cost time on every request, yet is still used if everything else fails.
+    """
 
     def __init__(self, adapters: list[LLMAdapter], budget_s: float = 20.0) -> None:
         self.adapters = adapters
@@ -226,16 +253,24 @@ class FallbackChain:
         """One answer within `budget_s` seconds in total, however many providers have to be tried."""
         token = _deadline.set(time.monotonic() + self.budget_s)
         errors = []
+        now = time.monotonic()
+        cooling = [a for a in self.adapters if _cooling.get(_key(a), 0.0) > now]
+        ordered = [a for a in self.adapters if a not in cooling] + cooling
         try:
-            for adapter in self.adapters:
+            for adapter in ordered:
                 try:
                     reply = adapter.complete(system, user, json_schema)
                 except LLMError as exc:
-                    errors.append(f"{adapter.config.provider}: {exc}")
+                    if exc.cooldown_s:
+                        _cooling[_key(adapter)] = time.monotonic() + exc.cooldown_s
+                    errors.append(f"{adapter.config.provider}/{adapter.config.model}: {exc}")
                     log.warning(
-                        "provider failed, trying the next", extra={"fields": {"provider": adapter.config.provider}}
+                        "provider failed, trying the next",
+                        extra={"fields": {"provider": adapter.config.provider, "model": adapter.config.model,
+                                          "cooldown_s": exc.cooldown_s}},
                     )
                     continue
+                _cooling.pop(_key(adapter), None)
                 self.last = adapter
                 return reply
         finally:
@@ -243,34 +278,48 @@ class FallbackChain:
         raise LLMError("every provider failed: " + "; ".join(errors))
 
 
+def _key(adapter: LLMAdapter) -> tuple[str, str]:
+    return adapter.config.provider, adapter.config.model
+
+
+# Gemini keys: provider -> (settings field holding the key, settings field holding its default model)
+GEMINI_KEYS = {
+    "gemini": ("gemini_api_key", "llm_model_gemini"),
+    "gemini_pro": ("gemini_pro_api_key", "llm_model_gemini_pro"),
+}
+
+
 def build_adapter(settings: Settings) -> LLMAdapter:
+    """The primary from LLM_PROVIDER/LLM_MODEL, then LLM_FALLBACK in order. A fallback is `provider` or
+    `provider:model`, so one key can serve several models, e.g. `gemini_pro:gemini-3.1-pro-preview,groq`."""
+
     def config(provider: str, model: str) -> LLMConfig:
         return LLMConfig(
             provider=provider, model=model, timeout_s=settings.llm_timeout_s, max_retries=settings.llm_max_retries,
             temperature=settings.llm_temperature, thinking_budget=settings.llm_thinking_budget,
         )
 
-    primary_config = config(settings.llm_provider, settings.llm_model)
-    if primary_config.provider == "stub":
-        return StubAdapter(primary_config)
-    if primary_config.provider == "gemini":
-        adapters: list[LLMAdapter] = [GeminiAdapter(primary_config, settings.gemini_api_key)]
-    elif primary_config.provider in OPENAI_COMPATIBLE:
-        adapters = [_compatible(settings, primary_config.provider, config)]
-    else:
-        raise ValueError(f"unsupported LLM_PROVIDER: {primary_config.provider}")
-    for name in (n.strip() for n in settings.llm_fallback.split(",") if n.strip()):
-        if name not in OPENAI_COMPATIBLE:
-            raise ValueError(f"unsupported fallback provider: {name}")
+    def make(provider: str, model: str | None) -> LLMAdapter:
+        if provider in GEMINI_KEYS:
+            key_field, model_field = GEMINI_KEYS[provider]
+            model = model or getattr(settings, model_field)
+            return GeminiAdapter(config(provider, model), getattr(settings, key_field))
+        if provider in OPENAI_COMPATIBLE:
+            base_url, key_field, model_field = OPENAI_COMPATIBLE[provider]
+            return OpenAICompatibleAdapter(
+                config(provider, model or getattr(settings, model_field)), getattr(settings, key_field), base_url
+            )
+        raise ValueError(f"unsupported LLM provider: {provider}")
+
+    if settings.llm_provider == "stub":
+        return StubAdapter(config("stub", settings.llm_model))
+    adapters = [make(settings.llm_provider, settings.llm_model)]
+    for entry in (e.strip() for e in settings.llm_fallback.split(",") if e.strip()):
+        provider, _, model = entry.partition(":")
+        if provider not in GEMINI_KEYS and provider not in OPENAI_COMPATIBLE:
+            raise ValueError(f"unsupported fallback provider: {provider}")
         try:
-            adapters.append(_compatible(settings, name, config))
+            adapters.append(make(provider, model.strip() or None))
         except LLMError:
-            log.warning("fallback provider skipped: no key", extra={"fields": {"provider": name}})
+            log.warning("fallback provider skipped: no key", extra={"fields": {"provider": provider}})
     return FallbackChain(adapters, settings.llm_budget_s)
-
-
-def _compatible(settings: Settings, provider: str, make_config) -> OpenAICompatibleAdapter:
-    base_url, key_field, model_field = OPENAI_COMPATIBLE[provider]
-    return OpenAICompatibleAdapter(
-        make_config(provider, getattr(settings, model_field)), getattr(settings, key_field), base_url
-    )

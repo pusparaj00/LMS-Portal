@@ -73,8 +73,11 @@ the course notes with sources (or says no source was found). `recommend` and `lm
 model is unavailable or unsure, keyword rules choose the route and the panel says so; the student can correct it.
 Instructors get a class mastery heatmap and misconception counts at `#/class/<course id>`.
 
-`LLM_FALLBACK=groq,openrouter,mistral,deepseek,openai` (Groq, Mistral, OpenAI, DeepSeek and OpenRouter keys are optional) lets the chat and feedback flows continue on another provider when the primary one
-is out of quota (each needs its own API key in `.env`). The labelled synthetic class is part of the demo seed above.
+`LLM_FALLBACK` lets the chat and feedback flows continue on another provider when the primary one fails or is out of
+quota. Entries are `provider` or `provider:model`: `gemini` and `gemini_pro` (two Google AI Studio keys, so one key can
+serve several models), `groq`, `openrouter`, `mistral` and `openai`; each needs its own key in `.env` and is skipped
+without one. A provider that rejects its key (401, 403, 404) or reports exhausted quota is moved to the end of the chain
+for a while, so a dead key costs no time on every request. The labelled synthetic class is part of the demo seed above.
 
 ## Sandbox
 

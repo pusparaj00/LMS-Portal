@@ -1,6 +1,7 @@
 """Which provider should be primary? Same submissions through the verified flow, per provider, no fallback (TR-P-03).
 
 Usage (inside the api container, which holds the keys): python -m evaluation.provider_compare gemini groq
+Each argument is `provider` or `provider:model`, as in LLM_FALLBACK (e.g. gemini_pro:gemini-3.1-pro-preview).
 For each wrong submission the providers take turns, so a slow minute on the network affects both alike.
 Prints a markdown table; every number is measured in this run.
 """
@@ -18,7 +19,7 @@ from sqlalchemy import text  # noqa: E402
 
 from app.config import get_settings  # noqa: E402
 from app.db import get_engine  # noqa: E402
-from app.llm.adapter import OPENAI_COMPATIBLE, build_adapter  # noqa: E402
+from app.llm.adapter import GEMINI_KEYS, OPENAI_COMPATIBLE, build_adapter  # noqa: E402
 from app.main import app  # noqa: E402
 from app.routers.feedback import llm_adapter  # noqa: E402
 from evaluation.real_feedback import WRONG_SUBMISSIONS  # noqa: E402
@@ -27,9 +28,12 @@ API = "/api/v1"
 PAUSE_SECONDS = 4  # stay under the free tier per-minute limits
 
 
-def settings_for(provider: str):
+def settings_for(entry: str):
     base = get_settings()
-    model = base.llm_model if provider == base.llm_provider else getattr(base, OPENAI_COMPATIBLE[provider][2])
+    provider, _, model = entry.partition(":")
+    if not model:
+        model_field = GEMINI_KEYS[provider][1] if provider in GEMINI_KEYS else OPENAI_COMPATIBLE[provider][2]
+        model = getattr(base, model_field)
     return base.model_copy(update={"llm_provider": provider, "llm_model": model, "llm_fallback": ""})
 
 
