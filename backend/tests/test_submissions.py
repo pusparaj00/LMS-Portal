@@ -112,3 +112,20 @@ def test_create_problem_rejects_a_bad_reference_solution(client, course):
     body["concepts"] = []
     message = client.post(f"{API}/problems", headers=course["instructor"], json=body).json()
     assert "has no concept" in json.dumps(message) and "has no category" in json.dumps(message)
+
+
+def test_a_graded_submission_moves_mastery_and_writes_the_ledger(client, course, student, owner):
+    user_id, headers = student
+    passed = submit(client, course, headers, "print(int(input()) + 1)\n").json()
+    assert [c["concept"] for c in passed["mastery_changes"]] == ["loops"]
+    assert passed["mastery_changes"][0]["after"] > passed["mastery_changes"][0]["before"]
+    failed = submit(client, course, headers, "print('wrong')\n").json()
+    assert failed["mastery_changes"][0]["after"] < failed["mastery_changes"][0]["before"]
+    with owner.connect() as conn:
+        refs = conn.execute(
+            text("SELECT evidence_ref, rule_id FROM mastery_events WHERE user_id = :u ORDER BY id"),
+            {"u": user_id},
+        ).all()
+    expected = (f"submission:{passed['submission_id']}", "bayes_update")
+    assert [tuple(r) for r in refs].count(expected) == 1
+    assert len(refs) >= 2

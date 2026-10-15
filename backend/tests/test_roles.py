@@ -73,7 +73,7 @@ def test_mastery_role_writes_mastery_and_appends_events_only(engines, ids):
             conn.execute(text(INSERT_CHAT), ids)
 
 
-def test_schema_has_core_tables_plus_the_two_step_2_tables(engines):
+def test_schema_has_the_core_tables_and_the_step_2_and_3_additions(engines):
     with engines["owner"].connect() as conn:
         names = {
             r[0]
@@ -81,6 +81,6 @@ def test_schema_has_core_tables_plus_the_two_step_2_tables(engines):
                 text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
             )
         } - {"alembic_version"}
-    assert len(names) == 17
-    assert names >= {"misconceptions", "item_options"}
-    assert not names & {"explanation_cache", "explanation_checks", "mastery_params"}
+    assert len(names) == 20
+    assert names >= {"misconceptions", "item_options", "mastery_params", "evidence_concept_map", "misconception_state"}
+    assert not names & {"explanation_cache", "explanation_checks"}

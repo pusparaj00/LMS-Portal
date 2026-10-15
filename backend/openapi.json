@@ -59,6 +59,29 @@
         "title": "ChatResponse",
         "type": "object"
       },
+      "ConceptMastery": {
+        "properties": {
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "p_known": {
+            "title": "P Known",
+            "type": "number"
+          }
+        },
+        "required": [
+          "concept_id",
+          "name",
+          "p_known"
+        ],
+        "title": "ConceptMastery",
+        "type": "object"
+      },
       "ConceptTag": {
         "properties": {
           "concept_id": {
@@ -125,11 +148,78 @@
         "title": "CourseCreate",
         "type": "object"
       },
+      "Dashboard": {
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptMastery"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "misconceptions": {
+            "items": {
+              "$ref": "#/components/schemas/SuspectedMisconception"
+            },
+            "title": "Misconceptions",
+            "type": "array"
+          },
+          "placement_completed": {
+            "title": "Placement Completed",
+            "type": "boolean"
+          },
+          "recent_submissions": {
+            "items": {
+              "$ref": "#/components/schemas/RecentSubmission"
+            },
+            "title": "Recent Submissions",
+            "type": "array"
+          },
+          "recommended": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecommendedProblem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "concepts",
+          "misconceptions",
+          "recent_submissions",
+          "recommended",
+          "placement_completed"
+        ],
+        "title": "Dashboard",
+        "type": "object"
+      },
       "DiagnosticAnswerRequest": {
         "properties": {
-          "answer": {
-            "title": "Answer",
-            "type": "string"
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 50000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Option Id"
           },
           "problem_id": {
             "title": "Problem Id",
@@ -142,57 +232,35 @@
         },
         "required": [
           "session_id",
-          "problem_id",
-          "answer"
+          "problem_id"
         ],
         "title": "DiagnosticAnswerRequest",
         "type": "object"
       },
       "DiagnosticAnswerResponse": {
-        "examples": [
-          {
-            "done": false,
-            "mastery": {
-              "functions": 0.5,
-              "loops": 0.55
-            },
-            "next_problem": {
-              "concepts": [
-                {
-                  "concept_id": 1,
-                  "name": "loops",
-                  "weight": 1.0
-                }
-              ],
-              "course_id": 1,
-              "difficulty_b": -0.5,
-              "discrimination_a": 1.0,
-              "id": 1,
-              "kind": "code",
-              "language": "python",
-              "review_status": "needs human review",
-              "statement": "Read n, then n numbers. Print their sum.",
-              "title": "Sum of a list"
-            },
-            "session_id": "mock-session"
-          }
-        ],
         "properties": {
           "done": {
             "title": "Done",
             "type": "boolean"
           },
-          "mastery": {
-            "additionalProperties": {
-              "type": "number"
-            },
-            "title": "Mastery",
-            "type": "object"
+          "item_number": {
+            "title": "Item Number",
+            "type": "integer"
           },
-          "next_problem": {
+          "next_item": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Problem"
+                "$ref": "#/components/schemas/DiagnosticItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiagnosticResult"
               },
               {
                 "type": "null"
@@ -207,39 +275,100 @@
         "required": [
           "session_id",
           "done",
-          "mastery",
-          "next_problem"
+          "item_number",
+          "next_item",
+          "result"
         ],
         "title": "DiagnosticAnswerResponse",
         "type": "object"
       },
-      "DiagnosticStartResponse": {
-        "examples": [
-          {
-            "item_number": 1,
-            "max_items": 10,
-            "problem": {
-              "concepts": [
-                {
-                  "concept_id": 1,
-                  "name": "loops",
-                  "weight": 1.0
-                }
-              ],
-              "course_id": 1,
-              "difficulty_b": -0.5,
-              "discrimination_a": 1.0,
-              "id": 1,
-              "kind": "code",
-              "language": "python",
-              "review_status": "needs human review",
-              "statement": "Read n, then n numbers. Print their sum.",
-              "title": "Sum of a list"
-            },
-            "session_id": "mock-session"
-          }
-        ],
+      "DiagnosticItem": {
         "properties": {
+          "kind": {
+            "enum": [
+              "code",
+              "mcq"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/OptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "problem_id",
+          "kind",
+          "title",
+          "statement",
+          "options"
+        ],
+        "title": "DiagnosticItem",
+        "type": "object"
+      },
+      "DiagnosticResult": {
+        "properties": {
+          "ability": {
+            "title": "Ability",
+            "type": "number"
+          },
+          "mastery": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptMastery"
+            },
+            "title": "Mastery",
+            "type": "array"
+          },
+          "misconceptions": {
+            "items": {
+              "$ref": "#/components/schemas/SuspectedMisconception"
+            },
+            "title": "Misconceptions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mastery",
+          "misconceptions",
+          "ability"
+        ],
+        "title": "DiagnosticResult",
+        "type": "object"
+      },
+      "DiagnosticStartRequest": {
+        "properties": {
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "course_id"
+        ],
+        "title": "DiagnosticStartRequest",
+        "type": "object"
+      },
+      "DiagnosticStartResponse": {
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/DiagnosticItem"
+          },
           "item_number": {
             "title": "Item Number",
             "type": "integer"
@@ -247,9 +376,6 @@
           "max_items": {
             "title": "Max Items",
             "type": "integer"
-          },
-          "problem": {
-            "$ref": "#/components/schemas/Problem"
           },
           "session_id": {
             "title": "Session Id",
@@ -260,7 +386,7 @@
           "session_id",
           "item_number",
           "max_items",
-          "problem"
+          "item"
         ],
         "title": "DiagnosticStartResponse",
         "type": "object"
@@ -331,6 +457,61 @@
         "title": "HealthResponse",
         "type": "object"
       },
+      "LedgerEntry": {
+        "properties": {
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "evidence_type": {
+            "title": "Evidence Type",
+            "type": "string"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "p_after": {
+            "title": "P After",
+            "type": "number"
+          },
+          "p_before": {
+            "title": "P Before",
+            "type": "number"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "submission_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Id"
+          }
+        },
+        "required": [
+          "created_at",
+          "concept",
+          "p_before",
+          "p_after",
+          "evidence_type",
+          "rule_id",
+          "explanation",
+          "submission_id"
+        ],
+        "title": "LedgerEntry",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -376,6 +557,24 @@
           "after"
         ],
         "title": "MasteryChange",
+        "type": "object"
+      },
+      "OptionOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "OptionOut",
         "type": "object"
       },
       "Problem": {
@@ -634,6 +833,72 @@
         "title": "ProblemList",
         "type": "object"
       },
+      "RecentSubmission": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "problem_title": {
+            "title": "Problem Title",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submission_id": {
+            "title": "Submission Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "submission_id",
+          "problem_id",
+          "problem_title",
+          "status",
+          "passed",
+          "failed",
+          "created_at"
+        ],
+        "title": "RecentSubmission",
+        "type": "object"
+      },
+      "RecommendedProblem": {
+        "properties": {
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "problem_id",
+          "title",
+          "reason"
+        ],
+        "title": "RecommendedProblem",
+        "type": "object"
+      },
       "RegisterRequest": {
         "properties": {
           "email": {
@@ -765,6 +1030,29 @@
           "mastery_changes"
         ],
         "title": "SubmissionResult",
+        "type": "object"
+      },
+      "SuspectedMisconception": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "probability": {
+            "title": "Probability",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "probability"
+        ],
+        "title": "SuspectedMisconception",
         "type": "object"
       },
       "TestCaseIn": {
@@ -1156,7 +1444,7 @@
     },
     "/api/v1/diagnostic/answer": {
       "post": {
-        "operationId": "diagnostic_answer_api_v1_diagnostic_answer_post",
+        "operationId": "answer_api_v1_diagnostic_answer_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1194,7 +1482,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Diagnostic Answer",
+        "summary": "Answer",
         "tags": [
           "diagnostic"
         ]
@@ -1202,7 +1490,17 @@
     },
     "/api/v1/diagnostic/start": {
       "post": {
-        "operationId": "diagnostic_start_api_v1_diagnostic_start_post",
+        "operationId": "start_api_v1_diagnostic_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosticStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -1213,6 +1511,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -1220,7 +1528,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Diagnostic Start",
+        "summary": "Start",
         "tags": [
           "diagnostic"
         ]
@@ -1382,6 +1690,105 @@
         "summary": "Get Problem",
         "tags": [
           "problems"
+        ]
+      }
+    },
+    "/api/v1/students/me/mastery": {
+      "get": {
+        "operationId": "dashboard_api_v1_students_me_mastery_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Dashboard",
+        "tags": [
+          "students"
+        ]
+      }
+    },
+    "/api/v1/students/me/mastery/{concept_id}/history": {
+      "get": {
+        "description": "Every change to one concept, with the test, error and rule behind it (F-34).",
+        "operationId": "history_api_v1_students_me_mastery__concept_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LedgerEntry"
+                  },
+                  "title": "Response History Api V1 Students Me Mastery  Concept Id  History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "History",
+        "tags": [
+          "students"
         ]
       }
     },

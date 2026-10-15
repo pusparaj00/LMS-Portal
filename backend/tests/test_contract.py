@@ -18,16 +18,12 @@ def test_openapi_file_is_frozen():
     )
 
 
-def test_remaining_mock_endpoints_return_openapi_examples(make_user):
+def test_chat_is_still_the_stub_adapter_behind_auth(make_user):
     _, student = make_user("student")
-    assert client.post("/api/v1/diagnostic/start", headers=student).json()["max_items"] == 10
-    answer = client.post(
-        "/api/v1/diagnostic/answer",
-        headers=student,
-        json={"session_id": "s", "problem_id": 1, "answer": "a"},
-    )
-    assert answer.json()["done"] is False
-    assert client.post("/api/v1/chat", headers=student, json={"message": "hi"}).json()["route"] == "general"
+    response = client.post("/api/v1/chat", headers=student, json={"message": "hi"})
+    assert response.json() == {
+        "reply": "This is a canned reply from the stub LLM adapter.", "route": "general", "sources": [],
+    }
 
 
 def test_validation_error_uses_the_single_error_shape():

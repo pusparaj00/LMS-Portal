@@ -35,6 +35,8 @@ PROTECTED = [
     ("get", "/submissions/1"),
     ("post", "/diagnostic/start"),
     ("post", "/diagnostic/answer"),
+    ("get", "/students/me/mastery?course_id=1"),
+    ("get", "/students/me/mastery/1/history"),
     ("post", "/chat"),
 ]
 

@@ -42,6 +42,7 @@ def make_user(owner):
     with owner.begin() as conn:
         params = {"ids": created}
         courses = "SELECT id FROM courses WHERE instructor_id = ANY(:ids)"
+        concepts = f"SELECT id FROM concepts WHERE course_id IN ({courses})"
         problems = f"SELECT id FROM problems WHERE course_id IN ({courses})"
         subs = f"SELECT id FROM submissions WHERE user_id = ANY(:ids) OR problem_id IN ({problems})"
         for sql in [
@@ -51,7 +52,14 @@ def make_user(owner):
             f"DELETE FROM test_cases WHERE problem_id IN ({problems})",
             f"DELETE FROM problem_concepts WHERE problem_id IN ({problems})",
             f"DELETE FROM item_options WHERE problem_id IN ({problems})",
+            "DELETE FROM misconception_state WHERE user_id = ANY(:ids)",
+            f"DELETE FROM misconceptions WHERE concept_id IN ({concepts})",
+            f"DELETE FROM mastery_params WHERE concept_id IN ({concepts})",
+            f"DELETE FROM evidence_concept_map WHERE concept_id IN ({concepts})",
+            "DELETE FROM diagnostic_sessions WHERE user_id = ANY(:ids)",
             f"DELETE FROM problems WHERE course_id IN ({courses})",
+            f"DELETE FROM mastery_events WHERE concept_id IN ({concepts})",
+            f"DELETE FROM mastery WHERE concept_id IN ({concepts})",
             "DELETE FROM mastery WHERE user_id = ANY(:ids)",
             "DELETE FROM mastery_events WHERE user_id = ANY(:ids)",
             "DELETE FROM chat_messages WHERE user_id = ANY(:ids)",
@@ -108,3 +116,78 @@ def course(client, make_user, owner):
         "instructor_id": instructor_id,
         "instructor": instructor,
     }
+
+
+PLACEMENT_RIGHT = "print(int(input()) + 1)\n"
+
+
+@pytest.fixture(scope="module")
+def placement_course(make_user, owner):
+    """A small synthetic course: 3 concepts, 9 tracing items tagged with 2 misconceptions, 3 coding tasks."""
+    instructor_id, instructor = make_user("instructor")
+    tag = uuid.uuid4().hex[:6]
+    with owner.begin() as conn:
+        course_id = conn.execute(
+            text("INSERT INTO courses (title, instructor_id) VALUES ('Placement test course', :i) RETURNING id"),
+            {"i": instructor_id},
+        ).scalar_one()
+        concepts = [
+            conn.execute(
+                text("INSERT INTO concepts (course_id, name) VALUES (:c, :n) RETURNING id"),
+                {"c": course_id, "n": name},
+            ).scalar_one()
+            for name in ("alpha", "beta", "gamma")
+        ]
+        # beta builds on alpha and gamma on beta, so a sharp drop is passed back along the chain
+        for child, parent in ((concepts[1], concepts[0]), (concepts[2], concepts[1])):
+            conn.execute(
+                text("UPDATE concepts SET parent_ids = ARRAY[CAST(:p AS integer)] WHERE id = :c"),
+                {"p": parent, "c": child},
+            )
+        misconceptions = [
+            conn.execute(
+                text("INSERT INTO misconceptions (concept_id, name, description) VALUES (:c, :n, :d) RETURNING id"),
+                {"c": concepts[i], "n": f"m{i}_{tag}", "d": f"misconception {i}"},
+            ).scalar_one()
+            for i in range(2)
+        ]
+
+        def problem(title, kind, b):
+            return conn.execute(
+                text(
+                    "INSERT INTO problems (course_id, title, statement, kind, difficulty_b, discrimination_a,"
+                    " reference_solution) VALUES (:c, :t, 'statement', :k, :b, 1.0, :r) RETURNING id"
+                ),
+                {"c": course_id, "t": title, "k": kind, "b": b, "r": PLACEMENT_RIGHT if kind == "code" else None},
+            ).scalar_one()
+
+        for n in range(9):
+            pid = problem(f"item {n}", "mcq", -0.6 + 0.15 * n)
+            conn.execute(
+                text("INSERT INTO problem_concepts VALUES (:p, :c, 1.0)"), {"p": pid, "c": concepts[n % 3]}
+            )
+            conn.execute(
+                text("INSERT INTO item_options (problem_id, option_text, is_correct) VALUES (:p, 'right', true)"),
+                {"p": pid},
+            )
+            for m in misconceptions:
+                conn.execute(
+                    text(
+                        "INSERT INTO item_options (problem_id, option_text, is_correct, misconception_id)"
+                        " VALUES (:p, :t, false, :m)"
+                    ),
+                    {"p": pid, "t": f"wrong {m}", "m": m},
+                )
+        for n in range(3):
+            pid = problem(f"task {n}", "code", 0.0)
+            conn.execute(
+                text("INSERT INTO problem_concepts VALUES (:p, :c, 1.0)"), {"p": pid, "c": concepts[n]}
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO test_cases (problem_id, input, expected, hidden, category)"
+                    " VALUES (:p, :i1, :e1, false, 'basic'), (:p, :i2, :e2, true, 'basic')"
+                ),
+                {"p": pid, "i1": "1\n", "e1": "2\n", "i2": "9\n", "e2": "10\n"},
+            )
+    return {"course_id": course_id, "concepts": concepts, "misconceptions": misconceptions, "tag": tag}
