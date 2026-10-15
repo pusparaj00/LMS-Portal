@@ -1,10 +1,11 @@
+import re
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
-from app.schemas import Course, CourseConcept, CourseCreate
+from app.schemas import ConceptCreate, Course, CourseConcept, CourseCreate
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -59,3 +60,31 @@ def list_concepts(course_id: int, user: Annotated[CurrentUser, Depends(current_u
         text("SELECT id AS concept_id, name FROM concepts WHERE course_id = :c ORDER BY id"), {"c": course_id}
     ).mappings()
     return [dict(r) for r in rows]
+
+
+CONCEPT_NAME = re.compile(r"[a-z][a-z0-9_]+")
+
+
+@router.post("/{course_id}/concepts", response_model=CourseConcept, status_code=201)
+def create_concept(
+    course_id: int, body: ConceptCreate, user: Annotated[CurrentUser, Depends(require_role("instructor"))], conn: Conn
+):
+    """Add a concept to the course's list (F-02). Mastery starts at the population prior and uses the default
+    slip and guess rates until an instructor tunes them, so nothing else has to be set up."""
+    if not can_access_course(conn, user, course_id):
+        raise HTTPException(403, "not your course")
+    name = re.sub(r"[\s-]+", "_", body.name.strip().lower())
+    if not CONCEPT_NAME.fullmatch(name):
+        raise HTTPException(
+            422, "a concept name starts with a letter and uses only letters, digits, spaces and underscores"
+        )
+    row = conn.execute(
+        text(
+            "INSERT INTO concepts (course_id, name) VALUES (:c, :n) ON CONFLICT (course_id, name) DO NOTHING"
+            " RETURNING id AS concept_id, name"
+        ),
+        {"c": course_id, "n": name},
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(409, f"the concept '{name}' already exists in this course")
+    return dict(row)

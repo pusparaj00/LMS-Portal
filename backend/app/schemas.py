@@ -84,6 +84,10 @@ class CourseConcept(BaseModel):
     name: str
 
 
+class ConceptCreate(BaseModel):
+    name: Text = Field(min_length=2, max_length=60, examples=["string formatting"])
+
+
 class CourseCreate(BaseModel):
     title: Text = Field(min_length=1, max_length=200)
 

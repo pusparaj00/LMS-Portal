@@ -23,6 +23,7 @@ POLICY = {
     ("GET", "/courses"): ANY,
     ("POST", "/courses"): INSTRUCTOR,
     ("GET", "/courses/{course_id}/concepts"): ANY,
+    ("POST", "/courses/{course_id}/concepts"): INSTRUCTOR,
     ("POST", "/courses/{course_id}/enroll"): STUDENT,
     ("GET", "/courses/{course_id}/documents"): INSTRUCTOR,
     ("POST", "/courses/{course_id}/documents"): INSTRUCTOR,

@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, BUSY_RETRIES, Problem, Session, api } from "../api";
+import { Concept, ConceptAdder } from "./ConceptAdder";
 
-type Concept = { concept_id: number; name: string };
 type TestRow = { input: string; expected: string; hidden: boolean; category: string };
 
 const CATEGORIES = ["basic", "zero", "negative_numbers", "single_item", "empty_input", "large_input", "boundary"];
@@ -107,10 +107,7 @@ export function NewProblemPage({ session, courseId }: { session: Session; course
         <fieldset>
           <legend>Concepts this problem practises</legend>
           {concepts.length === 0 && (
-            <p className="empty">
-              This course has no concepts yet, and a problem needs at least one. Concepts come with the question bank
-              import (<code>python -m app.bank_import</code>); creating them here is not available yet.
-            </p>
+            <p className="empty">This course has no concepts yet. A problem needs at least one: add it below.</p>
           )}
           {concepts.map((c) => (
             <div key={c.concept_id} className="concept-pick">
@@ -137,6 +134,14 @@ export function NewProblemPage({ session, courseId }: { session: Session; course
               )}
             </div>
           ))}
+          <ConceptAdder
+            session={session}
+            courseId={courseId}
+            onAdded={(concept) => {
+              setConcepts((list) => [...(list ?? []), concept]);
+              setWeights((w) => ({ ...w, [concept.concept_id]: 1 }));
+            }}
+          />
         </fieldset>
 
         <label>

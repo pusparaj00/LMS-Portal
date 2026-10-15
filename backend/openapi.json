@@ -190,6 +190,24 @@
         "title": "ClassStudent",
         "type": "object"
       },
+      "ConceptCreate": {
+        "properties": {
+          "name": {
+            "examples": [
+              "string formatting"
+            ],
+            "maxLength": 60,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ConceptCreate",
+        "type": "object"
+      },
       "ConceptMastery": {
         "properties": {
           "concept_id": {
@@ -2247,6 +2265,62 @@
           }
         ],
         "summary": "List Concepts",
+        "tags": [
+          "courses"
+        ]
+      },
+      "post": {
+        "description": "Add a concept to the course's list (F-02). Mastery starts at the population prior and uses the default\nslip and guess rates until an instructor tunes them, so nothing else has to be set up.",
+        "operationId": "create_concept_api_v1_courses__course_id__concepts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConceptCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseConcept"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Concept",
         "tags": [
           "courses"
         ]
