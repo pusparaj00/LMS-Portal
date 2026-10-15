@@ -7,6 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (working tree and history)
+        run: python3 backend/evaluation/secret_scan.py
       - name: Create a throwaway .env with random secrets
         run: |
           {

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuse to push if the secret scan finds anything (TR-S-03). Enable once with: git config core.hooksPath .githooks
+exec python backend/evaluation/secret_scan.py
