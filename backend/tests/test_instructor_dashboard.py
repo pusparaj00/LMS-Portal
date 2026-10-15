@@ -73,14 +73,17 @@ def test_seeding_again_changes_nothing(seeded, owner, placement_course):
         with owner.connect() as conn:
             return conn.execute(
                 text(
-                    "SELECT count(*), COALESCE(sum(p_after), 0) FROM mastery_events e JOIN users u ON u.id = e.user_id"
+                    "SELECT array_agg(e.id ORDER BY e.id), COALESCE(sum(p_after), 0) FROM mastery_events e"
+                    " JOIN users u ON u.id = e.user_id"
                     " WHERE u.email LIKE 'synthetic-%@synthetic.local'"
                 )
             ).one()
 
     before = state()
     assert synthetic.seed(placement_course["course_id"], students=6)["answers_applied"] == 0
-    assert tuple(state()) == tuple(before)
+    after = state()
+    # the same events exactly; the sum only approximately, since Postgres may add the rows in another order
+    assert after[0] == before[0] and after[1] == pytest.approx(before[1])
 
 
 def test_the_heatmap_has_one_row_per_student_and_one_cell_per_concept(client, seeded):
