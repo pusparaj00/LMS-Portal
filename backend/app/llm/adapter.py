@@ -3,6 +3,7 @@ from configuration; swapping provider needs no change elsewhere."""
 import json
 import logging
 import time
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -14,6 +15,9 @@ log = logging.getLogger("app.llm")
 TRANSIENT_STATUS = {429, 500, 502, 503, 504}
 BACKOFF_SECONDS = 1.5
 MAX_PROVIDER_WAIT_SECONDS = 90  # a per-minute limit is worth waiting for; a per-day limit is not
+MIN_USEFUL_SECONDS = 1.0  # a call with less time left than this cannot finish
+# The moment (time.monotonic) by which the whole chain must have answered; set by FallbackChain.
+_deadline: ContextVar[float | None] = ContextVar("llm_deadline", default=None)
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 
@@ -40,6 +44,25 @@ def _is_billing_error(response: httpx.Response) -> bool:
 
 class LLMError(Exception):
     """The model could not be reached or returned nothing usable."""
+
+
+def _time_left(timeout_s: float) -> float:
+    """The timeout for the next request: the configured one, cut short by the chain's remaining budget."""
+    deadline = _deadline.get()
+    if deadline is None:
+        return timeout_s
+    left = deadline - time.monotonic()
+    if left < MIN_USEFUL_SECONDS:
+        raise LLMError("time budget used up")
+    return min(timeout_s, left)
+
+
+def _pause(seconds: float) -> None:
+    """Sleep, but never past the budget; a retry that cannot finish is not attempted."""
+    deadline = _deadline.get()
+    if deadline is not None and deadline - time.monotonic() < seconds + MIN_USEFUL_SECONDS:
+        raise LLMError("time budget used up")
+    time.sleep(seconds)
 
 
 @dataclass(frozen=True)
@@ -97,7 +120,7 @@ class GeminiAdapter:
                     GEMINI_URL.format(model=self.config.model),
                     json=body,
                     headers={"x-goog-api-key": self._api_key},
-                    timeout=self.config.timeout_s,
+                    timeout=_time_left(self.config.timeout_s),
                 )
                 response.raise_for_status()
                 parts = response.json()["candidates"][0]["content"]["parts"]
@@ -118,13 +141,13 @@ class GeminiAdapter:
                 if wait is not None and wait > MAX_PROVIDER_WAIT_SECONDS:
                     break  # quota used up for the day: waiting is pointless
                 if wait is not None and attempt < self.config.max_retries:
-                    time.sleep(wait)
+                    _pause(wait)
                     continue
             except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
                 # Never include the request: its headers carry the key.
                 last_error = LLMError(f"{type(exc).__name__}: {str(exc)[:120]}".replace(self._api_key, "<key>"))
             if attempt < self.config.max_retries:
-                time.sleep(BACKOFF_SECONDS * (attempt + 1))
+                _pause(BACKOFF_SECONDS * (attempt + 1))
         raise last_error or LLMError("LLM call failed")
 
 
@@ -163,7 +186,7 @@ class OpenAICompatibleAdapter:
             try:
                 response = httpx.post(
                     self._url, json=body, headers={"Authorization": f"Bearer {self._api_key}"},
-                    timeout=self.config.timeout_s,
+                    timeout=_time_left(self.config.timeout_s),
                 )
                 response.raise_for_status()
                 text = response.json()["choices"][0]["message"]["content"] or ""
@@ -182,15 +205,16 @@ class OpenAICompatibleAdapter:
             except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
                 last_error = LLMError(f"{type(exc).__name__}: {str(exc)[:120]}".replace(self._api_key, "<key>"))
             if attempt < self.config.max_retries:
-                time.sleep(BACKOFF_SECONDS * (attempt + 1))
+                _pause(BACKOFF_SECONDS * (attempt + 1))
         raise last_error or LLMError("LLM call failed")
 
 
 class FallbackChain:
     """Tries each provider in order; the next one is used when one fails or has no quota left."""
 
-    def __init__(self, adapters: list[LLMAdapter]) -> None:
+    def __init__(self, adapters: list[LLMAdapter], budget_s: float = 20.0) -> None:
         self.adapters = adapters
+        self.budget_s = budget_s
         self.last: LLMAdapter = adapters[0]
 
     @property
@@ -199,16 +223,23 @@ class FallbackChain:
         return self.last.config
 
     def complete(self, system: str, user: str, json_schema: dict | None = None) -> str:
+        """One answer within `budget_s` seconds in total, however many providers have to be tried."""
+        token = _deadline.set(time.monotonic() + self.budget_s)
         errors = []
-        for adapter in self.adapters:
-            try:
-                reply = adapter.complete(system, user, json_schema)
-            except LLMError as exc:
-                errors.append(f"{adapter.config.provider}: {exc}")
-                log.warning("provider failed, trying the next", extra={"fields": {"provider": adapter.config.provider}})
-                continue
-            self.last = adapter
-            return reply
+        try:
+            for adapter in self.adapters:
+                try:
+                    reply = adapter.complete(system, user, json_schema)
+                except LLMError as exc:
+                    errors.append(f"{adapter.config.provider}: {exc}")
+                    log.warning(
+                        "provider failed, trying the next", extra={"fields": {"provider": adapter.config.provider}}
+                    )
+                    continue
+                self.last = adapter
+                return reply
+        finally:
+            _deadline.reset(token)
         raise LLMError("every provider failed: " + "; ".join(errors))
 
 
@@ -235,7 +266,7 @@ def build_adapter(settings: Settings) -> LLMAdapter:
             adapters.append(_compatible(settings, name, config))
         except LLMError:
             log.warning("fallback provider skipped: no key", extra={"fields": {"provider": name}})
-    return adapters[0] if len(adapters) == 1 else FallbackChain(adapters)
+    return FallbackChain(adapters, settings.llm_budget_s)
 
 
 def _compatible(settings: Settings, provider: str, make_config) -> OpenAICompatibleAdapter:

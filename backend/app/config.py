@@ -15,7 +15,8 @@ class Settings(BaseSettings):
 
     llm_provider: str = "stub"
     llm_model: str = "stub"
-    llm_timeout_s: float = 30
+    llm_timeout_s: float = 12  # one request to one provider
+    llm_budget_s: float = 20  # the whole answer, across retries and fallback providers
     llm_max_retries: int = 1
     llm_temperature: float = 0.1
     llm_thinking_budget: int = 0
