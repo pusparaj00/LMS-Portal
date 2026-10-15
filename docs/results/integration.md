@@ -116,4 +116,14 @@ database.
 
 `python -m app.seed` on the dev database, twice: the first run created 47 problems, embedded 8 notes and applied 360
 synthetic answers; the second run reported 0 created, 0 updated, 47 unchanged problems, 0 notes embedded and 0 answers
-applied. The clean-clone run is in the step report.
+applied.
+
+## Clean clone (G5)
+
+`git clone --branch step-6-integration` at commit 17ae5dc into an empty folder, `.env` copied in, then
+`docker compose -p lmsclean up -d --build --wait` (2 min 49 s from 15:59:08 to 16:01:57 UTC, images partly cached).
+`python -m app.seed` twice: first run 47 problems created, 8 notes embedded, 360 synthetic answers, both demo accounts
+created with one-time random passwords; second run 0 created, 0 updated, 47 unchanged, 0 notes, 0 answers.
+`evaluation.load runs 2`: 0 of 42 steps failed. With the model switched off (`LLM_PROVIDER=stub`, no fallback):
+`runs 2` again 0 of 42 failed, the explanation came from the prepared demo cache and chat used the keyword rules.
+`secret_scan.py` in the clone: passed, 73 commits, 197 tracked files. The scratch project was then removed.
