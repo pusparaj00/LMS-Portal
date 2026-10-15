@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { Session, loadSession, saveSession } from "./api";
 import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
+import { DashboardPage, WhyPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { PlacementPage } from "./pages/PlacementPage";
 import { ProblemPage } from "./pages/ProblemPage";
 
 function useHash(): string {
@@ -30,6 +32,9 @@ export function App() {
 
   const course = hash.match(/^#\/course\/(\d+)$/);
   const problem = hash.match(/^#\/problem\/(\d+)$/);
+  const placement = hash.match(/^#\/placement\/(\d+)$/);
+  const mastery = hash.match(/^#\/mastery\/(\d+)$/);
+  const why = hash.match(/^#\/mastery\/(\d+)\/concept\/(\d+)$/);
 
   return (
     <>
@@ -43,7 +48,13 @@ export function App() {
         </button>
       </header>
       <main>
-        {problem ? (
+        {why ? (
+          <WhyPage session={session} courseId={Number(why[1])} conceptId={Number(why[2])} />
+        ) : mastery ? (
+          <DashboardPage session={session} courseId={Number(mastery[1])} />
+        ) : placement ? (
+          <PlacementPage session={session} courseId={Number(placement[1])} />
+        ) : problem ? (
           <ProblemPage session={session} problemId={Number(problem[1])} />
         ) : course ? (
           <CoursePage session={session} courseId={Number(course[1])} />

@@ -20,6 +20,16 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
         <a href="#/courses">All courses</a>
       </p>
       <h1>Problems</h1>
+      {session.role === "student" && (
+        <p>
+          <a className="button" href={`#/placement/${courseId}`}>
+            Placement test
+          </a>{" "}
+          <a className="button" href={`#/mastery/${courseId}`}>
+            My mastery
+          </a>
+        </p>
+      )}
       {error && <p role="alert" className="error">{error}</p>}
       {problems && coding.length === 0 && (
         <p className="empty">This course has no coding problems yet.</p>
