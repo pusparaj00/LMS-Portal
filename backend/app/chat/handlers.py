@@ -122,9 +122,17 @@ def progress(turn: Turn) -> Reply:
 
 
 def _course_id(turn: Turn) -> int | None:
+    """A course the student is enrolled in: the open problem's course, else their first one.
+
+    The problem id comes from the client, so it is only used when the student is enrolled in that course.
+    """
     if turn.problem_id is not None:
         found = turn.conn.execute(
-            text("SELECT course_id FROM problems WHERE id = :p"), {"p": turn.problem_id}
+            text(
+                "SELECT p.course_id FROM problems p JOIN enrollments e"
+                " ON e.course_id = p.course_id AND e.user_id = :u WHERE p.id = :p"
+            ),
+            {"u": turn.user_id, "p": turn.problem_id},
         ).scalar()
         if found is not None:
             return found
