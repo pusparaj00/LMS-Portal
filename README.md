@@ -39,6 +39,16 @@ The scripted demo submissions in `data/demo/scenarios.json` have prepared explan
 that work with the model switched off. They are checked again by the verifier against each submission and are labelled
 as cached in the reply, the interface and `explanation_checks` (model `cached-demo`).
 
+## Instructor screens
+
+Instructors can do the setup in the browser (the scripts above remain for bulk loading): create a course on the courses page,
+then on the course page **Add a problem** (the reference solution must pass every test in the sandbox before it is saved) and
+**Course notes** (paste text or upload `.md`, `.txt` or `.pdf`; a PDF must contain text, up to 4 MB, 100 pages and 50,000
+characters, and is read in a separate limited process). A new course has no concepts and they cannot yet be created in the
+browser; they come with the question bank import. Instructors can export mastery vectors and the mastery ledger for a course as
+CSV or JSON (`GET /api/v1/courses/<id>/export/mastery` and `/export/mastery-events`, `?format=json`), with student numbers
+instead of emails.
+
 ## Stored explanations
 
 A verified explanation is stored under the failure's signature (problem, failed test categories, error type, error
@@ -84,8 +94,16 @@ Instructors get a class mastery heatmap and misconception counts at `#/class/<co
 `LLM_FALLBACK` lets the chat and feedback flows continue on another provider when the primary one fails or is out of
 quota. Entries are `provider` or `provider:model`: `gemini` and `gemini_pro` (two Google AI Studio keys, so one key can
 serve several models), `groq`, `openrouter`, `mistral` and `openai`; each needs its own key in `.env` and is skipped
-without one. A provider that rejects its key (401, 403, 404) or reports exhausted quota is moved to the end of the chain
+without one. `local` is also accepted: any OpenAI-compatible server (Ollama, vLLM, LM Studio) at `LOCAL_LLM_BASE_URL`, with
+`LLM_MODEL_LOCAL`, no key needed; from the containers the host machine is `host.docker.internal`, and local models need a
+larger `LLM_TIMEOUT_S` and `LLM_BUDGET_S`. A provider that rejects its key (401, 403, 404) or reports exhausted quota is moved to the end of the chain
 for a while, so a dead key costs no time on every request. The labelled synthetic class is part of the demo seed above.
+
+## Sandbox queue and model usage
+
+The sandbox runs one job at a time. When 20 jobs are already waiting, a new run waits up to 3 s, then gets "The sandbox is
+busy" (HTTP 503 with `Retry-After`) and the interface retries on its own. `python -m evaluation.llm_usage` (in the api
+container) reports model calls per 100 failed submissions and the share served from the caches.
 
 ## Sandbox
 

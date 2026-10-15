@@ -1,6 +1,7 @@
 # Gap report: project plan against current status
 
-Audit date 2026-10-15, branch `step-7-cache-stretch` (commit at the time of writing: the Step 7 push, CI green, 409 tests).
+Audit date 2026-10-15, first written on branch `step-7-cache-stretch` (409 tests) and **updated after Step 8** on branch
+`step-8-gap-closure` (450 tests); the statuses below are the updated ones, and section 9 lists what Step 8 closed.
 Sources compared: `docs/plan.md`, `docs/PRD.md` (34 features), `docs/TRD.md` (81 requirements), `docs/DRD.md`, the code and
 tests in the repository, and the measured results in `docs/results/`. Every status below was checked in the code, the
 tests or a measured result; where a status could not be checked it says so.
@@ -10,8 +11,8 @@ tests or a measured result; where a status could not be checked it says so.
 The system is a working, tested prototype of the whole demo flow in the plan (phases 0 to 5, gates G0 to G4 passed, the
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
-1. **Features not built or only partly built:** 4 of 34 PRD features not built, 4 partly built.
-2. **Requirements not met:** of 69 implementation requirements, 41 done, 9 partly done, 10 not built or not run, 9 not
+1. **Features not built or only partly built:** 4 of 34 PRD features not built, 3 partly built.
+2. **Requirements not met:** of 69 implementation requirements, 46 done, 6 partly done, 8 not built or not run, 9 not
    applicable by design (the sandbox is a custom runner, not Judge0). Compliance (consent, retention, breach procedure) is
    the largest untouched area.
 3. **Validation targets missed or unproven:** of 12 validation tests, 7 pass, 1 fails (adaptive selection, in simulation
@@ -34,11 +35,12 @@ Status of all 34 features. P0, P1 and P2 are the PRD's priorities.
 
 | Status | Features |
 | --- | --- |
-| Done (26) | F-01, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61 |
-| Partly built (4) | **F-02** (P0) instructors can create courses and problems only through the API and import scripts, there is no screen. **F-03** (P0) Markdown notes only, loaded by script; no PDF, no upload screen. **F-52** (P0) four of six routes work; `recommend` and `lms` answer "not available" by design. **F-62** (P1) the hint limit is per problem and approval of stored explanations works, but the leak threshold is global, not per problem. |
+| Done (27) | F-01, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61 |
+| Partly built (3) | **F-02** (P0) instructors can create courses and problems in the browser, but a new course has no concepts and they cannot be created there; they come with the question bank import. **F-52** (P0) four of six routes work; `recommend` and `lms` answer "not available" by design. **F-62** (P1) the hint limit is per problem and approval of stored explanations works, but the leak threshold is global, not per problem. |
 | Not built (4) | **F-04** assignments with due dates and a gradebook (P1). **F-05** announcements (P2). **F-23** difficulty estimates for new items from text and tags (P2). **F-70** LTI 1.3 launch from Moodle or Canvas (P2). |
 
-The two P0 gaps, F-02 and F-03, matter most: a teacher cannot use the system without a developer loading content.
+F-03 is closed (notes as text, Markdown or PDF, with an upload screen). The remaining F-02 gap matters most: a teacher can
+set up a course with a problem and notes, but only a course that already has concepts can take new problems.
 
 ## 3. Technical requirements (TRD), excluding validation
 
@@ -47,43 +49,38 @@ The two P0 gaps, F-02 and F-03, matter most: a teacher cannot use the system wit
 
 | Group | Done | Partly done | Not built or not run | Not applicable |
 | --- | --- | --- | --- | --- |
-| A architecture (9) | 6 | 2 | 1 | 0 |
+| A architecture (9) | 7 | 1 | 1 | 0 |
 | M mastery (12) | 7 | 3 | 0 | 2 |
 | X sandbox (9) | 2 | 0 | 0 | 7 |
 | L LLM (12) | 11 | 0 | 1 | 0 |
-| D data (8) | 6 | 0 | 2 | 0 |
+| D data (8) | 7 | 0 | 1 | 0 |
 | S security and privacy (10) | 4 | 1 | 5 | 0 |
-| P performance (9) | 5 | 3 | 1 | 0 |
-| **Total (69)** | **41** | **9** | **10** | **9** |
+| P performance (9) | 8 | 1 | 0 | 0 |
+| **Total (69)** | **46** | **6** | **8** | **9** |
 
-### 3.1 Partly done
+### 3.1 Partly done (6)
 
 | ID (priority) | What is missing | Detail |
 | --- | --- | --- |
-| TR-A-04 (P0) | Local model without code changes | The adapter supports Gemini and OpenAI-compatible hosts, but the host addresses are fixed in the code, so pointing it at a local server (for example Ollama) needs a code change. |
 | TR-A-08 (P1) | Request ID in the sandbox | Structured logs carry the request ID through the API, router and model calls; it is not passed into the sandbox container. |
 | TR-M-05 (P1) | Refitting item parameters | Difficulty and discrimination are stored with a source flag (`prior`), but there is no refit from pilot answers. It needs real answers first. |
 | TR-M-08 (P2) | Chat questions as a mastery signal | The route is stored with each chat message; the concept tag is not. |
 | TR-M-10 (P0) | 5-item test beats the mean | True on the concepts the five items tested (10 of 10 seeds); true on all 12 concepts in only 3 of 10 seeds. |
 | TR-S-06 (P1) | No direct identifiers in prompts | Explanation prompts hold no email or name (checked); chat prompts also carry none by construction, but no test enforces it. |
 | TR-P-03 (P0) | Explanation within 15 s | Median 4.04 s, but worst cases 14.75 s and 15.31 s in two measured runs; earlier runs reached 23 s. |
-| TR-P-05 (P1) | Busy sandbox: show a message and retry | A down sandbox returns "try again shortly" (HTTP 503); there is no queue and no automatic retry. |
-| TR-P-08 (P1) | Report LLM calls per 100 submissions and the cache share | At most one call plus one retry is enforced and logged in `explanation_checks`, but no report computes the numbers. |
 
-### 3.2 Not built or not run
+### 3.2 Not built or not run (8)
 
 | ID (priority) | Requirement | Note |
 | --- | --- | --- |
 | TR-A-09 (P2) | LTI 1.3 launch | Same as F-70. Planned for phase 7. |
 | TR-L-05 (P1) | Run the student's code on an input named in a claim and confirm the output differs | Not built. The verifier does not execute anything. |
 | TR-D-05 (P2) | Offline experiments on CodeWorkout or FalconCode | Not started; licences not checked. Planned for phase 6. |
-| TR-D-07 (P1) | Export mastery vectors and events as CSV or JSON | Not built. |
 | TR-S-05 (P1) | Consent notice with a timestamp; withdrawal | Not built. |
 | TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Not built. |
 | TR-S-08 (P1) | Breach detection logs and a written breach procedure | Logs exist; the written procedure does not. |
-| TR-S-09 (P1) | Full demo on a local model | Not run (same as TR-V-12). |
+| TR-S-09 (P1) | Full demo on a local model | Not run (same as TR-V-12). The `local` provider now exists (TR-A-04); what is missing is a model installed on this machine. |
 | TR-S-10 (P2) | Adult confirmation or parental consent | Not built. |
-| TR-P-09 (P1) | Works in Chrome and Edge at 1366 px | Not tested. Screenshots were taken at 1100 px and 390 px only. |
 
 ### 3.3 Not applicable by design
 
@@ -108,7 +105,7 @@ statements and need no code.
 | TR-V-09 | Right chunk in top 3 for 80% | 17 of 20 (85%) | Pass |
 | TR-V-10 | 10 concurrent, 10 consecutive, restart | 0 of 210 steps failed in each; sessions survived restarts | Pass |
 | TR-V-11 | Stored explanation under 1 s, no model call | 0.02 to 0.04 s for 5 of 5 later students | Pass (6 students, one problem) |
-| TR-V-12 | Full demo on a local model | Not run | **Not run** |
+| TR-V-12 | Full demo on a local model | Not run; the local provider is built and tested against a stand-in server | **Not run** (needs a model installed) |
 
 ## 5. Plan tasks and gate items that are still open
 
@@ -164,16 +161,33 @@ statements and need no code.
 5. Fix the Gemini Pro key in Google's console, or confirm the original key alone is enough.
 6. Open the pull request into `main`.
 
-**Small engineering items, each under a day (my suggestion for the next step):**
-7. TR-A-04: make the model host address configurable, so a local server works without code changes (also unlocks TR-V-12).
-8. TR-P-09: test the interface at 1366 px in Chrome and Edge.
-9. TR-P-08: a small report of model calls per 100 submissions and the cache share, from existing logs.
-10. TR-P-05: a short queue and automatic retry when the sandbox is busy.
-11. TR-D-07: CSV and JSON export of mastery and events.
-12. F-02 and F-03: instructor screens to create problems and upload notes (and PDF text extraction), the two P0 gaps.
+**Small engineering items (all done in Step 8, see section 9):**
+7. DONE: TR-A-04: make the model host address configurable, so a local server works without code changes (also unlocks TR-V-12).
+8. DONE: TR-P-09: test the interface at 1366 px in Chrome and Edge.
+9. DONE: TR-P-08: a small report of model calls per 100 submissions and the cache share, from existing logs.
+10. DONE: TR-P-05: a short queue and automatic retry when the sandbox is busy.
+11. DONE: TR-D-07: CSV and JSON export of mastery and events.
+12. DONE (except creating concepts in the browser): F-02 and F-03, instructor screens to create problems and upload notes, with PDF reading.
 
 **After the review (the plan's phases 6 to 8):** consent, retention and breach procedure (TR-S-05 to S-08), a pilot with real
 students and refitting item parameters (TR-M-05, TR-D-05), then F-04, F-05, LTI and the extensions.
 
-Gradebook and announcements (F-04, F-05) are in the plan only as stretch items after the other gates; I recommend doing items
-7 to 12 first, because they close P0 and P1 requirements that F-04 and F-05 do not.
+Gradebook and announcements (F-04, F-05) are the remaining stretch items. Suggested next, before them: creating concepts in the browser (finishes F-02),
+a small consent notice (TR-S-05), and the explanation check that runs the claimed input (TR-L-05); all close P0 or P1 requirements, which F-04 and F-05 do not.
+
+## 9. What Step 8 closed (2026-10-15)
+
+Measured results and commands are in `docs/results/step-8.md`.
+
+| Item | Before | After |
+| --- | --- | --- |
+| TR-A-04 local model | Host addresses fixed in code | `local` provider for any OpenAI-compatible server, configured by `LOCAL_LLM_BASE_URL`; tested against a real localhost server |
+| TR-P-05 busy sandbox | Plain 503, no retry | Queue limit of 20 jobs, 3 s wait, 503 with `Retry-After`, automatic retry in the interface; verified in a browser against the real stack |
+| TR-P-08 usage report | None | `python -m evaluation.llm_usage`: 85.7 model calls per 100 failed submissions and 21% served without a call, on dev data |
+| TR-D-07 export | None | CSV and JSON export of mastery and the ledger, no emails; ledger replays to the current vector |
+| F-03 notes | Text only, by script | Text, Markdown and PDF through an upload screen; PDFs read in a limited child process |
+| F-02 instructor screens | API only | Create a course, add a problem, manage notes in the browser; gap left: creating concepts |
+| TR-P-09 1366 px | Not tested | All 12 screens clean in Chromium at 1366 x 768; Edge 155 rendered the login page; other screens in Edge and Chrome themselves not driven |
+
+Two defects found and fixed on the way: the JSON export first included email addresses (caught by its own test), and the
+validator's message for a wrong reference solution was cryptic.
