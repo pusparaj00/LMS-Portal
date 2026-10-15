@@ -32,7 +32,7 @@ def chat(
     body: ChatRequest,
     user: Student,
     conn: Conn,
-    chat_conn: Annotated[Connection, Depends(chat_connection)],
+    chat_conn: Annotated[Connection, Depends(chat_connection, scope="function")],
     adapter: Annotated[LLMAdapter, Depends(llm_adapter)],
 ):
     ratelimit.check("chat", user.id)

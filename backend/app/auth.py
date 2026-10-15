@@ -43,7 +43,9 @@ def get_conn() -> Iterator[Connection]:
             raise
 
 
-Conn = Annotated[Connection, Depends(get_conn)]
+# "function" scope commits before the response is sent. The default ends the dependency after sending, so a client
+# could act on a 201 before its row was committed, and a failed commit would follow a success reply.
+Conn = Annotated[Connection, Depends(get_conn, scope="function")]
 
 
 class CurrentUser:
