@@ -213,7 +213,7 @@ input {
 
 @media (max-width: 60rem) {
   .workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -223,7 +223,7 @@ input {
 
 .example {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -320,7 +320,7 @@ pre {
 @media (max-width: 40rem) {
   .tests li,
   .example {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -791,4 +791,41 @@ label.inline input[type="checkbox"] {
 .consent-actions p {
   flex-basis: 100%;
   margin: 0;
+}
+
+.example-run {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.9rem;
+  border-left: 4px solid var(--signal);
+  background: var(--panel);
+}
+
+.example-run dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2rem 1rem;
+  margin: 0.4rem 0;
+}
+
+.example-run dt {
+  color: var(--slate);
+}
+
+.example-run dd {
+  margin: 0;
+}
+
+.example-run pre {
+  display: inline-block;
+  min-width: 6rem;
+  max-width: 100%;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+input,
+textarea,
+select {
+  min-width: 0;
+  max-width: 100%;
 }

@@ -15,7 +15,14 @@ type Explanation = {
   status: "verified" | "fallback";
   attempts: number;
   cached: boolean;
-  explanation: { claim: string; line: number; concept: string | null; sources: Source[] } | null;
+  explanation: {
+    claim: string;
+    line: number;
+    concept: string | null;
+    sources: Source[];
+    example_input: string | null;
+    example_output: string | null;
+  } | null;
   fallback_text: string | null;
   fallback_sources: Source[];
   probe: Probe | null;
@@ -111,6 +118,22 @@ export function FeedbackPanel({ session, submissionId }: { session: Session; sub
           <p>
             <Inline text={explanation.explanation.claim} />
           </p>
+          {explanation.explanation.example_input !== null && (
+            <div className="example-run">
+              <strong>Try it yourself</strong>
+              <dl>
+                <dt>Input</dt>
+                <dd>
+                  <pre>{explanation.explanation.example_input}</pre>
+                </dd>
+                <dt>Your program prints</dt>
+                <dd>
+                  <pre>{explanation.explanation.example_output}</pre>
+                </dd>
+              </dl>
+              <small>The system ran your program on this input to check the explanation before showing it.</small>
+            </div>
+          )}
           <p>
             <small>
               Line {explanation.explanation.line}
