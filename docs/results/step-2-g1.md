@@ -31,7 +31,7 @@ student-uid process exists (the checker itself) and the sandbox still answers.
 CapAdd=CHOWN DAC_OVERRIDE KILL SETGID SETUID, no-new-privileges, PidsLimit=256,
 Memory=512 MiB, 1 CPU, init=true, no published ports.
 
-Limits reported by the runner itself (`/jobs/config.json`): CPU 2 s, wall 4 s, memory 256 MiB,
+Limits reported by the runner itself (`/jobs/config.json`): CPU 2 s, wall 4 s (raised to 10 s in Step 3, see below), memory 256 MiB,
 16 processes, 32 open files, 1 MiB per output file, 64 KiB returned text, 256 KiB code,
 64 KiB stdin per run, 60 runs per job. Network interfaces: `lo` only. Student uid 10002 with
 an empty capability set.
@@ -58,3 +58,9 @@ negative_numbers. An infinite loop on Run: "Your code ran too long." (4170 ms).
 - The earlier unexplained flake was the growing-list memory bomb ending as `time_limit`
   (CPU limit reached before the memory limit). Both outcomes are contained; the test accepts
   either for that one attack. Full suite after the fixes: 74 passed, three runs in a row.
+
+## Change in Step 3 (2026-10-15)
+
+The wall-clock limit was raised from 4 s to 10 s (the TR-P-01 hard stop). In a fresh-clone run on a loaded machine
+(245 s for a suite that normally takes 70 s) a trivial `print('alive')` hit the 4 s limit. CPU time is still limited to
+2 s, so an infinite loop is stopped after about 2 s; only sleeping programs and the fork bomb now take about 10 s.

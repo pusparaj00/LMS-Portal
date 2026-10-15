@@ -24,7 +24,7 @@ RUN_UID = RUN_GID = 10002
 
 LIMITS = {
     "cpu_seconds": 2,
-    "wall_seconds": 4,
+    "wall_seconds": 10,  # TR-P-01 hard stop; generous so a loaded host does not fail honest code
     "memory_bytes": 256 * 1024 * 1024,
     "max_processes": 16,
     "max_open_files": 32,

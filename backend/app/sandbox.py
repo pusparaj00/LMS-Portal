@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 POLL_SECONDS = 0.05
-SECONDS_PER_RUN = 5
+SECONDS_PER_RUN = 12  # the runner stops a run after 10 s wall time, plus startup
 SLACK_SECONDS = 15
 
 
