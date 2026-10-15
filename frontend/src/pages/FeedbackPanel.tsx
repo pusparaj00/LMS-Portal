@@ -106,7 +106,7 @@ export function FeedbackPanel({ session, submissionId }: { session: Session; sub
       {explanation?.explanation && (
         <div className="explanation verified">
           <p className="badge">
-            {explanation.cached ? "Prepared demo explanation, checked against your test results" : "Checked against your test results"}
+            {explanation.cached ? "Stored explanation, checked again against your test results" : "Checked against your test results"}
           </p>
           <p>
             <Inline text={explanation.explanation.claim} />

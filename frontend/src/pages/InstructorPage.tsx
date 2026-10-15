@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Session, api } from "../api";
+import { StoredExplanations } from "./StoredExplanations";
 
 type Cell = { concept_id: number; name: string; p_known: number };
 type Student = { student_id: number; label: string; synthetic: boolean; mastery: Cell[] };
@@ -119,6 +120,8 @@ export function InstructorPage({ session, courseId }: { session: Session; course
             ))}
         </ul>
       )}
+
+      <StoredExplanations session={session} courseId={courseId} />
     </>
   );
 }
