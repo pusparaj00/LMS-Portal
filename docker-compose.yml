@@ -3,6 +3,8 @@ name: lms
 x-backend-env: &backend-env
   DATABASE_URL: postgresql+psycopg://lms_api:${LMS_API_DB_PASSWORD:?set in .env}@db:5432/lms
   REDIS_URL: redis://:${REDIS_PASSWORD:?set in .env}@redis:6379/0
+  JWT_SECRET: ${JWT_SECRET:?set in .env}
+  JOBS_DIR: /jobs
   LLM_PROVIDER: ${LLM_PROVIDER:-stub}
   LLM_MODEL: ${LLM_MODEL:-stub}
   LLM_TIMEOUT_S: ${LLM_TIMEOUT_S:-30}
@@ -46,15 +48,43 @@ services:
       db:
         condition: service_healthy
 
+  sandbox:
+    build: ./sandbox
+    init: true
+    network_mode: none
+    read_only: true
+    user: root
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID, KILL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 512m
+    cpus: 1.0
+    tmpfs:
+      - /work:size=64m,mode=0711,noexec,nosuid,nodev
+      - /tmp:size=8m,noexec,nosuid,nodev
+    volumes:
+      - jobs:/jobs
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import time;assert time.time()-float(open('/jobs/heartbeat').read())<5"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build: ./backend
     environment:
       <<: *backend-env
     ports:
       - "127.0.0.1:8000:8000"
+    volumes:
+      - jobs:/jobs
+      - ./data:/srv/data:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
+      sandbox:
+        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -85,9 +115,18 @@ services:
       <<: *backend-env
       OWNER_DATABASE_URL: postgresql+psycopg://lms_owner:${POSTGRES_PASSWORD:?set in .env}@db:5432/lms
       MASTERY_DATABASE_URL: postgresql+psycopg://lms_mastery:${LMS_MASTERY_DB_PASSWORD:?set in .env}@db:5432/lms
+    volumes:
+      - jobs:/jobs
+      - ./data:/srv/data:ro
     depends_on:
       api:
         condition: service_healthy
 
 volumes:
   pgdata:
+  jobs:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=64m

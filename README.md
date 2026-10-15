@@ -8,7 +8,7 @@ Requirements and design are in `docs/` (read `docs/plan.md` first).
 Needs Docker with Compose v2.
 
 ```sh
-cp .env.example .env     # fill every value; use letters and digits only
+cp .env.example .env     # fill every value; use letters and digits only; JWT_SECRET should be 32+ random characters
 docker compose up --build --wait
 ```
 
