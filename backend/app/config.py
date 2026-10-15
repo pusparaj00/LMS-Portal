@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.1
     llm_thinking_budget: int = 0
     gemini_api_key: str = ""
+    llm_fallback: str = ""  # providers tried in order when the primary fails, e.g. "groq,deepseek,openai"
+    groqcloud_api_key: str = ""
+    deepseek_api_key: str = ""
+    openai_api_key: str = ""
+    llm_model_groq: str = "openai/gpt-oss-20b"
+    llm_model_deepseek: str = "deepseek-flash"
+    llm_model_openai: str = "gpt-4.1-mini"
+    chat_database_url: str = ""
+    router_min_confidence: float = 0.6
+    chat_history_turns: int = 6
     retrieval_min_score: float = 0.67
 
 

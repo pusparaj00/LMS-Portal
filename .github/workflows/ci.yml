@@ -10,7 +10,7 @@ jobs:
       - name: Create a throwaway .env with random secrets
         run: |
           {
-            for name in POSTGRES_PASSWORD LMS_API_DB_PASSWORD LMS_MASTERY_DB_PASSWORD REDIS_PASSWORD JWT_SECRET MASTERY_SERVICE_TOKEN; do
+            for name in POSTGRES_PASSWORD LMS_API_DB_PASSWORD LMS_MASTERY_DB_PASSWORD REDIS_PASSWORD JWT_SECRET MASTERY_SERVICE_TOKEN LMS_CHAT_DB_PASSWORD; do
               echo "$name=$(openssl rand -hex 20)"
             done
           } > .env

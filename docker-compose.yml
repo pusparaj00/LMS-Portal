@@ -7,6 +7,9 @@ x-backend-env: &backend-env
   MASTERY_SERVICE_URL: http://mastery:8001
   MASTERY_SERVICE_TOKEN: ${MASTERY_SERVICE_TOKEN:?set in .env}
   JOBS_DIR: /jobs
+  CHAT_DATABASE_URL: postgresql+psycopg://lms_chat:${LMS_CHAT_DB_PASSWORD:?set in .env}@db:5432/lms
+  ROUTER_MIN_CONFIDENCE: ${ROUTER_MIN_CONFIDENCE:-0.6}
+  CHAT_HISTORY_TURNS: ${CHAT_HISTORY_TURNS:-6}
   LLM_PROVIDER: ${LLM_PROVIDER:-stub}
   LLM_MODEL: ${LLM_MODEL:-stub}
   LLM_TIMEOUT_S: ${LLM_TIMEOUT_S:-30}
@@ -50,6 +53,7 @@ services:
       OWNER_DATABASE_URL: postgresql+psycopg://lms_owner:${POSTGRES_PASSWORD:?set in .env}@db:5432/lms
       LMS_API_DB_PASSWORD: ${LMS_API_DB_PASSWORD:?set in .env}
       LMS_MASTERY_DB_PASSWORD: ${LMS_MASTERY_DB_PASSWORD:?set in .env}
+      LMS_CHAT_DB_PASSWORD: ${LMS_CHAT_DB_PASSWORD:?set in .env}
     depends_on:
       db:
         condition: service_healthy
@@ -120,6 +124,10 @@ services:
     environment:
       <<: *backend-env
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LLM_FALLBACK: ${LLM_FALLBACK:-}
+      GROQCLOUD_API_KEY: ${GROQCLOUD_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
