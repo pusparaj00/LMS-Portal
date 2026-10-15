@@ -52,7 +52,8 @@ def test_rejects_wrong_reference_solution():
         concept_names=["loops"], known_concepts=CONCEPTS,
         reference_solution="print(int(input()))\n", tests=GOOD_TESTS,
     )
-    assert errors == ["reference solution fails test 0 (basic): ok"]
+    assert len(errors) == 1 and errors[0].startswith("reference solution fails test 1 (basic): it printed ")
+    assert "but the test expects" in errors[0]
 
 
 def test_rejects_missing_concept_category_tests_and_reference():
@@ -77,7 +78,7 @@ def test_rejects_reference_solution_that_crashes_or_hangs():
             concept_names=["loops"], known_concepts=CONCEPTS, reference_solution=code,
             tests=GOOD_TESTS,
         )
-        assert errors and "fails test 0" in errors[0]
+        assert errors and "fails test 1" in errors[0] and "did not finish normally" in errors[0]
 
 
 def test_rejects_bad_mcq_items():

@@ -107,7 +107,8 @@ def test_create_problem_rejects_a_bad_reference_solution(client, course):
     }
     response = client.post(f"{API}/problems", headers=course["instructor"], json=body)
     assert response.status_code == 422
-    assert "reference solution fails test 0" in response.json()["error"]["message"]
+    message = response.json()["error"]["message"]
+    assert "reference solution fails test 1 (basic): it printed 'nope' but the test expects '2'" in message
     body["test_cases"][0]["category"] = ""
     body["concepts"] = []
     message = client.post(f"{API}/problems", headers=course["instructor"], json=body).json()

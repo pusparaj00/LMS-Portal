@@ -28,12 +28,22 @@ def validate_code_problem(
         reference_solution,
         [TestSpec(None, t["input"], t["expected"], t["hidden"], t["category"]) for t in tests],
     )
-    for i, outcome in enumerate(result.outcomes):
+    for number, outcome in enumerate(result.outcomes, 1):
         if not outcome.passed:
-            errors.append(
-                f"reference solution fails test {i} ({outcome.test.category}): {outcome.run.status}"
-            )
+            errors.append(f"reference solution fails test {number} ({outcome.test.category}): {_why(outcome)}")
     return errors
+
+
+def _why(outcome) -> str:
+    """What went wrong, in words an instructor can act on (this goes to the instructor, never to a student)."""
+    if outcome.run.status == "ok":
+        shown = normalise(outcome.run.stdout)
+        return f"it printed {_short(shown)} but the test expects {_short(normalise(outcome.test.expected))}"
+    return f"the program did not finish normally ({outcome.run.status.replace('_', ' ')})"
+
+
+def _short(value: str, limit: int = 60) -> str:
+    return repr(value if len(value) <= limit else value[:limit] + "...")
 
 
 def validate_mcq_item(
