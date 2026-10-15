@@ -19,21 +19,42 @@ docker compose up --build --wait
 The `migrate` service creates the schema and the `lms_api` and `lms_mastery` database roles
 before the API starts. The API holds no owner credentials.
 
-## First-time data
+## Demo data (one command, safe to run again)
 
 ```sh
-NEW_USER_PASSWORD='choose-a-password' docker compose exec -e NEW_USER_PASSWORD api   python -m app.manage create-user instructor@example.com instructor
-docker compose exec api python -m app.bank_import data/bank --instructor instructor@example.com
+docker compose exec api python -m app.seed
 ```
 
-Then queue the course notes for the worker to embed (about 20 seconds the first time):
+This creates `instructor@demo.local` and `student@demo.local`, imports and validates the question bank (every reference
+solution runs in the sandbox first), loads and embeds the course notes, enrols the student and adds a labelled class of
+20 synthetic students. Passwords come from `DEMO_INSTRUCTOR_PASSWORD` and `DEMO_STUDENT_PASSWORD` in `.env`; if either is
+empty, a random password is printed once when the account is created. Running the seed again changes nothing: existing
+accounts and passwords stay, unchanged problems keep their ids and review status, and embedded notes are skipped.
+The synthetic students (`synthetic-NN@synthetic.local`) cannot log in, and nobody can register on that domain.
+
+To load pieces by hand instead: `app.manage create-user`, `app.bank_import data/bank --instructor EMAIL` (add
+`--dry-run` to only validate), `app.notes_import data/notes --instructor EMAIL` and `app.synthetic --students 20`.
+
+The scripted demo submissions in `data/demo/scenarios.json` have prepared explanations (`data/demo/explanations.json`)
+that work with the model switched off. They are checked again by the verifier against each submission and are labelled
+as cached in the reply, the interface and `explanation_checks` (model `cached-demo`).
+
+## Backup and restore
+
+The database is the only state to back up; Redis keeps its data on the `redisdata` volume (append-only file).
 
 ```sh
-docker compose exec api python -m app.notes_import data/notes --instructor instructor@example.com
+mkdir -p backup
+docker compose exec -T db pg_dump -U lms_owner -Fc lms > backup/lms.dump
+# restore: stop the app services, recreate the database, load the dump, start again
+docker compose stop api worker mastery
+docker compose exec -T db dropdb -U lms_owner lms
+docker compose exec -T db createdb -U lms_owner lms
+docker compose exec -T db pg_restore -U lms_owner -d lms --no-owner < backup/lms.dump
+docker compose up -d --wait
 ```
 
-`bank_import` runs every reference solution in the sandbox first and loads only problems that
-pass; add `--dry-run` to validate without loading. Students register themselves in the browser.
+`backup/` is git-ignored: a dump holds password hashes and student data.
 
 ## Feedback loop
 
@@ -53,11 +74,7 @@ model is unavailable or unsure, keyword rules choose the route and the panel say
 Instructors get a class mastery heatmap and misconception counts at `#/class/<course id>`.
 
 `LLM_FALLBACK=groq,openrouter,mistral,deepseek,openai` (Groq, Mistral, OpenAI, DeepSeek and OpenRouter keys are optional) lets the chat and feedback flows continue on another provider when the primary one
-is out of quota (each needs its own API key in `.env`). A small labelled synthetic class for the demo is created with:
-
-```sh
-docker compose exec api python -m app.synthetic --students 20
-```
+is out of quota (each needs its own API key in `.env`). The labelled synthetic class is part of the demo seed above.
 
 ## Sandbox
 
@@ -71,7 +88,12 @@ unprivileged uid. The API talks to it through job files on a shared tmpfs volume
 docker compose up -d --wait
 docker compose --profile test run --rm test      # ruff + pytest (API contract, DB roles)
 cd frontend && npm ci && npm run lint            # type check
+python backend/evaluation/secret_scan.py         # no key from .env or known key pattern in any file or commit
 ```
+
+The tests use the same database as the app and remove the synthetic class while they run, so run
+`python -m app.seed` again after the tests and before a demo. Enable the secret scan before every push with
+`git config core.hooksPath .githooks`.
 
 CI (`.github/workflows/ci.yml`) runs the same checks on every push.
 

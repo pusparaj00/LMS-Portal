@@ -16,3 +16,6 @@ build/
 *.bin
 *.safetensors
 /data/datasets/
+
+# database dumps hold password hashes and student data
+backup/
