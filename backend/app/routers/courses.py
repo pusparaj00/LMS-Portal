@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
-from app.auth import Conn, CurrentUser, current_user, require_role
-from app.schemas import Course, CourseCreate
+from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
+from app.schemas import Course, CourseConcept, CourseCreate
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -48,3 +48,14 @@ def enroll(
         text("INSERT INTO enrollments (user_id, course_id) VALUES (:u, :c) ON CONFLICT DO NOTHING"),
         {"u": user.id, "c": course_id},
     )
+
+
+@router.get("/{course_id}/concepts", response_model=list[CourseConcept])
+def list_concepts(course_id: int, user: Annotated[CurrentUser, Depends(current_user)], conn: Conn):
+    """The concepts problems and notes can be tagged with (F-02)."""
+    if not can_access_course(conn, user, course_id):
+        raise HTTPException(403, "you have no access to this course")
+    rows = conn.execute(
+        text("SELECT id AS concept_id, name FROM concepts WHERE course_id = :c ORDER BY id"), {"c": course_id}
+    ).mappings()
+    return [dict(r) for r in rows]

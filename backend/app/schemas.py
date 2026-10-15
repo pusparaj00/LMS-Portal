@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MAX_PASSWORD_BYTES = 72  # bcrypt ignores or rejects anything longer
@@ -77,6 +77,11 @@ class Course(BaseModel):
     title: str
     instructor_id: int
     enrolled: bool
+
+
+class CourseConcept(BaseModel):
+    concept_id: int
+    name: str
 
 
 class CourseCreate(BaseModel):
@@ -305,10 +310,19 @@ class ChatResponse(BaseModel):
 
 
 class DocumentCreate(BaseModel):
+    """Notes as text, or as a PDF sent as base64 (about 4 MB at most); exactly one of the two."""
+
     title: Text = Field(min_length=1, max_length=200)
     source_ref: Text | None = Field(default=None, max_length=200)
     concept: Text | None = None
-    text: Text = Field(min_length=1, max_length=50_000)
+    text: Text | None = Field(default=None, min_length=1, max_length=50_000)
+    pdf_base64: str | None = Field(default=None, min_length=1, max_length=5_400_000)
+
+    @model_validator(mode="after")
+    def one_source(self):
+        if (self.text is None) == (self.pdf_base64 is None):
+            raise ValueError("send either text or pdf_base64, not both and not neither")
+        return self
 
 
 class DocumentOut(BaseModel):

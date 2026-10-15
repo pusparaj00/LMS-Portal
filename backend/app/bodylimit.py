@@ -1,7 +1,10 @@
 """Maximum request size (TR-S-04). Pure ASGI so it also stops bodies that arrive without a Content-Length."""
 import json
+import re
 
 MAX_BODY_BYTES = 600_000  # a 50,000 character submission is well under this even in UTF-8
+NOTES_PATH = re.compile(r"^/api/v1/courses/\d+/documents/?$")
+MAX_NOTES_BODY_BYTES = 6_000_000  # a PDF of up to 4 MB, sent as base64 inside JSON (F-03)
 
 
 class PayloadTooLarge(Exception):
@@ -17,9 +20,12 @@ class BodySizeLimit:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
+        # Only the notes upload may be large (a PDF); everything else keeps the tight limit.
+        notes = scope["method"] == "POST" and NOTES_PATH.match(scope["path"])
+        limit = max(self.max_bytes, MAX_NOTES_BODY_BYTES) if notes else self.max_bytes
         declared = dict(scope["headers"]).get(b"content-length")
-        if declared is not None and declared.isdigit() and int(declared) > self.max_bytes:
-            await self._reject(send)
+        if declared is not None and declared.isdigit() and int(declared) > limit:
+            await self._reject(send, limit)
             return
 
         received = 0
@@ -31,7 +37,7 @@ class BodySizeLimit:
             message = await receive()
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
-                if received > self.max_bytes:
+                if received > limit:
                     exceeded = True
                     raise PayloadTooLarge
             return message
@@ -42,7 +48,7 @@ class BodySizeLimit:
             if exceeded:
                 if message["type"] == "http.response.start" and not answered:
                     answered = True
-                    await self._reject(send)
+                    await self._reject(send, limit)
                 return
             await send(message)
 
@@ -50,11 +56,11 @@ class BodySizeLimit:
             await self.app(scope, limited_receive, tracking_send)
         except PayloadTooLarge:
             if not answered:
-                await self._reject(send)
+                await self._reject(send, limit)
 
-    async def _reject(self, send):
+    async def _reject(self, send, limit):
         body = json.dumps(
-            {"error": {"code": "payload_too_large", "message": f"The request is larger than {self.max_bytes} bytes.",
+            {"error": {"code": "payload_too_large", "message": f"The request is larger than {limit} bytes.",
                        "request_id": "-"}}
         ).encode()
         await send({"type": "http.response.start", "status": 413,

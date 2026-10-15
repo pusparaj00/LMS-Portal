@@ -264,6 +264,24 @@
         "title": "Course",
         "type": "object"
       },
+      "CourseConcept": {
+        "properties": {
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "concept_id",
+          "name"
+        ],
+        "title": "CourseConcept",
+        "type": "object"
+      },
       "CourseCreate": {
         "properties": {
           "title": {
@@ -523,6 +541,7 @@
         "type": "object"
       },
       "DocumentCreate": {
+        "description": "Notes as text, or as a PDF sent as base64 (about 4 MB at most); exactly one of the two.",
         "properties": {
           "concept": {
             "anyOf": [
@@ -534,6 +553,19 @@
               }
             ],
             "title": "Concept"
+          },
+          "pdf_base64": {
+            "anyOf": [
+              {
+                "maxLength": 5400000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Base64"
           },
           "source_ref": {
             "anyOf": [
@@ -548,10 +580,17 @@
             "title": "Source Ref"
           },
           "text": {
-            "maxLength": 50000,
-            "minLength": 1,
-            "title": "Text",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 50000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
           },
           "title": {
             "maxLength": 200,
@@ -561,8 +600,7 @@
           }
         },
         "required": [
-          "title",
-          "text"
+          "title"
         ],
         "title": "DocumentCreate",
         "type": "object"
@@ -2162,6 +2200,58 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/concepts": {
+      "get": {
+        "description": "The concepts problems and notes can be tagged with (F-02).",
+        "operationId": "list_concepts_api_v1_courses__course_id__concepts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CourseConcept"
+                  },
+                  "title": "Response List Concepts Api V1 Courses  Course Id  Concepts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Concepts",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/documents": {
       "get": {
         "operationId": "list_documents_api_v1_courses__course_id__documents_get",
@@ -2357,6 +2447,130 @@
         "summary": "Stored Explanations",
         "tags": [
           "instructor"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/export/mastery": {
+      "get": {
+        "description": "The current mastery value of every student for every concept in the course.",
+        "operationId": "export_mastery_api_v1_courses__course_id__export_mastery_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "csv (default) or json",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "description": "csv (default) or json",
+              "enum": [
+                "csv",
+                "json"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Mastery",
+        "tags": [
+          "export"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/export/mastery-events": {
+      "get": {
+        "description": "The mastery ledger: every change with its before and after value, the rule and the evidence behind it.",
+        "operationId": "export_mastery_events_api_v1_courses__course_id__export_mastery_events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "csv (default) or json",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "description": "csv (default) or json",
+              "enum": [
+                "csv",
+                "json"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Mastery Events",
+        "tags": [
+          "export"
         ]
       }
     },
