@@ -64,8 +64,8 @@ def test_attack_is_contained(name):
     code, stdin, expected_status, stderr_hint = ATTACKS[name]
     (run,) = run_batch(code, [stdin])
     RESULTS[name] = (run.status, run.runtime_ms)
-    assert run.status == expected_status, run.stderr
-    assert stderr_hint.lower() in run.stderr.lower()
+    assert run.status == expected_status, (name, run.status, run.stderr)
+    assert stderr_hint.lower() in run.stderr.lower(), (name, run.stderr)
     assert len(run.stdout) <= 64 * 1024
     if name == "shell characters in input":
         assert run.stdout.strip() == stdin.strip()
