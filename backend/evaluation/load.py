@@ -1,10 +1,11 @@
-"""Load and reliability checks (TR-V-10, TR-P-01 to TR-P-04, TR-P-06, TR-P-07). Run inside the api container.
+"""Load and reliability checks (TR-V-10, TR-V-11, TR-P-01 to TR-P-07). Run inside the api container.
 
   python -m evaluation.load concurrent 10   # 10 students at once, each doing the whole demo flow
   python -m evaluation.load runs 10         # the whole demo flow, one student after another
   python -m evaluation.load timings         # sandbox run, item selection and explanation latency
   python -m evaluation.load prepare         # restart test, part 1: a placement test left half done (prints a handle)
   python -m evaluation.load verify HANDLE   # restart test, part 2: finish it after the services were restarted
+  python -m evaluation.load cache 5         # same failure for new students: stored explanation, no model call
 
 Every number printed is measured by this script in this run. A step "fails" on any HTTP error or unexpected answer.
 """
@@ -240,6 +241,43 @@ def Counter_text(values: list[str]) -> str:  # noqa: N802
     return ", ".join(f"{n} x {v}" for v, n in counts.items())
 
 
+CACHE_PROBLEM = "Factorial"
+CACHE_CODE = "n = int(input())\nresult = 0\nfor i in range(2, n + 1):\n    result *= i\nprint(result)\n"
+
+
+def cache(students: int) -> int:
+    """TR-V-11: the first student's failure goes to the model; later students with the same failure get the stored
+    explanation in under 1 s with no new model call (checked in explanation_checks, not assumed)."""
+    course, _ = course_ids()
+    client = httpx.Client(timeout=120)
+    with get_engine().connect() as conn:
+        problem = conn.execute(
+            text("SELECT id FROM problems WHERE course_id = :c AND title = :t"), {"c": course, "t": CACHE_PROBLEM}
+        ).scalar_one()
+    rows = []
+    for n in range(students + 1):
+        token = client.post(f"{API}/auth/register", json={"email": f"cache-{uuid.uuid4().hex[:8]}@eval.local", "password": "cache-pass-1"}).json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        client.post(f"{API}/courses/{course}/enroll", headers=headers)
+        sid = client.post(f"{API}/submissions", headers=headers, json={"problem_id": problem, "code": CACHE_CODE}).json()["submission_id"]
+        started = time.perf_counter()
+        reply = client.post(f"{API}/submissions/{sid}/explain", headers=headers).json()
+        seconds = time.perf_counter() - started
+        with get_engine().connect() as conn:
+            models = sorted(set(conn.execute(text("SELECT model FROM explanation_checks WHERE submission_id = :s"), {"s": sid}).scalars()))
+        rows.append((n + 1, seconds, reply["status"], reply["cached"], models))
+    print(f"# Failure-signature cache (TR-V-11)\n\nRun {datetime.now(UTC):%Y-%m-%d %H:%M UTC}, problem `{CACHE_PROBLEM}`, "
+          "the same wrong code from each new student.\n")
+    print("| Student | Seconds | Result | Stored explanation | Models in explanation_checks |\n| --- | --- | --- | --- | --- |")
+    for number, seconds, status, cached, models in rows:
+        print(f"| {number} | {seconds:.2f} | {status} | {'yes' if cached else 'no'} | {', '.join(models)} |")
+    later = rows[1:]
+    ok = all(cached and seconds < 1 and models == ["cache"] for _, seconds, _, cached, models in later)
+    print(f"\nLater students served from the cache in under 1 s with no model call: "
+          f"{sum(c and s < 1 and m == ['cache'] for _, s, _, c, m in later)} of {len(later)}")
+    return 0 if ok else 1
+
+
 def prepare() -> int:
     """Restart test, part 1: register a student and leave a placement test half done."""
     course, _ = course_ids()
@@ -290,6 +328,8 @@ def main() -> int:
         return concurrent(int(sys.argv[2]))
     if command == "runs":
         return runs(int(sys.argv[2]))
+    if command == "cache":
+        return cache(int(sys.argv[2]))
     if command == "timings":
         return timings()
     if command == "prepare":

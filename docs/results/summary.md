@@ -16,7 +16,7 @@ should not be quoted as rates.
 | TR-V-08 | Route 50 labelled messages | `python -m evaluation.router_eval routing` ([router](router.md)) | 50 of 50 (keyword rules alone 41 of 50) | At least 90% | Pass |
 | TR-V-09 | 20 questions with a known source chunk | `python -m evaluation.retrieval` ([feedback](feedback.md)) | 17 of 20 (85%) in the top 3 after the notes revision | At least 80% | Pass |
 | TR-V-10 | 10 concurrent students, 10 consecutive demo runs, restarts | `python -m evaluation.load concurrent 10`, `runs 10`, `prepare` / `verify` ([integration](integration.md)) | Concurrent: 0 of 210 steps failed. Consecutive: 0 of 210 failed (after the commit-order fix). Session survived an API and Redis restart and a full restart | No failed requests, no repair, no lost session | Pass |
-| TR-V-11 | Same failing submission for a second student | none | The failure-signature cache (F-46, TR-L-09) is not built. The demo's prepared explanations answer in 0.04 s median, but they are a separate mechanism | Stored explanation in under 1 s, no LLM call | Not run (feature not built) |
+| TR-V-11 | Same failing submission for later students | `python -m evaluation.load cache 5` ([cache](cache.md)) | First student 10.80 s from the model; the next 5 got the stored explanation in 0.02 to 0.04 s with only `cache` rows in explanation_checks | Stored explanation in under 1 s, no LLM call | Pass (small sample) |
 | TR-V-12 | Full demo on a local model | none | Not run, by decision in Step 6 | Completes with no hosted call | Not run |
 
 ## Timing targets (TR-P)

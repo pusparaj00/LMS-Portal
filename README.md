@@ -39,6 +39,14 @@ The scripted demo submissions in `data/demo/scenarios.json` have prepared explan
 that work with the model switched off. They are checked again by the verifier against each submission and are labelled
 as cached in the reply, the interface and `explanation_checks` (model `cached-demo`).
 
+## Stored explanations
+
+A verified explanation is stored under the failure's signature (problem, failed test categories, error type, error
+message). A later student with the same failure gets it without a model call, but only after it is checked again against
+that student's code: the cited line must read the same and every verifier check must pass, otherwise the model is asked.
+Instructors review the stored explanations on the class page (`#/class/<course id>`): approve, edit (the edit must pass
+the same checks) or reject (a rejected one is never shown again).
+
 ## Backup and restore
 
 The database is the only state to back up; Redis keeps its data on the `redisdata` volume (append-only file).
