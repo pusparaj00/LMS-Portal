@@ -110,3 +110,22 @@ printing with returning). The synthetic students (`synthetic-01` to `synthetic-2
 their mastery was written only by the mastery service as simulated placement answers: 20 students, 360 answers, 552 ledger rows.
 They are for the demo only and the simulated mastery values are extreme in places (many cells at 0%), because the update
 rule moves strongly on each answer.
+
+## 6. Providers checked again with OpenRouter and Mistral added (2026-10-15)
+
+One routing call to each provider on its own, `docker compose exec api python - < providers_live2.py`:
+
+| Provider (model) | Result | Routed | Time |
+| --- | --- | --- | --- |
+| gemini (gemini-3.5-flash-lite) | answered | hint | 4.4s |
+| groq (openai/gpt-oss-20b) | answered | hint | 0.9s |
+| mistral (mistral-small-2603) | FAILED: model unavailable: HTTP 429 from mistral | keyword rules | 6.2s |
+| openrouter (nvidia/nemotron-3-super-120b-a12b:free) | answered | hint | 1.9s |
+| deepseek (deepseek-flash) | FAILED: model unavailable: HTTP 402 from deepseek | keyword rules | 0.9s |
+| openai (gpt-4.1-mini) | FAILED: model unavailable: HTTP 429 from openai | keyword rules | 1.5s |
+
+Gemini, Groq and OpenRouter (a free `nvidia/nemotron-3-super-120b-a12b` model) answer. Mistral returns "Rate limit exceeded" (type
+`rate_limited`) even after a 45 second pause, DeepSeek returns HTTP 402 (no balance) and OpenAI returns HTTP 429 with "You have no
+credits remaining". The chain in use is therefore Gemini, then Groq, then OpenRouter; Mistral, DeepSeek and OpenAI are configured and
+will be tried after those. A first OpenRouter model (`google/gemma-4-31b-it:free`) was rate-limited upstream, which is why the default
+was changed. Free-tier models on OpenRouter can disappear or be rate-limited at any time.

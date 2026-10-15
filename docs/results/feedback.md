@@ -187,3 +187,28 @@ loops mastery before the probe: 0.273 after: 0.628
 - The check log stores the model name, prompt version and each check per attempt: 100 rows for the ten-run, 0 failed.
 - Browser check (headless Chromium, real UI): the progress state appears while the explanation is generated, the verified claim is
   labelled "Checked against your test results", three hints appear one level at a time and then stop, and a probe is offered.
+
+## 8. After the notes were corrected (2026-10-15)
+
+An outside review of the eight notes was checked claim by claim by running the code in the sandbox (every claim was true), and the
+notes were then made more precise and given short examples with their expected output (about 24 examples; `tests/test_notes_examples.py`
+runs each one in the sandbox, 26 tests, all passing). Every note is still marked "needs human review", because an AI review is not a
+human review. The notes were re-embedded and the same 20 questions and the same threshold (0.67, not retuned) were run again:
+
+```
+on-topic best scores:  min 0.706  median 0.754  max 0.853
+off-topic best scores: min 0.374  median 0.468  max 0.621
+separable: True; midpoint between lowest on-topic and highest off-topic: 0.66
+
+threshold applied: 0.67
+right chunk in the top 3: 17/20 = 85%
+right chunk first: 12/20 = 60%
+  MISS: 'My program never finishes and seems stuck repeating forever' wanted ('Loops and range', 'The while loop'), got []
+  MISS: 'Why does a score of exactly 90 not get an A in my grade program?' wanted ('Conditionals', 'Boundaries'), got []
+  MISS: 'I get RecursionError: maximum recursion depth exceeded' wanted ('Recursion', 'Base case and recursive case'), got [('Recursion', 'Returning the recursive result')]
+model: BAAI/bge-small-en-v1.5@fastembed-0.9.0   run: 2026-10-15 13:50 UTC
+```
+
+**17 of 20 (85%) in the top 3, down from 18 of 20 (90%) on the earlier notes**: the RecursionError question now returns the
+neighbouring section. Still above the 80% target, but it shows how sensitive a 20-question set is to small edits. The numbers in
+sections 4 and 6 above describe the notes as they were during Step 4.
