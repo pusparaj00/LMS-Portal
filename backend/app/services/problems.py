@@ -1,3 +1,5 @@
+from typing import Literal
+
 from sqlalchemy import Connection, text
 
 from app.schemas import ConceptTag, Problem, ProblemDetail
@@ -65,8 +67,11 @@ def save_problem(
     concept_weights: list[tuple[int, float]],
     tests: list[dict],
     options: list[dict],
-) -> tuple[int, bool]:
-    """Insert a problem, or replace the content of the one with the same title in the course."""
+) -> tuple[int, Literal["created", "updated", "unchanged"]]:
+    """Insert a problem, or replace the content of the one with the same title in the course.
+
+    An identical problem is left alone, so importing the same bank again keeps its ids and any human review.
+    """
     existing = conn.execute(
         text("SELECT id FROM problems WHERE course_id = :c AND title = :t"),
         {"c": course_id, "t": title},
@@ -84,6 +89,8 @@ def save_problem(
             ),
             values,
         ).scalar_one()
+    elif _same_content(conn, existing, values, concept_weights, tests, options):
+        return existing, "unchanged"
     else:
         problem_id = existing
         conn.execute(
@@ -124,4 +131,34 @@ def save_problem(
             ),
             {"p": problem_id, "t": o["text"], "ok": o["correct"], "m": o["misconception_id"]},
         )
-    return problem_id, existing is None
+    return problem_id, "created" if existing is None else "updated"
+
+
+def _same_content(
+    conn: Connection, problem_id: int, values: dict, concept_weights: list, tests: list[dict], options: list[dict]
+) -> bool:
+    row = conn.execute(
+        text(
+            "SELECT statement, kind, difficulty_b, discrimination_a, param_source, reference_solution"
+            " FROM problems WHERE id = :id"
+        ),
+        {"id": problem_id},
+    ).one()
+    if tuple(row) != (values["s"], values["k"], values["b"], values["a"], values["ps"], values["ref"]):
+        return False
+    stored_concepts = conn.execute(
+        text("SELECT concept_id, weight FROM problem_concepts WHERE problem_id = :id"), {"id": problem_id}
+    ).all()
+    stored_tests = conn.execute(
+        text("SELECT input, expected, hidden, category FROM test_cases WHERE problem_id = :id ORDER BY id"),
+        {"id": problem_id},
+    ).all()
+    stored_options = conn.execute(
+        text("SELECT option_text, is_correct, misconception_id FROM item_options WHERE problem_id = :id ORDER BY id"),
+        {"id": problem_id},
+    ).all()
+    return (
+        sorted(map(tuple, stored_concepts)) == sorted((c, w) for c, w in concept_weights)
+        and [tuple(t) for t in stored_tests] == [(t["input"], t["expected"], t["hidden"], t["category"]) for t in tests]
+        and [tuple(o) for o in stored_options] == [(o["text"], o["correct"], o["misconception_id"]) for o in options]
+    )

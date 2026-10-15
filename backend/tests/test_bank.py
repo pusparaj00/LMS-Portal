@@ -108,7 +108,7 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
         transaction = conn.begin()
         try:
             summary = import_bank(conn, bank, titles, email)
-            assert summary["created"] == 47 and summary["updated"] == 0
+            assert (summary["created"], summary["updated"], summary["unchanged"]) == (47, 0, 0)
             rows = conn.execute(
                 text(
                     "SELECT kind, review_status, param_source, count(*) FROM problems"
@@ -128,8 +128,25 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
                 {"c": summary["course_id"]},
             ).scalar_one()
             assert untagged == 0
+            ids = lambda: conn.execute(  # noqa: E731
+                text(
+                    "SELECT array_agg(t.id ORDER BY t.id) FROM test_cases t JOIN problems p ON p.id = t.problem_id"
+                    " WHERE p.course_id = :c"
+                ),
+                {"c": summary["course_id"]},
+            ).scalar_one()
+            before = ids()
+            conn.execute(
+                text("UPDATE problems SET review_status = 'reviewed' WHERE course_id = :c"), {"c": summary["course_id"]}
+            )
             again = import_bank(conn, bank, titles, email)
-            assert again["created"] == 0 and again["updated"] == 47
+            assert (again["created"], again["updated"], again["unchanged"]) == (0, 0, 47)
+            assert ids() == before  # nothing was deleted and re-inserted
+            reviewed = conn.execute(
+                text("SELECT count(*) FROM problems WHERE course_id = :c AND review_status = 'reviewed'"),
+                {"c": summary["course_id"]},
+            ).scalar_one()
+            assert reviewed == 47  # a human review survives running the seed again
         finally:
             transaction.rollback()
 
@@ -140,3 +157,33 @@ def test_a_problem_with_too_many_tests_is_rejected_with_a_clear_message():
         concept_names=["loops"], known_concepts=CONCEPTS, reference_solution="print(int(input()) + 1)\n", tests=many
     )
     assert errors == ["has 51 tests; at most 50 are allowed"]
+
+
+def test_importing_the_bank_into_a_second_course_leaves_the_first_course_its_misconceptions(bank, verdicts, make_user, owner):
+    titles = {v.title for v in verdicts if not v.errors}
+    emails = []
+    for _ in range(2):
+        instructor_id, _ = make_user("instructor")
+        with owner.connect() as conn:
+            emails.append(conn.execute(text("SELECT email FROM users WHERE id = :i"), {"i": instructor_id}).scalar_one())
+    count = text(
+        "SELECT count(*) FROM misconceptions m JOIN concepts c ON c.id = m.concept_id WHERE c.course_id = :c"
+    )
+    foreign_links = text(
+        "SELECT count(*) FROM item_options o JOIN problems p ON p.id = o.problem_id"
+        " JOIN misconceptions m ON m.id = o.misconception_id JOIN concepts c ON c.id = m.concept_id"
+        " WHERE p.course_id = :c AND c.course_id <> :c"
+    )
+    with get_engine().connect() as conn:
+        transaction = conn.begin()
+        try:
+            first = import_bank(conn, bank, titles, emails[0])["course_id"]
+            before = conn.execute(count, {"c": first}).scalar_one()
+            second = import_bank(conn, bank, titles, emails[1])["course_id"]
+            assert before == len(bank.misconceptions) > 0
+            assert conn.execute(count, {"c": first}).scalar_one() == before
+            assert conn.execute(count, {"c": second}).scalar_one() == before
+            assert conn.execute(foreign_links, {"c": first}).scalar_one() == 0
+            assert conn.execute(foreign_links, {"c": second}).scalar_one() == 0
+        finally:
+            transaction.rollback()

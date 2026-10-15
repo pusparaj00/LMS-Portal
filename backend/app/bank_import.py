@@ -143,20 +143,19 @@ def import_bank(
         misconception_ids[m["name"]] = conn.execute(
             text(
                 "INSERT INTO misconceptions (concept_id, name, description) VALUES (:c, :n, :d)"
-                " ON CONFLICT (name) DO UPDATE SET concept_id = excluded.concept_id,"
-                " description = excluded.description RETURNING id"
+                " ON CONFLICT (concept_id, name) DO UPDATE SET description = excluded.description RETURNING id"
             ),
             {"c": concept_ids[m["concept"]], "n": m["name"], "d": m["description"]},
         ).scalar_one()
 
     _seed_mastery_config(conn, bank, concept_ids)
 
-    created = updated = 0
+    counts = {"created": 0, "updated": 0, "unchanged": 0}
     for kind, entries in (("code", bank.problems), ("mcq", bank.items)):
         for e in entries:
             if e["title"] not in valid_titles:
                 continue
-            _, is_new = save_problem(
+            _, status = save_problem(
                 conn,
                 course_id=course_id,
                 title=e["title"],
@@ -177,9 +176,8 @@ def import_bank(
                     for o in e.get("options", [])
                 ],
             )
-            created += is_new
-            updated += not is_new
-    return {"course_id": course_id, "created": created, "updated": updated}
+            counts[status] += 1
+    return {"course_id": course_id, **counts}
 
 
 def main() -> int:
