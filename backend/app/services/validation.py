@@ -2,6 +2,8 @@
 from app.grading import TestSpec, grade, normalise
 from app.sandbox import run_batch
 
+MAX_TESTS = 50  # the sandbox refuses jobs of more than 60 runs; stay clear of it
+
 
 def validate_code_problem(
     *,
@@ -16,6 +18,8 @@ def validate_code_problem(
     errors += [f"unknown concept '{c}'" for c in concept_names if c not in known_concepts]
     if not tests:
         errors.append("has no tests")
+    if len(tests) > MAX_TESTS:
+        errors.append(f"has {len(tests)} tests; at most {MAX_TESTS} are allowed")
     errors += [f"test {i} has no category" for i, t in enumerate(tests) if not t.get("category")]
     if errors or not reference_solution.strip():
         return errors or ["has no reference solution"]
