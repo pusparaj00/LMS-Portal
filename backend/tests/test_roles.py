@@ -73,7 +73,7 @@ def test_mastery_role_writes_mastery_and_appends_events_only(engines, ids):
             conn.execute(text(INSERT_CHAT), ids)
 
 
-def test_schema_has_the_core_tables_and_the_step_2_and_3_additions(engines):
+def test_schema_has_the_core_tables_and_the_later_additions(engines):
     with engines["owner"].connect() as conn:
         names = {
             r[0]
@@ -81,6 +81,9 @@ def test_schema_has_the_core_tables_and_the_step_2_and_3_additions(engines):
                 text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
             )
         } - {"alembic_version"}
-    assert len(names) == 20
-    assert names >= {"misconceptions", "item_options", "mastery_params", "evidence_concept_map", "misconception_state"}
-    assert not names & {"explanation_cache", "explanation_checks"}
+    assert len(names) == 21
+    assert names >= {
+        "misconceptions", "item_options", "mastery_params", "evidence_concept_map", "misconception_state",
+        "explanation_checks",
+    }
+    assert "explanation_cache" not in names  # the failure-signature cache is not built yet

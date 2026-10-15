@@ -52,6 +52,7 @@ def test_request_id_is_echoed_and_logged(caplog):
 def test_llm_adapter_returns_canned_reply_from_environment_config(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "test-model")
     monkeypatch.setenv("LLM_TIMEOUT_S", "7")
+    monkeypatch.setenv("LLM_MAX_RETRIES", "1")
     get_settings.cache_clear()
     adapter = build_adapter(get_settings())
     get_settings.cache_clear()
