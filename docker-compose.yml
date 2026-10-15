@@ -4,6 +4,8 @@ x-backend-env: &backend-env
   DATABASE_URL: postgresql+psycopg://lms_api:${LMS_API_DB_PASSWORD:?set in .env}@db:5432/lms
   REDIS_URL: redis://:${REDIS_PASSWORD:?set in .env}@redis:6379/0
   JWT_SECRET: ${JWT_SECRET:?set in .env}
+  MASTERY_SERVICE_URL: http://mastery:8001
+  MASTERY_SERVICE_TOKEN: ${MASTERY_SERVICE_TOKEN:?set in .env}
   JOBS_DIR: /jobs
   LLM_PROVIDER: ${LLM_PROVIDER:-stub}
   LLM_MODEL: ${LLM_MODEL:-stub}
@@ -74,6 +76,23 @@ services:
       timeout: 3s
       retries: 10
 
+  mastery:
+    restart: unless-stopped
+    build: ./backend
+    command: ["uvicorn", "app.mastery.main:app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      MASTERY_DATABASE_URL: postgresql+psycopg://lms_mastery:${LMS_MASTERY_DB_PASSWORD:?set in .env}@db:5432/lms
+      MASTERY_SERVICE_TOKEN: ${MASTERY_SERVICE_TOKEN:?set in .env}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+
   api:
     restart: unless-stopped
     build: ./backend
@@ -88,6 +107,8 @@ services:
       migrate:
         condition: service_completed_successfully
       sandbox:
+        condition: service_healthy
+      mastery:
         condition: service_healthy
       redis:
         condition: service_healthy

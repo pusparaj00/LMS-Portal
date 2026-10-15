@@ -31,8 +31,13 @@ def create_token(user_id: int, role: str) -> str:
 
 
 def get_conn() -> Iterator[Connection]:
-    with get_engine().begin() as conn:
-        yield conn
+    with get_engine().connect() as conn:
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
 
 
 Conn = Annotated[Connection, Depends(get_conn)]

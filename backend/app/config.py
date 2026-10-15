@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
     jwt_secret: str
+    mastery_service_url: str
+    mastery_service_token: str
     jwt_expire_minutes: int = 60
 
     llm_provider: str = "stub"

@@ -1,0 +1,44 @@
+"""How the API reports evidence to the mastery service. The API never writes mastery itself."""
+import httpx
+
+from app.config import get_settings
+from app.schemas import MasteryChange
+
+
+class MasteryUnavailable(Exception):
+    pass
+
+
+def _post(path: str, payload: dict) -> list[MasteryChange]:
+    settings = get_settings()
+    try:
+        response = httpx.post(
+            f"{settings.mastery_service_url}{path}",
+            json=payload,
+            headers={"X-Service-Token": settings.mastery_service_token},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise MasteryUnavailable(str(exc)) from exc
+    return [
+        MasteryChange(concept=c["concept"], before=c["before"], after=c["after"])
+        for c in response.json()["changes"]
+    ]
+
+
+def record_submission(submission_id: int) -> list[MasteryChange]:
+    return _post("/evidence/submission", {"submission_id": submission_id})
+
+
+def record_answer(
+    *, user_id: int, problem_id: int, correct: bool, evidence_type: str, evidence_ref: str,
+    option_id: int | None,
+) -> list[MasteryChange]:
+    return _post(
+        "/evidence/answer",
+        {
+            "user_id": user_id, "problem_id": problem_id, "correct": correct,
+            "evidence_type": evidence_type, "evidence_ref": evidence_ref, "option_id": option_id,
+        },
+    )
