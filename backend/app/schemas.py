@@ -279,26 +279,36 @@ class Dashboard(BaseModel):
     placement_completed: bool
 
 
+class SourceOut(BaseModel):
+    chunk_id: int
+    title: str
+    section: str
+    text: str
+
+
+RouteLabel = Literal["explain", "hint", "progress", "recommend", "lms", "general"]
+
+
 class ChatRequest(BaseModel):
-    message: Text = Field(max_length=2000, examples=["Why does my loop skip the last item?"])
+    message: Text = Field(min_length=1, max_length=2000, examples=["Why does my loop skip the last item?"])
+    problem_id: int | None = Field(default=None, description="The problem the student has open, if any")
+    route: RouteLabel | None = Field(default=None, description="Set when the student corrects the route")
 
 
-class ChatResponse(Mockable):
+class RouterInfo(BaseModel):
+    how: Literal["llm", "keyword", "student"]
+    confidence: float | None
+    reason: str
+    provider: str | None
+
+
+class ChatResponse(BaseModel):
+    message_id: int
     reply: str
-    route: Literal["explain", "hint", "progress", "recommend", "lms", "general"]
-    sources: list[str]
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "reply": "This is a canned reply from the stub LLM adapter.",
-                    "route": "explain",
-                    "sources": [],
-                }
-            ]
-        }
-    )
+    route: RouteLabel
+    router: RouterInfo
+    tools: list[str]
+    sources: list[SourceOut]
 
 
 class DocumentCreate(BaseModel):
@@ -314,13 +324,6 @@ class DocumentOut(BaseModel):
     concept: str | None
     status: Literal["pending", "ready", "failed"]
     detail: str | None
-
-
-class SourceOut(BaseModel):
-    chunk_id: int
-    title: str
-    section: str
-    text: str
 
 
 class ExplanationOut(BaseModel):
@@ -371,3 +374,23 @@ class ProbeResult(BaseModel):
 
 class ProblemPolicy(BaseModel):
     max_hint_level: int = Field(ge=1, le=3)
+
+
+class ClassStudent(BaseModel):
+    student_id: int
+    label: str
+    synthetic: bool
+    mastery: list[ConceptMastery]
+
+
+class ClassMastery(BaseModel):
+    concepts: list[ConceptMastery]  # class average per concept
+    students: list[ClassStudent]
+
+
+class ClassMisconception(BaseModel):
+    name: str
+    description: str
+    concept: str
+    students: int  # students whose probability of holding it is above the suspicion threshold
+    mean_probability: float

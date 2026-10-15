@@ -7,7 +7,11 @@ from app.retrieval.store import Source
 
 PROMPT_VERSION = "explain-v1"
 MAX_STDERR_CHARS = 500
-TAGS = ("student_code", "run_result", "problem", "course_notes", "concept", "verifier_feedback")
+# Every data block any prompt uses; student text must never be able to open or close one.
+TAGS = (
+    "student_code", "run_result", "problem", "course_notes", "concept", "verifier_feedback",
+    "student_message", "conversation",
+)
 TAG_PATTERN = re.compile(r"</?\s*(?:" + "|".join(TAGS) + r")\s*>", re.IGNORECASE)
 
 SYSTEM = """You are a patient Python tutor inside a learning system. You explain why ONE student submission failed.

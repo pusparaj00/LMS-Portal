@@ -8,12 +8,13 @@ from app.errors import error_response, install_error_handlers
 from app.logging import configure_logging, request_id_var
 from app.routers import (
     accounts,
+    chat,
     courses,
     diagnostic,
     documents,
     feedback,
     health,
-    mock,
+    instructor,
     problems,
     students,
     submissions,
@@ -58,5 +59,5 @@ async def request_context(request: Request, call_next):
 
 
 app.include_router(health.router, prefix="/api/v1")
-for module in (accounts, courses, documents, problems, submissions, feedback, diagnostic, students, mock):
+for module in (accounts, courses, documents, problems, submissions, feedback, diagnostic, students, chat, instructor):
     app.include_router(module.router, prefix="/api/v1")
