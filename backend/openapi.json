@@ -391,6 +391,103 @@
         "title": "DiagnosticStartResponse",
         "type": "object"
       },
+      "DocumentCreate": {
+        "properties": {
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
+          },
+          "text": {
+            "maxLength": 50000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ],
+        "title": "DocumentCreate",
+        "type": "object"
+      },
+      "DocumentOut": {
+        "properties": {
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "ready",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "concept",
+          "status",
+          "detail"
+        ],
+        "title": "DocumentOut",
+        "type": "object"
+      },
       "Example": {
         "properties": {
           "expected": {
@@ -407,6 +504,113 @@
           "expected"
         ],
         "title": "Example",
+        "type": "object"
+      },
+      "ExplainResponse": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExplanationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fallback_sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Fallback Sources",
+            "type": "array"
+          },
+          "fallback_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Text"
+          },
+          "probe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProbeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "verified",
+              "fallback"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "attempts",
+          "explanation",
+          "fallback_text",
+          "fallback_sources",
+          "probe"
+        ],
+        "title": "ExplainResponse",
+        "type": "object"
+      },
+      "ExplanationOut": {
+        "properties": {
+          "claim": {
+            "title": "Claim",
+            "type": "string"
+          },
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept"
+          },
+          "hint_level": {
+            "title": "Hint Level",
+            "type": "integer"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "claim",
+          "line",
+          "concept",
+          "hint_level",
+          "sources"
+        ],
+        "title": "ExplanationOut",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -455,6 +659,72 @@
           "redis"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "HintResponse": {
+        "properties": {
+          "example_solution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Solution"
+          },
+          "example_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Title"
+          },
+          "kind": {
+            "enum": [
+              "concept",
+              "location",
+              "example"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "max_level": {
+            "title": "Max Level",
+            "type": "integer"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "max_level",
+          "kind",
+          "text"
+        ],
+        "title": "HintResponse",
         "type": "object"
       },
       "LedgerEntry": {
@@ -575,6 +845,103 @@
           "text"
         ],
         "title": "OptionOut",
+        "type": "object"
+      },
+      "ProbeAnswerRequest": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 50000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Option Id"
+          },
+          "submission_id": {
+            "title": "Submission Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "submission_id"
+        ],
+        "title": "ProbeAnswerRequest",
+        "type": "object"
+      },
+      "ProbeOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "code",
+              "mcq"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/OptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "problem_id",
+          "kind",
+          "title",
+          "statement",
+          "options"
+        ],
+        "title": "ProbeOut",
+        "type": "object"
+      },
+      "ProbeResult": {
+        "properties": {
+          "correct": {
+            "title": "Correct",
+            "type": "boolean"
+          },
+          "mastery_changes": {
+            "items": {
+              "$ref": "#/components/schemas/MasteryChange"
+            },
+            "title": "Mastery Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "correct",
+          "mastery_changes"
+        ],
+        "title": "ProbeResult",
         "type": "object"
       },
       "Problem": {
@@ -833,6 +1200,21 @@
         "title": "ProblemList",
         "type": "object"
       },
+      "ProblemPolicy": {
+        "properties": {
+          "max_hint_level": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Max Hint Level",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_hint_level"
+        ],
+        "title": "ProblemPolicy",
+        "type": "object"
+      },
       "RecentSubmission": {
         "properties": {
           "created_at": {
@@ -922,6 +1304,34 @@
           "password"
         ],
         "title": "RegisterRequest",
+        "type": "object"
+      },
+      "SourceOut": {
+        "properties": {
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "integer"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "chunk_id",
+          "title",
+          "section",
+          "text"
+        ],
+        "title": "SourceOut",
         "type": "object"
       },
       "SubmissionCreate": {
@@ -1284,6 +1694,7 @@
     },
     "/api/v1/chat": {
       "post": {
+        "description": "Placeholder until the chat router exists: a fixed reply, never an unchecked model reply.",
         "operationId": "chat_api_v1_chat_post",
         "requestBody": {
           "content": {
@@ -1399,6 +1810,112 @@
         "summary": "Create Course",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/documents": {
+      "get": {
+        "operationId": "list_documents_api_v1_courses__course_id__documents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentOut"
+                  },
+                  "title": "Response List Documents Api V1 Courses  Course Id  Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Documents",
+        "tags": [
+          "documents"
+        ]
+      },
+      "post": {
+        "operationId": "upload_api_v1_courses__course_id__documents_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload",
+        "tags": [
+          "documents"
         ]
       }
     },
@@ -1555,6 +2072,63 @@
         ]
       }
     },
+    "/api/v1/probes/{problem_id}/answer": {
+      "post": {
+        "operationId": "answer_probe_api_v1_probes__problem_id__answer_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProbeAnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbeResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Answer Probe",
+        "tags": [
+          "feedback"
+        ]
+      }
+    },
     "/api/v1/problems": {
       "get": {
         "operationId": "list_problems_api_v1_problems_get",
@@ -1690,6 +2264,63 @@
         "summary": "Get Problem",
         "tags": [
           "problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{problem_id}/policy": {
+      "put": {
+        "operationId": "set_policy_api_v1_problems__problem_id__policy_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Policy",
+        "tags": [
+          "feedback"
         ]
       }
     },
@@ -1929,6 +2560,101 @@
         "summary": "Get Submission",
         "tags": [
           "submissions"
+        ]
+      }
+    },
+    "/api/v1/submissions/{submission_id}/explain": {
+      "post": {
+        "description": "Runs generation and verification to completion before answering, so no unchecked text is ever shown.",
+        "operationId": "explain_api_v1_submissions__submission_id__explain_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "title": "Submission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Explain",
+        "tags": [
+          "feedback"
+        ]
+      }
+    },
+    "/api/v1/submissions/{submission_id}/hint": {
+      "post": {
+        "operationId": "hint_api_v1_submissions__submission_id__hint_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "title": "Submission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HintResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Hint",
+        "tags": [
+          "feedback"
         ]
       }
     }

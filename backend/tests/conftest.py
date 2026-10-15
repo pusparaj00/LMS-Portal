@@ -46,12 +46,15 @@ def make_user(owner):
         problems = f"SELECT id FROM problems WHERE course_id IN ({courses})"
         subs = f"SELECT id FROM submissions WHERE user_id = ANY(:ids) OR problem_id IN ({problems})"
         for sql in [
+            f"DELETE FROM explanation_checks WHERE submission_id IN ({subs})",
             f"DELETE FROM mastery_events WHERE submission_id IN ({subs})",
             f"DELETE FROM run_results WHERE submission_id IN ({subs})",
             f"DELETE FROM submissions WHERE id IN ({subs})",
             f"DELETE FROM test_cases WHERE problem_id IN ({problems})",
             f"DELETE FROM problem_concepts WHERE problem_id IN ({problems})",
             f"DELETE FROM item_options WHERE problem_id IN ({problems})",
+            f"DELETE FROM chunks WHERE document_id IN (SELECT id FROM documents WHERE course_id IN ({courses}))",
+            f"DELETE FROM documents WHERE course_id IN ({courses})",
             "DELETE FROM misconception_state WHERE user_id = ANY(:ids)",
             f"DELETE FROM misconceptions WHERE concept_id IN ({concepts})",
             f"DELETE FROM mastery_params WHERE concept_id IN ({concepts})",
