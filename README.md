@@ -84,6 +84,17 @@ docker compose up -d --wait
 
 `backup/` is git-ignored: a dump holds password hashes and student data.
 
+A dump keeps data a student has since had erased (TR-S-07), and a restore brings it back. The operator must set how long
+dumps are kept, delete old ones, and after a restore erase again anyone whose erasure completed after the dump was made
+(the worker's log lists each completed erasure by user number). This repository sets no backup expiry.
+
+## Deletion and retention (TR-S-07)
+
+A student can delete their account, submissions, chat messages and mastery from Privacy in the top bar. It runs 48 hours
+after the request and can be cancelled until then; a banner shows the date. `RETENTION_DAYS` in `.env` (default 0, off)
+schedules the same erasure, with the same 48 hours, for students with no activity for that many days. The worker
+checks every minute; mastery rows are removed by the mastery service.
+
 ## Feedback loop
 
 A failed submission can be explained. The explanation is produced by the configured LLM

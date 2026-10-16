@@ -1,8 +1,8 @@
 # Gap report: project plan against current status
 
 Audit date 2026-10-15, first written on branch `step-7-cache-stretch` (409 tests) and **updated after Step 8** on branch
-`step-8-gap-closure` (450 tests), then after Step 9 on `step-9-concepts-consent-claims` (493 tests); the statuses below
-are the updated ones, and sections 9 and 10 list what Steps 8 and 9 closed.
+`step-8-gap-closure` (450 tests), then after Step 9 on `step-9-concepts-consent-claims` (493 tests), then after Step 10 on `step-10-deletion-retention`
+(505 tests); the statuses below are the updated ones, and sections 9 and 10 list what Steps 8 to 10 closed.
 Sources compared: `docs/plan.md`, `docs/PRD.md` (34 features), `docs/TRD.md` (81 requirements), `docs/DRD.md`, the code and
 tests in the repository, and the measured results in `docs/results/`. Every status below was checked in the code, the
 tests or a measured result; where a status could not be checked it says so.
@@ -13,8 +13,8 @@ The system is a working, tested prototype of the whole demo flow in the plan (ph
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
 1. **Features not built or only partly built:** 4 of 34 PRD features not built, 2 partly built.
-2. **Requirements not met:** of 69 implementation requirements, 49 done, 5 partly done, 6 not built or not run, 9 not
-   applicable by design (the sandbox is a custom runner, not Judge0). Compliance (consent, retention, breach procedure) is
+2. **Requirements not met:** of 69 implementation requirements, 50 done, 5 partly done, 5 not built or not run, 9 not
+   applicable by design (the sandbox is a custom runner, not Judge0). Compliance (the breach procedure, TR-S-08) is
    the largest untouched area.
 3. **Validation targets missed or unproven:** of 12 validation tests, 7 pass, 1 fails (adaptive selection, in simulation
    only), 2 are partly met, 2 are not run (they need human raters or a local model).
@@ -55,9 +55,9 @@ PDF) in the browser.
 | X sandbox (9) | 2 | 0 | 0 | 7 |
 | L LLM (12) | 12 | 0 | 0 | 0 |
 | D data (8) | 7 | 0 | 1 | 0 |
-| S security and privacy (10) | 6 | 0 | 4 | 0 |
+| S security and privacy (10) | 7 | 0 | 3 | 0 |
 | P performance (9) | 8 | 1 | 0 | 0 |
-| **Total (69)** | **49** | **5** | **6** | **9** |
+| **Total (69)** | **50** | **5** | **5** | **9** |
 
 ### 3.1 Partly done (5)
 
@@ -75,7 +75,7 @@ PDF) in the browser.
 | --- | --- | --- |
 | TR-A-09 (P2) | LTI 1.3 launch | Same as F-70. Planned for phase 7. |
 | TR-D-05 (P2) | Offline experiments on CodeWorkout or FalconCode | Not started; licences not checked. Planned for phase 6. |
-| TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Not built. |
+| TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Done, with one gap: the notice is in the app only, so a student who never signs in is not told ([step-10](step-10.md)). |
 | TR-S-08 (P1) | Breach detection logs and a written breach procedure | Logs exist; the written procedure does not. |
 | TR-S-09 (P1) | Full demo on a local model | Not run (same as TR-V-12). The `local` provider now exists (TR-A-04); what is missing is a model installed on this machine. |
 | TR-S-10 (P2) | Adult confirmation or parental consent | Not built. |
@@ -145,8 +145,8 @@ statements and need no code.
 5. **Explanation latency near the limit.** The 15 s target is met at the median and missed or touched at the worst case.
    The demo relies on prepared and stored explanations.
 6. **Tests share the app's database.** Running them removes the synthetic class; the seed must be run again before a demo.
-7. **Compliance not started.** No consent, retention, deletion or breach procedure. TR-S-05 to S-08 are P1 and are needed
-   before any use by real students.
+7. **Compliance partly done.** Consent and deletion exist; the breach procedure (TR-S-08) does not, and the 48-hour erasure
+   notice reaches only students who sign in. TR-S-05 to S-08 are P1 and are needed before any use by real students.
 8. **No second reviewer.** The CI is green on every branch, but code and content have had one author.
 
 ## 8. Recommended next actions, in order
@@ -202,6 +202,12 @@ Measured results and commands are in `docs/results/step-9.md`.
 | TR-L-05 claimed input | The verifier ran nothing | An example input named in a claim is run on the student's program and the reference in the sandbox; accepted only if the outputs differ; never a hidden test input; the student sees their own output only |
 
 Defects found and fixed on the way: the problem page overflowed a 390 px phone; a passing check stored failure wording as
-its detail. Still open from the audit: TR-S-07 (deletion and retention), TR-S-08 (breach procedure), TR-S-09 and TR-V-12 (a
+its detail. Still open from the audit: TR-S-08 (breach procedure), TR-S-09 and TR-V-12 (a
 local-model demo, which needs a model installed), TR-S-10, TR-A-09, TR-D-05, F-04, F-05, F-23, F-70, and the people items in
 section 5. The consent text is a draft awaiting the data protection contact.
+
+## 11. What Step 10 changed
+
+| Item | Before | After |
+| --- | --- | --- |
+| TR-S-07 deletion and retention | A student could not delete anything | A student can ask for deletion of their account, submissions, chat and mastery; it runs 48 hours later and can be cancelled. `RETENTION_DAYS` (off by default) schedules the same erasure for inactive students ([step-10](step-10.md)) |
