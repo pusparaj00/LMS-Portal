@@ -10,6 +10,7 @@ import { NotesPage } from "./pages/NotesPage";
 import { InstructorPage } from "./pages/InstructorPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlacementPage } from "./pages/PlacementPage";
+import { ErasureBanner, ErasureState } from "./pages/ErasureSection";
 import { ConsentState, PrivacyPage } from "./pages/PrivacyPage";
 import { ProblemPage } from "./pages/ProblemPage";
 
@@ -27,12 +28,14 @@ export function App() {
   const [session, setSession] = useState<Session | null>(loadSession);
   const [consent, setConsent] = useState<ConsentState | null>(null);
   const [consentError, setConsentError] = useState<string | null>(null);
+  const [erasure, setErasure] = useState<ErasureState | null>(null);
   const hash = useHash();
 
   const update = (next: Session | null) => {
     saveSession(next);
     setSession(next);
     setConsent(null);
+    setErasure(null);
     window.location.hash = next ? "#/courses" : "#/login";
   };
 
@@ -43,6 +46,9 @@ export function App() {
     api<ConsentState>("/consent", session)
       .then(setConsent)
       .catch((e: Error) => setConsentError(e.message));
+    api<ErasureState>("/me/erasure", session)
+      .then(setErasure)
+      .catch(() => setErasure(null));
   }, [session?.token]);
 
   if (!session) return <LoginPage onSession={update} />;
@@ -70,6 +76,7 @@ export function App() {
           Log out
         </button>
       </header>
+      {erasure && <ErasureBanner state={erasure} />}
       <main>
         {consentError ? (
           <p role="alert" className="error">
@@ -78,7 +85,14 @@ export function App() {
         ) : waitingForConsent ? (
           <p>Loading…</p>
         ) : mustAgree || hash === "#/privacy" ? (
-          <PrivacyPage session={session} state={consent} gate={mustAgree} onChange={setConsent} />
+          <PrivacyPage
+            session={session}
+            state={consent}
+            gate={mustAgree}
+            onChange={setConsent}
+            erasure={erasure}
+            onErasureChange={setErasure}
+          />
         ) : newProblem && session.role === "instructor" ? (
           <NewProblemPage session={session} courseId={Number(newProblem[1])} />
         ) : notes && session.role === "instructor" ? (

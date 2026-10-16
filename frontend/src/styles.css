@@ -829,3 +829,16 @@ select {
   min-width: 0;
   max-width: 100%;
 }
+
+.erasure {
+  margin: 2rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.erasure-banner {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: var(--fail-bg);
+  color: var(--fail);
+}

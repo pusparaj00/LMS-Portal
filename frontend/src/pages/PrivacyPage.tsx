@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
+import { ErasureSection, ErasureState } from "./ErasureSection";
 
 export type ConsentState = { version: string; accepted: boolean; accepted_at: string | null; withdrawn_at: string | null };
 type Notice = {
@@ -21,11 +22,15 @@ export function PrivacyPage({
   state,
   gate,
   onChange,
+  erasure,
+  onErasureChange,
 }: {
   session: Session;
   state: ConsentState | null;
   gate: boolean;
   onChange: (state: ConsentState) => void;
+  erasure: ErasureState | null;
+  onErasureChange: (state: ErasureState) => void;
 }) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -132,6 +137,7 @@ export function PrivacyPage({
           )}
         </div>
       )}
+      {student && !gate && erasure && <ErasureSection session={session} state={erasure} onChange={onErasureChange} />}
     </article>
   );
 }
