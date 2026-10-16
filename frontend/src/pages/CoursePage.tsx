@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Problem, Session, api } from "../api";
+import { Announcements } from "./Announcements";
 import { StudentAssignments } from "./AssignmentsPage";
 
 export function CoursePage({ session, courseId }: { session: Session; courseId: number }) {
@@ -54,6 +55,7 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
           </a>
         </p>
       )}
+      <Announcements session={session} courseId={courseId} />
       {session.role === "student" && <StudentAssignments session={session} courseId={courseId} />}
       {error && <p role="alert" className="error">{error}</p>}
       {problems && coding.length === 0 && (

@@ -253,6 +253,7 @@ pre {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   margin: 0.75rem 0;
@@ -859,4 +860,22 @@ select {
 
 .gradebook td small {
   color: inherit;
+}
+
+.announcement {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 0.6rem 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.announcement h3 {
+  margin: 0 0 0.15rem;
+}
+
+.announcement-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0.5rem 0 0;
 }
