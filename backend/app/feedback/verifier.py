@@ -56,6 +56,7 @@ class Evidence:
     error_concept_ids: frozenset[int]  # concepts linked to the run's error type, if it had one
     retrieved_chunk_ids: frozenset[int]
     hidden_inputs: frozenset[str] = frozenset()  # every hidden test input of the problem, passed or failed
+    leak_threshold: float = leak.SIMILARITY_THRESHOLD  # the problem's leak policy (F-62)
 
 
 @dataclass(frozen=True)
@@ -111,7 +112,7 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
     example = explanation.example_input.strip()
     if example and example in {h.strip() for h in evidence.hidden_inputs}:
         leaked.append(example)  # the example would show a student a hidden test input
-    guard = leak.check(explanation.claim, evidence.reference_solution)
+    guard = leak.check(explanation.claim, evidence.reference_solution, evidence.leak_threshold)
     unknown_chunks = sorted(set(explanation.source_chunk_ids) - evidence.retrieved_chunk_ids)
     example_ok = len(explanation.example_input) <= MAX_EXAMPLE_CHARS and "\x00" not in explanation.example_input
 

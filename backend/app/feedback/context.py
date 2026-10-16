@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Connection, text
 
+from app.feedback import leak
 from app.feedback.verifier import FailedTest
 from app.mastery.plan import linked_concepts
 
@@ -26,6 +27,7 @@ class ExplainContext:
     concepts: dict[int, str]  # every concept an explanation may legitimately name
     primary_concept_id: int | None
     hidden_inputs: frozenset[str] = frozenset()
+    leak_threshold: float = 0.7  # the problem's leak policy, or the tuned default (F-62)
 
     @property
     def primary_concept_name(self) -> str | None:
@@ -50,6 +52,7 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
     row = conn.execute(
         text(
             "SELECT s.user_id, s.problem_id, s.code, p.course_id, p.title, p.statement, p.reference_solution,"
+            " p.leak_threshold,"
             " r.status, r.error_type, r.stderr, r.failed_categories, r.failed_test_ids"
             " FROM submissions s JOIN problems p ON p.id = s.problem_id"
             " JOIN run_results r ON r.submission_id = s.id WHERE s.id = :s"
@@ -109,4 +112,5 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
         stderr=row.stderr or "", failed_categories=list(row.failed_categories), failed_tests=failed_tests,
         error_concept_ids=error_concepts, concepts=names, primary_concept_id=primary,
         hidden_inputs=hidden_inputs,
+        leak_threshold=row.leak_threshold if row.leak_threshold is not None else leak.SIMILARITY_THRESHOLD,
     )

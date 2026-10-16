@@ -89,7 +89,7 @@ def check_against(
     evidence = Evidence(
         code=ctx.code, reference_solution=ctx.reference_solution, failed_tests=ctx.failed_tests,
         error_concept_ids=ctx.error_concept_ids, retrieved_chunk_ids=frozenset(s.chunk_id for s in sources),
-        hidden_inputs=ctx.hidden_inputs,
+        hidden_inputs=ctx.hidden_inputs, leak_threshold=ctx.leak_threshold,
     )
     explanation, checks, example = verify_with_example(raw, evidence)
     return explanation, checks, sources, example

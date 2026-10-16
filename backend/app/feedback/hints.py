@@ -82,7 +82,7 @@ def worked_example(conn: Connection, ctx: ExplainContext) -> Hint:
         {"c": ctx.primary_concept_id, "course": ctx.course_id, "p": ctx.problem_id},
     ).all()
     for row in rows:
-        if leak.containment(row.reference_solution, ctx.reference_solution) < leak.SIMILARITY_THRESHOLD:
+        if leak.containment(row.reference_solution, ctx.reference_solution) < ctx.leak_threshold:
             return Hint(3, 3, "example", f"Here is a worked example on a different problem: {row.title}.",
                         example_title=row.title, example_solution=row.reference_solution)
     return Hint(3, 3, "example", "There is no worked example for this concept yet. Ask your instructor.")

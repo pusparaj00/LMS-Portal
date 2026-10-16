@@ -659,6 +659,14 @@ class ProbeResult(BaseModel):
 
 class ProblemPolicy(BaseModel):
     max_hint_level: int = Field(ge=1, le=3)
+    leak_threshold: float | None = Field(
+        default=None, ge=0.3, le=0.7,
+        description="stricter leak guard for this problem: 0.5 strict, 0.3 very strict; empty uses the tuned 0.7",
+    )
+
+
+class ProblemPolicyOut(ProblemPolicy):
+    effective_leak_threshold: float
 
 
 class StoredExplanation(BaseModel):

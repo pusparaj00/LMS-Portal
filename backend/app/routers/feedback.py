@@ -10,7 +10,7 @@ from app.config import get_settings
 from app.consent import consented_student
 from app.db import get_redis
 from app.errors import sandbox_error
-from app.feedback import hints, probe, review, service
+from app.feedback import hints, leak, probe, review, service
 from app.feedback.context import NotExplainable, load_context
 from app.grading import TestSpec, grade
 from app.llm.adapter import LLMAdapter, build_adapter
@@ -22,8 +22,8 @@ from app.schemas import (
     HintResponse,
     ProbeAnswerRequest,
     ProbeResult,
-    Problem,
     ProblemPolicy,
+    ProblemPolicyOut,
     StoredExplanation,
 )
 
@@ -108,20 +108,36 @@ def answer_probe(problem_id: int, body: ProbeAnswerRequest, user: Student, conn:
     return ProbeResult(correct=correct, mastery_changes=changes)
 
 
-@router.put("/problems/{problem_id}/policy", response_model=Problem)
+def _policy(conn, user: CurrentUser, problem_id: int) -> ProblemPolicyOut:
+    row = conn.execute(
+        text("SELECT course_id, max_hint_level, leak_threshold FROM problems WHERE id = :p"), {"p": problem_id}
+    ).first()
+    if row is None or not can_access_course(conn, user, row.course_id):
+        raise HTTPException(404, "problem not found")
+    return ProblemPolicyOut(
+        max_hint_level=row.max_hint_level, leak_threshold=row.leak_threshold,
+        effective_leak_threshold=row.leak_threshold if row.leak_threshold is not None else leak.SIMILARITY_THRESHOLD,
+    )
+
+
+@router.get("/problems/{problem_id}/policy", response_model=ProblemPolicyOut)
+def read_policy(problem_id: int, conn: Conn, user: Annotated[CurrentUser, Depends(require_role("instructor"))]):
+    return _policy(conn, user, problem_id)
+
+
+@router.put("/problems/{problem_id}/policy", response_model=ProblemPolicyOut)
 def set_policy(
     problem_id: int, body: ProblemPolicy, conn: Conn,
     user: Annotated[CurrentUser, Depends(require_role("instructor"))],
 ):
-    from app.services import problems as repo
-
-    problem = repo.get_problem(conn, problem_id)
-    if problem is None or not can_access_course(conn, user, problem.course_id):
-        raise HTTPException(404, "problem not found")
+    """How many hints a student may take, and how strictly replies are kept from resembling the solution (F-62).
+    The leak guard can only be made stricter than the tuned default, never looser."""
+    _policy(conn, user, problem_id)
     conn.execute(
-        text("UPDATE problems SET max_hint_level = :m WHERE id = :p"), {"m": body.max_hint_level, "p": problem_id}
+        text("UPDATE problems SET max_hint_level = :m, leak_threshold = :t WHERE id = :p"),
+        {"m": body.max_hint_level, "t": body.leak_threshold, "p": problem_id},
     )
-    return problem
+    return _policy(conn, user, problem_id)
 
 
 @router.post("/explanations/{signature}/approve", response_model=StoredExplanation)

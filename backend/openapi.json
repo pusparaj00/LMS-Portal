@@ -2370,6 +2370,20 @@
       },
       "ProblemPolicy": {
         "properties": {
+          "leak_threshold": {
+            "anyOf": [
+              {
+                "maximum": 0.7,
+                "minimum": 0.3,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "stricter leak guard for this problem: 0.5 strict, 0.3 very strict; empty uses the tuned 0.7",
+            "title": "Leak Threshold"
+          },
           "max_hint_level": {
             "maximum": 3.0,
             "minimum": 1.0,
@@ -2381,6 +2395,40 @@
           "max_hint_level"
         ],
         "title": "ProblemPolicy",
+        "type": "object"
+      },
+      "ProblemPolicyOut": {
+        "properties": {
+          "effective_leak_threshold": {
+            "title": "Effective Leak Threshold",
+            "type": "number"
+          },
+          "leak_threshold": {
+            "anyOf": [
+              {
+                "maximum": 0.7,
+                "minimum": 0.3,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "stricter leak guard for this problem: 0.5 strict, 0.3 very strict; empty uses the tuned 0.7",
+            "title": "Leak Threshold"
+          },
+          "max_hint_level": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Max Hint Level",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_hint_level",
+          "effective_leak_threshold"
+        ],
+        "title": "ProblemPolicyOut",
         "type": "object"
       },
       "ProblemSource": {
@@ -6466,7 +6514,53 @@
       }
     },
     "/api/v1/problems/{problem_id}/policy": {
+      "get": {
+        "operationId": "read_policy_api_v1_problems__problem_id__policy_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemPolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Policy",
+        "tags": [
+          "feedback"
+        ]
+      },
       "put": {
+        "description": "How many hints a student may take, and how strictly replies are kept from resembling the solution (F-62).\nThe leak guard can only be made stricter than the tuned default, never looser.",
         "operationId": "set_policy_api_v1_problems__problem_id__policy_put",
         "parameters": [
           {
@@ -6494,7 +6588,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ProblemPolicyOut"
                 }
               }
             },

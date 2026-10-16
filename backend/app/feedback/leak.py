@@ -12,6 +12,7 @@ MAX_CODE_LINES = 3
 MAX_INLINE_SNIPPET_CHARS = 60
 MIN_TOKENS_TO_COMPARE = 12  # shorter fragments (a single `range(1, n + 1)`) are not a solution
 SIMILARITY_THRESHOLD = 0.7  # chosen on the question bank, see evaluation/leak_threshold.py
+STRICTEST_THRESHOLD = 0.3  # a problem may only make the guard stricter (F-62), down to this
 NGRAM = 3
 
 FENCE = "`" * 3
@@ -83,7 +84,9 @@ def code_like_text(text: str) -> tuple[list[str], list[str]]:
     return [line for line in without_inline.splitlines() if looks_like_code(line)], inline
 
 
-def check(text: str, reference_solution: str) -> LeakResult:
+def check(text: str, reference_solution: str, threshold: float = SIMILARITY_THRESHOLD) -> LeakResult:
+    """`threshold` is the problem's leak policy; it is never allowed above the tuned default."""
+    threshold = min(threshold, SIMILARITY_THRESHOLD)
     if FENCE in text:
         return LeakResult(False, "fenced code block")
     lines, snippets = code_like_text(text)
@@ -94,6 +97,6 @@ def check(text: str, reference_solution: str) -> LeakResult:
     combined = "\n".join([*lines, *snippets])
     if len(normalise_tokens(combined)) >= MIN_TOKENS_TO_COMPARE:
         similarity = containment(combined, reference_solution)
-        if similarity >= SIMILARITY_THRESHOLD:
+        if similarity >= threshold:
             return LeakResult(False, f"code matches the reference solution ({similarity:.0%})")
     return LeakResult(True, "no solution code")
