@@ -6,10 +6,12 @@ import { Concept, ConceptAdder } from "./ConceptAdder";
 type TestRow = { input: string; expected: string; hidden: boolean; category: string };
 
 const CATEGORIES = ["basic", "zero", "negative_numbers", "single_item", "empty_input", "large_input", "boundary"];
+// "" asks the server to estimate it from the text and concepts (F-23); the problem is then marked as estimated.
 const DIFFICULTY = [
-  { label: "Easy", value: -1 },
-  { label: "Medium", value: 0 },
-  { label: "Hard", value: 1 },
+  { label: "Estimate it for me", value: "" },
+  { label: "Easy", value: "-1" },
+  { label: "Medium", value: "0" },
+  { label: "Hard", value: "1" },
 ];
 const pretty = (name: string) => name.replace(/_/g, " ");
 const blankTest = (): TestRow => ({ input: "", expected: "", hidden: false, category: "basic" });
@@ -18,6 +20,7 @@ type Source = {
   title: string;
   statement: string;
   difficulty_b: number;
+  param_source: "prior" | "estimated";
   concepts: { concept_id: number; name: string; weight: number }[];
   reference_solution: string;
   test_cases: TestRow[];
@@ -29,7 +32,8 @@ export function NewProblemPage({ session, courseId, problemId }: { session: Sess
   const [concepts, setConcepts] = useState<Concept[] | null>(null);
   const [title, setTitle] = useState("");
   const [statement, setStatement] = useState("");
-  const [difficulty, setDifficulty] = useState(0);
+  const [difficulty, setDifficulty] = useState("0");
+  const [estimated, setEstimated] = useState<number | null>(null);
   const [weights, setWeights] = useState<Record<number, number>>({});
   const [solution, setSolution] = useState("");
   const [tests, setTests] = useState<TestRow[]>([
@@ -49,7 +53,13 @@ export function NewProblemPage({ session, courseId, problemId }: { session: Sess
       .then((s) => {
         setTitle(s.title);
         setStatement(s.statement);
-        setDifficulty(s.difficulty_b);
+        if (s.param_source === "estimated") {
+          setDifficulty("");
+          setEstimated(s.difficulty_b);
+        } else {
+          const nearest = ["-1", "0", "1"].reduce((a, b) => (Math.abs(Number(b) - s.difficulty_b) < Math.abs(Number(a) - s.difficulty_b) ? b : a));
+          setDifficulty(Number(nearest) === s.difficulty_b ? nearest : String(s.difficulty_b));
+        }
         setWeights(Object.fromEntries(s.concepts.map((c) => [c.concept_id, c.weight])));
         setSolution(s.reference_solution);
         setTests(s.test_cases);
@@ -72,7 +82,7 @@ export function NewProblemPage({ session, courseId, problemId }: { session: Sess
           course_id: courseId,
           title,
           statement,
-          difficulty_b: difficulty,
+          difficulty_b: difficulty === "" ? null : Number(difficulty),
           discrimination_a: 1,
           concepts: chosen.map(([id, weight]) => ({
             concept_id: Number(id),
@@ -122,15 +132,21 @@ export function NewProblemPage({ session, courseId, problemId }: { session: Sess
         </label>
         <label>
           Difficulty
-          <select value={difficulty} onChange={(e) => setDifficulty(Number(e.target.value))}>
+          <select value={difficulty} aria-describedby="difficulty-help" onChange={(e) => setDifficulty(e.target.value)}>
             {DIFFICULTY.map((d) => (
               <option key={d.value} value={d.value}>
                 {d.label}
               </option>
             ))}
+            {!DIFFICULTY.some((d) => d.value === difficulty) && <option value={difficulty}>Kept as it is ({difficulty})</option>}
           </select>
-          <small>A starting estimate. It is marked as a prior until real answers refine it.</small>
         </label>
+        <small id="difficulty-help">
+          {difficulty === ""
+            ? "Estimated from the reference solution, the statement and the concepts, in the way the question bank's authors rated theirs."
+            : "A starting value. It is marked as a prior until real answers refine it."}
+          {estimated !== null && difficulty === "" && ` Current estimate: ${estimated}.`}
+        </small>
 
         <fieldset>
           <legend>Concepts this problem practises</legend>
