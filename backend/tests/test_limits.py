@@ -61,6 +61,10 @@ def remove_limit_test_users(owner):
 def test_submissions_and_runs_are_limited_per_student_before_any_work_is_done(client, make_user, course, owner, monkeypatch):
     monkeypatch.setitem(ratelimit.RULES, "submit", Rule(2, 60))
     monkeypatch.setitem(ratelimit.RULES, "run", Rule(2, 60))
+    # Windows are fixed minutes and each graded request takes seconds; keep the clock inside one window, or a minute
+    # boundary between requests resets the count and the test fails at random.
+    frozen = ratelimit.time.time()
+    monkeypatch.setattr(ratelimit, "time", type("Clock", (), {"time": staticmethod(lambda: frozen)}))
     user_id, headers = make_user("student")
     client.post(f"{API}/courses/{course['id']}/enroll", headers=headers)
     body = {"problem_id": course["problem_id"], "code": "print(int(input()) + 1)\n"}

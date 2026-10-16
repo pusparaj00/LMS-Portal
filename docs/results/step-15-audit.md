@@ -9,12 +9,15 @@ Run on 2026-10-16 on branch `step-15-audit`. It covered the code added since the
 | G2 | A student whose account was opened from the LMS could not ask for deletion (TR-S-07): the request needs the password, and such an account has a random one nobody knows | Code review | For an account linked to an LMS, an explicit confirmation replaces the password; the status says which is needed and the Privacy page shows a checkbox instead of a password field. A password account still needs its password | Test in `test_lti.py` |
 | G3 | The LTI target check used a bare prefix, so `http://localhost:8080.evil.test/` passed as this tool | Code review | The target must be the tool's address itself or a path or query under it | 2 refusal cases added in `test_lti.py` |
 | G4 | A refused LTI launch was recorded twice (`lti.launch_refused` and a generic `access.denied`), which would inflate a breach report | Code review | The middleware leaves 401 and 403 on `/auth/` and `/lti/` paths to those handlers' own events | Assertion in `test_lti.py` |
+| G5 | `test_submissions_and_runs_are_limited...` failed at random in CI: limits use fixed one-minute windows and each graded request takes seconds, so a minute boundary between the requests reset the count | CI run 38868377376 (200 where 429 was expected); passed locally | The test pins the rate limiter's clock inside one window | 3 runs in a row pass; CI |
 
 Suite: `docker compose --profile test run --rm --build test`, **561 passed**, ruff clean. The OpenAPI file was
 regenerated for the new `confirm_with` and `confirm` fields.
 
 ## Seen but not changed
 
+- Fixed windows let a client make up to twice the limit across a minute boundary. That is the documented design
+  (TR-S-04, `app/ratelimit.py`), not changed here.
 - Two first launches of the same new LMS user at the same moment would race, and one would fail with a 500. This is
   unlikely in practice; making it safe needs an upsert on the account and course together.
 - Gradebook labels for LMS accounts are the placeholder (`lti-28-...`), because no name is taken from the LMS
