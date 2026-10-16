@@ -237,3 +237,4 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | Second audit | | Gradebook column order, LMS students' deletion, LTI target check, double audit, a flaky test fixed ([step-15](step-15-audit.md)) |
 | Grade passback | Scores stayed in this app | The teacher sends on-time scores to the LMS; one column per assignment; shown live in Moodle's grader report ([step-16](step-16.md)) |
 | F-05 announcements | None | Plain-text course announcements, posted, edited and deleted by the course's teacher, shown newest first to members ([step-17](step-17.md)) |
+| Third audit | | A hint could reveal the solution of a problem set in an assignment; a late run result showed on another problem ([step-18](step-18-audit.md)). Overall status in [progress-report](progress-report.md) |
