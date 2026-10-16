@@ -1358,6 +1358,60 @@
         "title": "ExplanationOut",
         "type": "object"
       },
+      "ExplanationRecord": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "from_cache": {
+            "description": "served from the stored-explanation cache instead of a model call",
+            "title": "From Cache",
+            "type": "boolean"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "enum": [
+                  "verified",
+                  "template"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "verified by the checks, or a fallback",
+            "title": "Outcome"
+          },
+          "requested": {
+            "title": "Requested",
+            "type": "boolean"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "what the student was shown, while it is still cached (24 hours)",
+            "title": "Text"
+          }
+        },
+        "required": [
+          "requested",
+          "attempts",
+          "outcome",
+          "from_cache",
+          "text"
+        ],
+        "title": "ExplanationRecord",
+        "type": "object"
+      },
       "GradeSendFailure": {
         "properties": {
           "assignment_id": {
@@ -2716,6 +2770,97 @@
         "title": "StoredExplanation",
         "type": "object"
       },
+      "StudentSubmission": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "problem_title": {
+            "title": "Problem Title",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submission_id": {
+            "title": "Submission Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "submission_id",
+          "problem_id",
+          "problem_title",
+          "created_at",
+          "status",
+          "passed",
+          "failed"
+        ],
+        "title": "StudentSubmission",
+        "type": "object"
+      },
+      "StudentWork": {
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptMastery"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "misconceptions": {
+            "items": {
+              "$ref": "#/components/schemas/SuspectedMisconception"
+            },
+            "title": "Misconceptions",
+            "type": "array"
+          },
+          "student_id": {
+            "title": "Student Id",
+            "type": "integer"
+          },
+          "submissions": {
+            "items": {
+              "$ref": "#/components/schemas/StudentSubmission"
+            },
+            "title": "Submissions",
+            "type": "array"
+          },
+          "synthetic": {
+            "title": "Synthetic",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "student_id",
+          "label",
+          "synthetic",
+          "concepts",
+          "misconceptions",
+          "submissions"
+        ],
+        "title": "StudentWork",
+        "type": "object"
+      },
       "SubmissionCreate": {
         "properties": {
           "code": {
@@ -2736,6 +2881,108 @@
           "code"
         ],
         "title": "SubmissionCreate",
+        "type": "object"
+      },
+      "SubmissionDetail": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/ExplanationRecord"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "failed_categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Failed Categories",
+            "type": "array"
+          },
+          "hidden_failed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "how many hidden tests failed; their inputs are never shown",
+            "title": "Hidden Failed"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "problem_title": {
+            "title": "Problem Title",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submission_id": {
+            "title": "Submission Id",
+            "type": "integer"
+          },
+          "visible_tests": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VisibleTestResult"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "per-test results for the examples; absent when the tests were changed after this submission",
+            "title": "Visible Tests"
+          }
+        },
+        "required": [
+          "submission_id",
+          "problem_id",
+          "problem_title",
+          "created_at",
+          "status",
+          "passed",
+          "failed",
+          "code",
+          "error_type",
+          "failed_categories",
+          "visible_tests",
+          "hidden_failed",
+          "explanation"
+        ],
+        "title": "SubmissionDetail",
         "type": "object"
       },
       "SubmissionResult": {
@@ -2998,6 +3245,29 @@
           "status"
         ],
         "title": "VisibleTest",
+        "type": "object"
+      },
+      "VisibleTestResult": {
+        "properties": {
+          "expected": {
+            "title": "Expected",
+            "type": "string"
+          },
+          "input": {
+            "title": "Input",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "input",
+          "expected",
+          "passed"
+        ],
+        "title": "VisibleTestResult",
         "type": "object"
       }
     },
@@ -5191,6 +5461,197 @@
         "summary": "Remove Student",
         "tags": [
           "courses"
+        ]
+      },
+      "get": {
+        "description": "Mastery, suspected misconceptions and submissions in this course, newest first (at most 100).",
+        "operationId": "student_work_api_v1_courses__course_id__students__student_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "student_id",
+            "required": true,
+            "schema": {
+              "title": "Student Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentWork"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Student Work",
+        "tags": [
+          "student work"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/students/{student_id}/mastery/{concept_id}/history": {
+      "get": {
+        "description": "The same ledger the student sees: each change with the test, error and rule behind it (F-34).",
+        "operationId": "student_history_api_v1_courses__course_id__students__student_id__mastery__concept_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "student_id",
+            "required": true,
+            "schema": {
+              "title": "Student Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LedgerEntry"
+                  },
+                  "title": "Response Student History Api V1 Courses  Course Id  Students  Student Id  Mastery  Concept Id  History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Student History",
+        "tags": [
+          "student work"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/students/{student_id}/submissions/{submission_id}": {
+      "get": {
+        "description": "The code as submitted and its result. Opening it is audited: a student's code is their personal data.",
+        "operationId": "submission_api_v1_courses__course_id__students__student_id__submissions__submission_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "student_id",
+            "required": true,
+            "schema": {
+              "title": "Student Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "title": "Submission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submission",
+        "tags": [
+          "student work"
         ]
       }
     },

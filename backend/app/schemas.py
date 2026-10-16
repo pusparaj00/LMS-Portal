@@ -494,6 +494,50 @@ class RecentSubmission(BaseModel):
     created_at: str
 
 
+class VisibleTestResult(BaseModel):
+    input: str
+    expected: str
+    passed: bool
+
+
+class ExplanationRecord(BaseModel):
+    requested: bool
+    attempts: int
+    outcome: Literal["verified", "template"] | None = Field(description="verified by the checks, or a fallback")
+    from_cache: bool = Field(description="served from the stored-explanation cache instead of a model call")
+    text: str | None = Field(description="what the student was shown, while it is still cached (24 hours)")
+
+
+class StudentSubmission(BaseModel):
+    submission_id: int
+    problem_id: int
+    problem_title: str
+    created_at: datetime
+    status: str
+    passed: int
+    failed: int
+
+
+class StudentWork(BaseModel):
+    student_id: int
+    label: str
+    synthetic: bool
+    concepts: list[ConceptMastery]
+    misconceptions: list[SuspectedMisconception]
+    submissions: list[StudentSubmission]
+
+
+class SubmissionDetail(StudentSubmission):
+    code: str
+    error_type: str | None
+    failed_categories: list[str]
+    visible_tests: list[VisibleTestResult] | None = Field(
+        description="per-test results for the examples; absent when the tests were changed after this submission"
+    )
+    hidden_failed: int | None = Field(description="how many hidden tests failed; their inputs are never shown")
+    explanation: ExplanationRecord
+
+
 class RecommendedProblem(BaseModel):
     problem_id: int
     title: str

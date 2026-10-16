@@ -15,7 +15,7 @@ from app.config import Settings, get_settings
 from app.llm.adapter import GEMINI_KEYS, LOCAL, OPENAI_COMPATIBLE
 from app.schemas import ConsentNotice, ConsentProvider, ConsentSection, ConsentStatus
 
-CONSENT_VERSION = "2026-10-v2"  # change it whenever the notice changes; everyone is then asked again
+CONSENT_VERSION = "2026-10-v3"  # change it whenever the notice changes; everyone is then asked again
 REQUIRED_MESSAGE = (
     "You have not agreed to the privacy notice, or you withdrew your agreement. "
     "Open Privacy in the top bar to read it."
@@ -75,7 +75,9 @@ def notice(settings: Settings) -> ConsentNotice:
                 "personal details in your code or messages." if providers else
                 "No model provider is configured, so explanations use fixed templates and nothing is sent outside "
                 "the system.",
-                "Your instructor can see your mastery and progress for the course, and class-level summaries.",
+                "Your instructor can see your mastery and why it changed, the code you submit with its test "
+                "results, and whether you asked for an explanation. Your messages to the assistant are not shown to "
+                "them.",
             ]),
             ConsentSection(heading="How long it is kept", paragraphs=[
                 (f"Your data is erased {settings.retention_days} days after your last activity."

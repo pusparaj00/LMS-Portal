@@ -96,6 +96,11 @@ def history(concept_id: int, user: Student, conn: Conn):
     ).scalar()
     if course is None or not can_access_course(conn, user, course):
         raise HTTPException(404, "concept not found")
+    return ledger(conn, user.id, concept_id)
+
+
+def ledger(conn: Connection, user_id: int, concept_id: int) -> list[LedgerEntry]:
+    """One student's changes to one concept, newest first; also what their teacher sees (PRD: transparent mastery)."""
     rows = conn.execute(
         text(
             "SELECT e.created_at, c.name AS concept, e.p_before, e.p_after, e.evidence_type, e.rule_id,"
@@ -109,7 +114,7 @@ def history(concept_id: int, user: Student, conn: Conn):
             " LEFT JOIN run_results r ON r.submission_id = e.submission_id"
             " WHERE e.user_id = :u AND e.concept_id = :c ORDER BY e.id DESC LIMIT :n"
         ),
-        {"u": user.id, "c": concept_id, "n": HISTORY_LIMIT},
+        {"u": user_id, "c": concept_id, "n": HISTORY_LIMIT},
     ).all()
     problem_ids = {x for r in rows for x in (r.problem_id, r.diagnostic_problem_id) if x}
     titles = {
