@@ -239,3 +239,4 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | F-05 announcements | None | Plain-text course announcements, posted, edited and deleted by the course's teacher, shown newest first to members ([step-17](step-17.md)) |
 | Third audit | | A hint could reveal the solution of a problem set in an assignment; a late run result showed on another problem ([step-18](step-18-audit.md)). Overall status in [progress-report](progress-report.md) |
 | Content management | Content could only be added | Edit, archive and restore problems and courses, rename and delete concepts, delete notes, leave or remove from a course, with no history lost ([step-19](step-19.md)) |
+| Accounts | No password change or reset; no names; staff created only from the command line | Own password and name, admin user page (create, reset, disable, roles) with lockout safeguards, sessions end on a change ([step-20](step-20.md)) |

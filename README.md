@@ -88,6 +88,14 @@ A dump keeps data a student has since had erased (TR-S-07), and a restore brings
 dumps are kept, delete old ones, and after a restore erase again anyone whose erasure completed after the dump was made
 (the worker's log lists each completed erasure by user number). This repository sets no backup expiry.
 
+## Accounts (F-01)
+
+Everyone can set a display name and change their password under **Account**. An admin manages people under **Users**:
+create staff accounts, reset a password (a one-time temporary password is shown once, to be passed on in person; the
+user must choose their own at the next login), disable or enable an account, and change roles. A changed or reset
+password signs out every other session. The first admin still comes from the command line:
+`NEW_USER_PASSWORD=... docker compose exec -T -e NEW_USER_PASSWORD api python -m app.manage create-user EMAIL admin`.
+
 ## Audit trail and breach procedure (TR-S-08)
 
 Logins, failed logins, refused (401, 403) and throttled (429) requests, not-found reads of submission ids, exports,
