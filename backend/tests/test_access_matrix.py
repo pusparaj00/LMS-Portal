@@ -38,6 +38,19 @@ POLICY = {
     ("GET", "/courses/{course_id}/concepts"): ANY,
     ("POST", "/courses/{course_id}/concepts"): INSTRUCTOR,
     ("POST", "/courses/{course_id}/enroll"): STUDENT,
+    ("DELETE", "/courses/{course_id}/enroll"): STUDENT,
+    ("PATCH", "/courses/{course_id}"): INSTRUCTOR,
+    ("POST", "/courses/{course_id}/archive"): INSTRUCTOR,
+    ("POST", "/courses/{course_id}/restore"): INSTRUCTOR,
+    ("PATCH", "/courses/{course_id}/concepts/{concept_id}"): INSTRUCTOR,
+    ("DELETE", "/courses/{course_id}/concepts/{concept_id}"): INSTRUCTOR,
+    ("DELETE", "/courses/{course_id}/students/{student_id}"): INSTRUCTOR,
+    ("DELETE", "/courses/{course_id}/documents/{document_id}"): INSTRUCTOR,
+    ("GET", "/problems/{problem_id}/source"): INSTRUCTOR,
+    ("PUT", "/problems/{problem_id}"): INSTRUCTOR,
+    ("POST", "/problems/{problem_id}/archive"): INSTRUCTOR,
+    ("POST", "/problems/{problem_id}/restore"): INSTRUCTOR,
+    ("POST", "/problems/{problem_id}/review"): INSTRUCTOR,
     ("GET", "/courses/{course_id}/documents"): INSTRUCTOR,
     ("POST", "/courses/{course_id}/documents"): INSTRUCTOR,
     ("GET", "/courses/{course_id}/class-mastery"): STAFF,
@@ -98,7 +111,7 @@ def request(client, method, template, headers):
     kwargs = {"headers": headers} if headers else {}
     if template in ("/problems", "/students/me/mastery"):
         kwargs["params"] = {"course_id": 1}
-    if method in ("POST", "PUT"):
+    if method in ("POST", "PUT", "PATCH"):
         kwargs["json"] = {}
     return client.request(method, path, **kwargs)
 
