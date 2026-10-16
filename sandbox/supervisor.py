@@ -7,12 +7,14 @@ per-run directory on a tmpfs and is killed, with every process of that uid, when
 """
 import json
 import os
+import re
 import resource
 import shutil
 import signal
 import subprocess
 import time
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 JOBS = Path(os.environ.get("JOBS_DIR", "/jobs"))
@@ -35,6 +37,7 @@ LIMITS = {
     "max_runs_per_job": 60,
 }
 ORPHAN_RESULT_SECONDS = 120
+REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")  # the API's own rule; anything else is logged as "-"
 
 
 def _demote() -> None:
@@ -160,8 +163,24 @@ def _write_result(job_id: str, payload: dict) -> None:
     os.replace(tmp, JOBS / "out" / f"{job_id}.json")
 
 
+def _log(job_id: str, request_id: object, payload: dict, started: float) -> None:
+    """One JSON line per job in the API's log format (TR-A-08); never the code or its input and output."""
+    runs = payload.get("runs", [])
+    statuses: dict[str, int] = {}
+    for run in runs:
+        statuses[run["status"]] = statuses.get(run["status"], 0) + 1
+    print(json.dumps({
+        "ts": datetime.now(UTC).isoformat(), "level": "INFO", "logger": "sandbox",
+        "request_id": request_id if isinstance(request_id, str) and REQUEST_ID.fullmatch(request_id) else "-",
+        "message": "job finished", "job_id": job_id, "runs": len(runs), "statuses": statuses,
+        "error": payload.get("error"), "duration_ms": int((time.monotonic() - started) * 1000),
+    }), flush=True)
+
+
 def handle(job_path: Path) -> None:
     job_id = job_path.stem
+    started = time.monotonic()
+    job: object = None
     try:
         job = json.loads(job_path.read_text())
         if _valid(job):
@@ -173,6 +192,7 @@ def handle(job_path: Path) -> None:
     finally:
         job_path.unlink(missing_ok=True)
     _write_result(job_id, payload)
+    _log(job_id, job.get("request_id") if isinstance(job, dict) else None, payload, started)
 
 
 def _ensure(path: Path, uid: int, gid: int, mode: int) -> None:

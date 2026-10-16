@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from app import audit
 from app.bodylimit import BodySizeLimit
 from app.errors import error_response, install_error_handlers
-from app.logging import configure_logging, request_id_var
+from app.logging import REQUEST_ID, configure_logging, request_id_var
 from app.ratelimit import client_ip
 from app.routers import (
     accounts,
@@ -43,7 +43,8 @@ install_error_handlers(app)
 
 @app.middleware("http")
 async def request_context(request: Request, call_next):
-    request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+    offered = request.headers.get("X-Request-ID", "")
+    request_id = offered if REQUEST_ID.fullmatch(offered) else uuid.uuid4().hex
     token = request_id_var.set(request_id)
     started = time.perf_counter()
     try:

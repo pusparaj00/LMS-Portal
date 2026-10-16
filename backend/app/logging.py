@@ -1,10 +1,14 @@
 import json
 import logging
+import re
 import sys
 from contextvars import ContextVar
 from datetime import UTC, datetime
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
+# A caller may name its own request; anything else (too long, odd characters) gets a fresh ID instead, so client text
+# never reaches the append-only audit trail or the sandbox log.
+REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 
 class JsonFormatter(logging.Formatter):

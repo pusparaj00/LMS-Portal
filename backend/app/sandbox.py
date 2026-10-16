@@ -10,6 +10,8 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.logging import request_id_var
+
 POLL_SECONDS = 0.05
 SECONDS_PER_RUN = 12  # the runner stops a run after 10 s wall time, plus startup
 SLACK_SECONDS = 15
@@ -73,7 +75,8 @@ def run_batch(code: str, stdins: list[str]) -> list[RunOutcome]:
     job_id = uuid.uuid4().hex
     tmp = jobs / "in" / f"{job_id}.json.tmp"
     try:
-        tmp.write_text(json.dumps({"code": code, "runs": [{"stdin": s} for s in stdins]}))
+        job = {"code": code, "runs": [{"stdin": s} for s in stdins], "request_id": request_id_var.get()}
+        tmp.write_text(json.dumps(job))
         os.replace(tmp, jobs / "in" / f"{job_id}.json")
     except OSError as exc:
         raise SandboxUnavailable("cannot submit job to the sandbox") from exc
