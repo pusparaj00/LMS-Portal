@@ -81,7 +81,7 @@ def test_schema_has_the_core_tables_and_the_later_additions(engines):
                 text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
             )
         } - {"alembic_version"}
-    assert len(names) == 28
+    assert len(names) == 30
     assert names >= {
         "misconceptions", "item_options", "mastery_params", "evidence_concept_map", "misconception_state",
         "explanation_checks", "explanation_cache", "consents",

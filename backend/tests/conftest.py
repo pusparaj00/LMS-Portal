@@ -79,6 +79,8 @@ def make_user(owner):
             f"DELETE FROM mastery_events WHERE submission_id IN ({subs})",
             f"DELETE FROM run_results WHERE submission_id IN ({subs})",
             f"DELETE FROM submissions WHERE id IN ({subs})",
+            f"DELETE FROM assignment_problems WHERE problem_id IN ({problems})",
+            f"DELETE FROM assignments WHERE course_id IN ({courses})",
             f"DELETE FROM test_cases WHERE problem_id IN ({problems})",
             f"DELETE FROM problem_concepts WHERE problem_id IN ({problems})",
             f"DELETE FROM item_options WHERE problem_id IN ({problems})",
