@@ -1,7 +1,7 @@
 # Progress report: Adaptive AI-Powered LMS
 
-Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 25 steps, each on its own branch of
-`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-25-difficulty-estimates`, with **648 automated tests passing**. Every number
+Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 26 steps, each on its own branch of
+`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-26-audit`, with **651 automated tests passing**. Every number
 below was measured and comes from a results file in this folder, which gives the command and the date.
 
 ## 1. Where the project stands
@@ -28,7 +28,7 @@ What is missing is mostly work only people can do:
 | PRD features (34) | 34 done |
 | TRD implementation requirements (69) | 52 done, 5 partly done, 3 not built or not run, 9 not applicable (custom sandbox instead of Judge0) |
 | Validation tests (12) | 7 pass, 1 fails (TR-V-05, simulation), 2 partly met, 2 not run (need raters or a local model) |
-| Automated tests | 648 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
+| Automated tests | 651 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
 
 ## 2. Plan gates
 
@@ -81,6 +81,7 @@ What is missing is mostly work only people can do:
 | 23 | `step-23-chat-routes` | The assistant answers "what next" and deadlines, grades and announcements from records, completing F-52 |
 | 24 | `step-24-leak-policy` | Per-problem help policy: hint limit and a stricter-only leak level, completing F-62 |
 | 25 | `step-25-difficulty-estimates` | "Estimate it for me": a measured, model-free difficulty estimate for new problems, completing F-23 |
+| 26 | `step-26-audit` | Audit: archived courses closed to students, chat skips them, estimate uses the course's concept names |
 
 The three audits found and fixed 16 bugs, each with a test, and each recorded in `step-11-audit.md`,
 `step-15-audit.md` and `step-18-audit.md`. More defects were found and fixed during the steps themselves and are
