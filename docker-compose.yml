@@ -23,6 +23,19 @@ x-backend-env: &backend-env
   TOOL_BASE_URL: ${TOOL_BASE_URL:-http://localhost:8080}
   LTI_KEYS_TIMEOUT_S: ${LTI_KEYS_TIMEOUT_S:-5}
 
+# The tests never touch the app's data: they run against their own database (lms_test, on the same Postgres server),
+# their own Redis database number, and their own copies of the mastery service and the worker (TR-A-01, TR-V-10).
+x-test-env: &test-env
+  OWNER_DATABASE_URL: postgresql+psycopg://lms_owner:${POSTGRES_PASSWORD:?set in .env}@db:5432/lms_test
+  DATABASE_URL: postgresql+psycopg://lms_api:${LMS_API_DB_PASSWORD:?set in .env}@db:5432/lms_test
+  MASTERY_DATABASE_URL: postgresql+psycopg://lms_mastery:${LMS_MASTERY_DB_PASSWORD:?set in .env}@db:5432/lms_test
+  CHAT_DATABASE_URL: postgresql+psycopg://lms_chat:${LMS_CHAT_DB_PASSWORD:?set in .env}@db:5432/lms_test
+  REDIS_URL: redis://:${REDIS_PASSWORD:?set in .env}@redis:6379/1
+  MASTERY_SERVICE_URL: http://mastery-test:8001
+  LMS_API_DB_PASSWORD: ${LMS_API_DB_PASSWORD:?set in .env}
+  LMS_MASTERY_DB_PASSWORD: ${LMS_MASTERY_DB_PASSWORD:?set in .env}
+  LMS_CHAT_DB_PASSWORD: ${LMS_CHAT_DB_PASSWORD:?set in .env}
+
 services:
   db:
     restart: unless-stopped
@@ -188,21 +201,76 @@ services:
       timeout: 3s
       retries: 6
 
+  testdb:
+    profiles: ["test"]
+    build: ./backend
+    command: ["python", "-m", "tests.prepare_db"]
+    environment:
+      <<: *test-env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  mastery-test:
+    profiles: ["test"]
+    build: ./backend
+    command: ["uvicorn", "app.mastery.main:app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      MASTERY_DATABASE_URL: postgresql+psycopg://lms_mastery:${LMS_MASTERY_DB_PASSWORD:?set in .env}@db:5432/lms_test
+      MASTERY_SERVICE_TOKEN: ${MASTERY_SERVICE_TOKEN:?set in .env}
+    depends_on:
+      testdb:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  worker-test:
+    profiles: ["test"]
+    build: ./backend
+    command: ["python", "-m", "app.worker.main"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://lms_api:${LMS_API_DB_PASSWORD:?set in .env}@db:5432/lms_test
+      REDIS_URL: redis://:${REDIS_PASSWORD:?set in .env}@redis:6379/1
+      MASTERY_SERVICE_URL: http://mastery-test:8001
+      MASTERY_SERVICE_TOKEN: ${MASTERY_SERVICE_TOKEN:?set in .env}
+      RETENTION_DAYS: "0"
+      AUDIT_RETENTION_DAYS: "0"
+    depends_on:
+      testdb:
+        condition: service_completed_successfully
+      mastery-test:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, time, redis; v = redis.Redis.from_url(os.environ['REDIS_URL']).get('worker:heartbeat'); assert v and time.time() - float(v) < 20"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
   test:
     profiles: ["test"]
     build: ./backend
     command: ["sh", "-c", "ruff check . && pytest -q"]
     environment:
-      <<: *backend-env
+      <<: [*test-env, *backend-env]
       LLM_PROVIDER: stub
       LLM_MODEL: stub
-      OWNER_DATABASE_URL: postgresql+psycopg://lms_owner:${POSTGRES_PASSWORD:?set in .env}@db:5432/lms
-      MASTERY_DATABASE_URL: postgresql+psycopg://lms_mastery:${LMS_MASTERY_DB_PASSWORD:?set in .env}@db:5432/lms
+      MASTERY_SERVICE_TOKEN: ${MASTERY_SERVICE_TOKEN:?set in .env}
     volumes:
       - jobs:/jobs
       - ./data:/srv/data:ro
     depends_on:
-      api:
+      mastery-test:
+        condition: service_healthy
+      worker-test:
+        condition: service_healthy
+      sandbox:
         condition: service_healthy
 
 volumes:

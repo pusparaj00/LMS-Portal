@@ -15,7 +15,10 @@ down_revision = "0004"
 
 def upgrade() -> None:
     password = os.environ["LMS_CHAT_DB_PASSWORD"].replace("'", "''")
-    op.execute(f"CREATE ROLE lms_chat LOGIN PASSWORD '{password}'")
+    op.execute(  # per server, not per database: the test database finds it already there
+        "DO $role$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lms_chat') THEN"
+        f" CREATE ROLE lms_chat LOGIN PASSWORD '{password}'; END IF; END $role$"
+    )
     op.execute("GRANT USAGE ON SCHEMA public TO lms_chat")
     op.execute("GRANT SELECT ON concepts, mastery, enrollments, courses TO lms_chat")
 

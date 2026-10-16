@@ -21,6 +21,14 @@ def _password(var: str) -> str:
     return "'" + os.environ[var].replace("'", "''") + "'"
 
 
+def _create_role(name: str, password_literal: str) -> None:
+    """Roles are per server: a second database on the same server (the test database) finds them already there."""
+    op.execute(
+        f"DO $role$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{name}') THEN"
+        f" CREATE ROLE {name} LOGIN PASSWORD {password_literal}; END IF; END $role$"
+    )
+
+
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
@@ -140,8 +148,8 @@ def upgrade() -> None:
     );
     """)
 
-    op.execute(f"CREATE ROLE lms_api LOGIN PASSWORD {_password('LMS_API_DB_PASSWORD')}")
-    op.execute(f"CREATE ROLE lms_mastery LOGIN PASSWORD {_password('LMS_MASTERY_DB_PASSWORD')}")
+    _create_role("lms_api", _password("LMS_API_DB_PASSWORD"))
+    _create_role("lms_mastery", _password("LMS_MASTERY_DB_PASSWORD"))
     op.execute("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC")
     op.execute("GRANT USAGE ON SCHEMA public TO lms_api, lms_mastery")
     op.execute("GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO lms_api, lms_mastery")

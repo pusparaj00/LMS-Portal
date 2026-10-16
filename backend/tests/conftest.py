@@ -8,6 +8,15 @@ from sqlalchemy import create_engine, text
 from app.auth import create_token, hash_password
 from app.consent import CONSENT_VERSION
 from app.main import app
+from tests.prepare_db import TEST_DATABASE
+
+# The suite creates, changes and deletes data by the thousand, so it must never run against the app's own database,
+# whatever the environment says. This stops the whole run before any test starts.
+for _name in ("OWNER_DATABASE_URL", "DATABASE_URL", "MASTERY_DATABASE_URL", "CHAT_DATABASE_URL"):
+    if not os.environ.get(_name, "").rsplit("/", 1)[-1] == TEST_DATABASE:
+        pytest.exit(f"{_name} must point at the database '{TEST_DATABASE}'; the tests never run against app data", 2)
+if not os.environ.get("REDIS_URL", "").endswith("/1"):
+    pytest.exit("REDIS_URL must use Redis database 1 for tests; database 0 holds the app's own data", 2)
 
 
 @pytest.fixture(autouse=True)
@@ -102,6 +111,7 @@ def make_user(owner):
             "DELETE FROM erasure_requests WHERE user_id = ANY(:ids)",
             "DELETE FROM lti_users WHERE user_id = ANY(:ids)",
             f"DELETE FROM lti_contexts WHERE course_id IN ({courses})",
+            "DELETE FROM lti_platforms WHERE issuer LIKE 'https://erasure-%'",
             f"DELETE FROM concepts WHERE course_id IN ({courses})",
             "DELETE FROM enrollments WHERE user_id = ANY(:ids)",
             f"DELETE FROM enrollments WHERE course_id IN ({courses})",
