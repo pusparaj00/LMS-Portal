@@ -12,7 +12,7 @@ tests or a measured result; where a status could not be checked it says so.
 The system is a working, tested prototype of the whole demo flow in the plan (phases 0 to 5, gates G0 to G4 passed, the
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
-1. **Features not built or only partly built:** 1 of 34 PRD features not built (F-23).
+1. **Features not built or only partly built:** none; all 34 PRD features are built (F-23 in Step 25, for problems a teacher adds; generated items are later work, TR-L-10).
 2. **Requirements not met:** of 69 implementation requirements, 52 done, 5 partly done, 3 not built or not run, 9 not
    applicable by design (the sandbox is a custom runner, not Judge0). Compliance is built (TR-S-05 to S-08) but
    awaits the data protection contact's review.
@@ -36,9 +36,9 @@ Status of all 34 features. P0, P1 and P2 are the PRD's priorities.
 
 | Status | Features |
 | --- | --- |
-| Done (33) | F-01, F-04, F-05, F-52, F-62, F-02, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61, F-70 |
+| Done (34) | F-01, F-04, F-05, F-23, F-52, F-62, F-02, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61, F-70 |
 | Partly built (0) | None. |
-| Not built (1) | **F-23** difficulty estimates for new items from text and tags (P2). |
+| Not built (0) | None. |
 
 F-02 and F-03 are closed: a teacher can create a course and its concepts, add problems and upload notes (text, Markdown or
 PDF) in the browser.
@@ -244,3 +244,4 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | Teacher's view of a student | The PRD promises the instructor can see why a student's mastery changed; only the student could, so F-34 was counted done too early | The course's teacher sees a student's mastery, its history, their submissions and code (audited; hidden tests and chat never shown); notice v3 says so ([step-22](step-22.md)) |
 | F-52 routes | `recommend` and `lms` answered "not available" | Both answer from the student's records by the dashboard's and gradebook's own rules, through the read-only chat role, with no model writing the reply ([step-23](step-23.md)) |
 | F-62 leak policy | One global threshold | Per-problem leak level, stricter only (Standard 0.7, Strict 0.5, Very strict 0.3), with the measured cost of each; the PRD's "unless the instructor allows it" is not built, because the project rule says never ([step-24](step-24.md)) |
+| F-23 difficulty estimates | Teachers picked Easy, Medium or Hard | "Estimate it for me": a ridge model on the bank estimates from the code, statement and concepts, marked `estimated`; leave-one-out error 0.370 against 0.607 for the mean ([step-25](step-25.md)) |
