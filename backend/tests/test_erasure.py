@@ -75,6 +75,16 @@ def fill(owner, user_id: int, course) -> int:
             text("INSERT INTO misconception_state (user_id, misconception_id, probability) VALUES (:u, :m, 0.5)"),
             {"u": user_id, "m": misconception},
         )
+        platform = conn.execute(
+            text(
+                "INSERT INTO lti_platforms (issuer, client_id, auth_login_url, jwks_url, deployment_ids)"
+                " VALUES (:i, 'c', 'https://a.test', 'https://a.test/k', '{1}') RETURNING id"
+            ),
+            {"i": f"https://erasure-{uuid.uuid4().hex[:8]}.test"},
+        ).scalar_one()
+        conn.execute(
+            text("INSERT INTO lti_users (platform_id, sub, user_id) VALUES (:p, 's', :u)"), {"p": platform, "u": user_id}
+        )
     return submission
 
 

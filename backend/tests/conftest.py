@@ -97,6 +97,8 @@ def make_user(owner):
             "DELETE FROM chat_messages WHERE user_id = ANY(:ids)",
             "DELETE FROM consents WHERE user_id = ANY(:ids)",
             "DELETE FROM erasure_requests WHERE user_id = ANY(:ids)",
+            "DELETE FROM lti_users WHERE user_id = ANY(:ids)",
+            f"DELETE FROM lti_contexts WHERE course_id IN ({courses})",
             f"DELETE FROM concepts WHERE course_id IN ({courses})",
             "DELETE FROM enrollments WHERE user_id = ANY(:ids)",
             f"DELETE FROM enrollments WHERE course_id IN ({courses})",
