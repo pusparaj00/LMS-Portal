@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ApiError, BUSY_RETRIES, ProblemDetail, Session, SubmissionResult, api } from "../api";
 import { FeedbackPanel } from "./FeedbackPanel";
+import { HelpPolicy } from "./HelpPolicy";
 
 const STARTER = "# Read from input(), print the answer.\n";
 
@@ -137,6 +138,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
             {!isStudent && <span>Only students can run code.</span>}
           </div>
           {error && <p role="alert" className="error">{error}</p>}
+          {session.role === "instructor" && <HelpPolicy session={session} problemId={problemId} />}
           {result && (
             <div className="results" aria-live="polite">
               <Summary result={result} submitted={submitted} />
