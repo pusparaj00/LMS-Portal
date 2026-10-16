@@ -1,6 +1,133 @@
 {
   "components": {
     "schemas": {
+      "AssignmentIn": {
+        "properties": {
+          "due_at": {
+            "format": "date-time",
+            "title": "Due At",
+            "type": "string"
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentProblemIn"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Problems",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "due_at",
+          "problems"
+        ],
+        "title": "AssignmentIn",
+        "type": "object"
+      },
+      "AssignmentOut": {
+        "properties": {
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "due_at": {
+            "format": "date-time",
+            "title": "Due At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "mine": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MyScore"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the signed-in student's own score; absent for staff"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentProblemOut"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "course_id",
+          "title",
+          "due_at",
+          "possible",
+          "problems"
+        ],
+        "title": "AssignmentOut",
+        "type": "object"
+      },
+      "AssignmentProblemIn": {
+        "properties": {
+          "points": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Points",
+            "type": "number"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "problem_id"
+        ],
+        "title": "AssignmentProblemIn",
+        "type": "object"
+      },
+      "AssignmentProblemOut": {
+        "properties": {
+          "points": {
+            "title": "Points",
+            "type": "number"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "problem_id",
+          "title",
+          "points"
+        ],
+        "title": "AssignmentProblemOut",
+        "type": "object"
+      },
       "ChatRequest": {
         "properties": {
           "message": {
@@ -1060,6 +1187,140 @@
         "title": "ExplanationOut",
         "type": "object"
       },
+      "Gradebook": {
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/GradebookAssignment"
+            },
+            "title": "Assignments",
+            "type": "array"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "students": {
+            "items": {
+              "$ref": "#/components/schemas/GradebookRow"
+            },
+            "title": "Students",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assignments",
+          "students",
+          "possible"
+        ],
+        "title": "Gradebook",
+        "type": "object"
+      },
+      "GradebookAssignment": {
+        "properties": {
+          "due_at": {
+            "format": "date-time",
+            "title": "Due At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "due_at",
+          "possible"
+        ],
+        "title": "GradebookAssignment",
+        "type": "object"
+      },
+      "GradebookCell": {
+        "properties": {
+          "assignment_id": {
+            "title": "Assignment Id",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "complete",
+              "in_progress",
+              "late",
+              "missing",
+              "not_started"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "with_late": {
+            "title": "With Late",
+            "type": "number"
+          }
+        },
+        "required": [
+          "assignment_id",
+          "score",
+          "with_late",
+          "status"
+        ],
+        "title": "GradebookCell",
+        "type": "object"
+      },
+      "GradebookRow": {
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/GradebookCell"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "student_id": {
+            "title": "Student Id",
+            "type": "integer"
+          },
+          "synthetic": {
+            "title": "Synthetic",
+            "type": "boolean"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          },
+          "total_with_late": {
+            "title": "Total With Late",
+            "type": "number"
+          }
+        },
+        "required": [
+          "student_id",
+          "label",
+          "synthetic",
+          "cells",
+          "total",
+          "total_with_late"
+        ],
+        "title": "GradebookRow",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1321,6 +1582,41 @@
           "after"
         ],
         "title": "MasteryChange",
+        "type": "object"
+      },
+      "MyScore": {
+        "properties": {
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "complete",
+              "in_progress",
+              "late",
+              "missing",
+              "not_started"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "with_late": {
+            "title": "With Late",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "with_late",
+          "possible",
+          "status"
+        ],
+        "title": "MyScore",
         "type": "object"
       },
       "OptionOut": {
@@ -2568,6 +2864,228 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/assignments": {
+      "get": {
+        "description": "Every assignment in the course by due date; a student also gets their own score for each.",
+        "operationId": "list_assignments_api_v1_courses__course_id__assignments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssignmentOut"
+                  },
+                  "title": "Response List Assignments Api V1 Courses  Course Id  Assignments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Assignments",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "post": {
+        "operationId": "create_assignment_api_v1_courses__course_id__assignments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/assignments/{assignment_id}": {
+      "delete": {
+        "description": "Removes the assignment only; the students' submissions stay.",
+        "operationId": "delete_assignment_api_v1_courses__course_id__assignments__assignment_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "title": "Assignment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Assignment",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "put": {
+        "description": "Changing the problems or the due date changes every score at once: scores are computed, not stored.",
+        "operationId": "update_assignment_api_v1_courses__course_id__assignments__assignment_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "title": "Assignment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/class-mastery": {
       "get": {
         "operationId": "class_mastery_api_v1_courses__course_id__class_mastery_get",
@@ -2921,6 +3439,68 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/export/gradebook": {
+      "get": {
+        "description": "One row per student and assignment: the on-time score, the score with late work, and the status (F-04).",
+        "operationId": "export_gradebook_api_v1_courses__course_id__export_gradebook_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "csv (default) or json",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "description": "csv (default) or json",
+              "enum": [
+                "csv",
+                "json"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Gradebook",
+        "tags": [
+          "export"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/export/mastery": {
       "get": {
         "description": "The current mastery value of every student for every concept in the course.",
@@ -3042,6 +3622,54 @@
         "summary": "Export Mastery Events",
         "tags": [
           "export"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/gradebook": {
+      "get": {
+        "description": "Students by assignment: the on-time score, what late work would make it, and a status for each.",
+        "operationId": "read_gradebook_api_v1_courses__course_id__gradebook_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Gradebook"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Gradebook",
+        "tags": [
+          "assignments"
         ]
       }
     },

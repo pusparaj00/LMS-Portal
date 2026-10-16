@@ -134,6 +134,84 @@ class ConsentAccept(BaseModel):
     version: Text = Field(max_length=40, description="the notice version the student was shown")
 
 
+class AssignmentProblemIn(BaseModel):
+    problem_id: int
+    points: float = Field(default=1.0, gt=0, le=100)
+
+
+def _aware(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        raise ValueError("give the due time with its time zone, for example 2026-11-01T23:59:00+05:30")
+    return value
+
+
+class AssignmentIn(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
+    due_at: Annotated[datetime, AfterValidator(_aware)]
+    problems: list[AssignmentProblemIn] = Field(min_length=1, max_length=50)
+
+    @model_validator(mode="after")
+    def _distinct(self):
+        if len({p.problem_id for p in self.problems}) != len(self.problems):
+            raise ValueError("each problem can be in an assignment only once")
+        return self
+
+
+class AssignmentProblemOut(BaseModel):
+    problem_id: int
+    title: str
+    points: float
+
+
+Status = Literal["complete", "in_progress", "late", "missing", "not_started"]
+
+
+class MyScore(BaseModel):
+    score: float
+    with_late: float
+    possible: float
+    status: Status
+
+
+class AssignmentOut(BaseModel):
+    id: int
+    course_id: int
+    title: str
+    due_at: datetime
+    possible: float
+    problems: list[AssignmentProblemOut]
+    mine: MyScore | None = Field(default=None, description="the signed-in student's own score; absent for staff")
+
+
+class GradebookAssignment(BaseModel):
+    id: int
+    title: str
+    due_at: datetime
+    possible: float
+
+
+class GradebookCell(BaseModel):
+    assignment_id: int
+    score: float
+    with_late: float
+    status: Status
+
+
+class GradebookRow(BaseModel):
+    student_id: int
+    label: str
+    synthetic: bool
+    cells: list[GradebookCell]
+    total: float
+    total_with_late: float
+
+
+class Gradebook(BaseModel):
+    assignments: list[GradebookAssignment]
+    students: list[GradebookRow]
+    possible: float
+
+
 class ConceptCreate(BaseModel):
     name: Text = Field(min_length=2, max_length=60, examples=["string formatting"])
 

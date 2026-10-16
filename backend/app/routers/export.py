@@ -1,7 +1,10 @@
-"""Export of mastery vectors and the mastery ledger for evaluation and for the instructor (TR-D-07).
+"""Export of mastery vectors and the mastery ledger for evaluation and for the instructor (TR-D-07), and of the
+gradebook (F-04).
 
-Rows carry the student's numeric ID and a `synthetic` flag, never an email address, so an export can be shared for
-analysis without naming anyone. Both exports are read-only and limited to the course's instructor (or an admin).
+Mastery rows carry the student's numeric ID and a `synthetic` flag, never an email address, so they can be shared for
+analysis without naming anyone. The gradebook is the exception: it is for recording grades, so it carries the same
+label the class view shows (the part of the email before the @). Every export is read-only and limited to the
+course's instructor (or an admin), and is written to the audit trail.
 """
 import csv
 import io
@@ -22,6 +25,10 @@ Format = Annotated[Literal["csv", "json"], Query(description="csv (default) or j
 FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 
 MASTERY_COLUMNS = ["student_id", "synthetic", "concept_id", "concept", "p_known", "updated_at"]
+GRADEBOOK_COLUMNS = [
+    "student_id", "label", "synthetic", "assignment_id", "assignment", "due_at", "score", "possible", "with_late",
+    "status",
+]
 EVENT_COLUMNS = [
     "event_id", "student_id", "synthetic", "concept_id", "concept", "p_before", "p_after", "weight", "correct",
     "evidence_type", "rule_id", "submission_id", "evidence_ref", "created_at",
@@ -101,3 +108,24 @@ def export_mastery_events(course_id: int, user: Staff, conn: Conn, request: Requ
     ).mappings()
     data = [{**r, "synthetic": _is_synthetic(r["email"])} for r in rows]
     return _respond(data, EVENT_COLUMNS, format, f"mastery-events-course-{course_id}")
+
+
+@router.get("/gradebook", response_model=None)
+def export_gradebook(course_id: int, user: Staff, conn: Conn, request: Request, format: Format = "csv"):
+    """One row per student and assignment: the on-time score, the score with late work, and the status (F-04)."""
+    from app.routers.assignments import gradebook
+
+    _check(conn, user, course_id, request, "gradebook", format)
+    book = gradebook(conn, course_id)
+    assignments = {a.id: a for a in book.assignments}
+    data = [
+        {
+            "student_id": row.student_id, "label": row.label, "synthetic": row.synthetic,
+            "assignment_id": cell.assignment_id, "assignment": assignments[cell.assignment_id].title,
+            "due_at": assignments[cell.assignment_id].due_at, "score": cell.score,
+            "possible": assignments[cell.assignment_id].possible, "with_late": cell.with_late, "status": cell.status,
+        }
+        for row in book.students
+        for cell in row.cells
+    ]
+    return _respond(data, GRADEBOOK_COLUMNS, format, f"gradebook-course-{course_id}")
