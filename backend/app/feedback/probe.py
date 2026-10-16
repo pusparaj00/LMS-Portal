@@ -42,7 +42,7 @@ def select_probe(conn: Connection, ctx: ExplainContext) -> Probe | None:
         text(
             "SELECT p.id, p.kind, p.title, p.statement, p.difficulty_b FROM problems p"
             " JOIN problem_concepts pc ON pc.problem_id = p.id AND pc.concept_id = :c AND pc.weight >= :w"
-            " WHERE p.course_id = :course AND p.id <> :cur AND NOT EXISTS ("
+            " WHERE p.course_id = :course AND p.id <> :cur AND p.archived_at IS NULL AND NOT EXISTS ("
             "   SELECT 1 FROM mastery_events e WHERE e.user_id = :u AND e.evidence_ref LIKE 'probe:%:' || p.id)"
             " AND NOT EXISTS (SELECT 1 FROM submissions s JOIN run_results r ON r.submission_id = s.id"
             "   WHERE s.user_id = :u AND s.problem_id = p.id AND r.status = 'passed')"

@@ -39,7 +39,8 @@ def _items(conn: Connection, course_id: int) -> tuple[list[Item], list[int]]:
     for pid, kind, a, b, cid, weight in conn.execute(
         text(
             "SELECT p.id, p.kind, p.discrimination_a, p.difficulty_b, pc.concept_id, pc.weight FROM problems p"
-            " JOIN problem_concepts pc ON pc.problem_id = p.id WHERE p.course_id = :c ORDER BY p.id"
+            " JOIN problem_concepts pc ON pc.problem_id = p.id WHERE p.course_id = :c AND p.archived_at IS NULL"
+            " ORDER BY p.id"
         ),
         {"c": course_id},
     ):

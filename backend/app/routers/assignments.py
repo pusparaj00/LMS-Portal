@@ -52,12 +52,15 @@ def _assignments(conn: Connection, course_id: int, assignment_id: int | None = N
 def _save_problems(conn: Connection, course_id: int, assignment_id: int, body: AssignmentIn) -> None:
     ids = [p.problem_id for p in body.problems]
     usable = set(conn.execute(
-        text("SELECT id FROM problems WHERE id = ANY(:ids) AND course_id = :c AND kind = 'code'"),
-        {"ids": ids, "c": course_id},
+        text(
+            "SELECT id FROM problems WHERE id = ANY(:ids) AND course_id = :c AND kind = 'code' AND (archived_at IS NULL"
+            " OR id IN (SELECT problem_id FROM assignment_problems WHERE assignment_id = :a))"
+        ),
+        {"ids": ids, "c": course_id, "a": assignment_id},
     ).scalars())
     refused = [i for i in ids if i not in usable]
     if refused:
-        raise HTTPException(422, f"not a coding problem of this course: {', '.join(map(str, refused))}")
+        raise HTTPException(422, f"not a live coding problem of this course: {', '.join(map(str, refused))}")
     conn.execute(text("DELETE FROM assignment_problems WHERE assignment_id = :a"), {"a": assignment_id})
     for p in body.problems:
         conn.execute(

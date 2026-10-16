@@ -88,6 +88,11 @@ class Course(BaseModel):
     title: str
     instructor_id: int
     enrolled: bool
+    archived: bool = False
+
+
+class CourseRename(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
 
 
 class CourseConcept(BaseModel):
@@ -271,6 +276,7 @@ class Problem(BaseModel):
     discrimination_a: float
     review_status: Literal["needs human review", "reviewed"]
     concepts: list[ConceptTag]
+    archived: bool = False
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -323,6 +329,10 @@ class ProblemCreate(BaseModel):
     concepts: list[ConceptTag]
     reference_solution: Text
     test_cases: list[TestCaseIn]
+
+
+class ProblemSource(ProblemCreate):
+    """Everything an instructor needs to edit a coding problem, hidden tests and reference solution included."""
 
 
 class SubmissionCreate(BaseModel):

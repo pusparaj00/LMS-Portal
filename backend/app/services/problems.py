@@ -5,7 +5,8 @@ from sqlalchemy import Connection, text
 from app.schemas import ConceptTag, Problem, ProblemDetail
 
 PROBLEM_COLUMNS = (
-    "id, course_id, title, statement, language, kind, difficulty_b, discrimination_a, review_status"
+    "id, course_id, title, statement, language, kind, difficulty_b, discrimination_a, review_status,"
+    " archived_at IS NOT NULL AS archived"
 )
 
 
@@ -24,10 +25,13 @@ def _concepts(conn: Connection, problem_ids: list[int]) -> dict[int, list[Concep
     return out
 
 
-def list_problems(conn: Connection, course_id: int) -> list[Problem]:
+def list_problems(conn: Connection, course_id: int, include_archived: bool = False) -> list[Problem]:
     rows = conn.execute(
-        text(f"SELECT {PROBLEM_COLUMNS} FROM problems WHERE course_id = :c ORDER BY id"),
-        {"c": course_id},
+        text(
+            f"SELECT {PROBLEM_COLUMNS} FROM problems WHERE course_id = :c"
+            " AND (CAST(:all AS boolean) OR archived_at IS NULL) ORDER BY id"
+        ),
+        {"c": course_id, "all": include_archived},
     ).mappings().all()
     concepts = _concepts(conn, [r["id"] for r in rows])
     return [Problem(**r, concepts=concepts[r["id"]]) for r in rows]
@@ -162,3 +166,54 @@ def _same_content(
         and [tuple(t) for t in stored_tests] == [(t["input"], t["expected"], t["hidden"], t["category"]) for t in tests]
         and [tuple(o) for o in stored_options] == [(o["text"], o["correct"], o["misconception_id"]) for o in options]
     )
+
+
+def source(conn: Connection, problem_id: int) -> dict | None:
+    """A coding problem as its editor needs it: hidden tests and the reference solution included (instructors only)."""
+    row = conn.execute(
+        text(
+            "SELECT course_id, title, statement, difficulty_b, discrimination_a, reference_solution FROM problems"
+            " WHERE id = :p AND kind = 'code'"
+        ),
+        {"p": problem_id},
+    ).mappings().first()
+    if row is None:
+        return None
+    concepts = conn.execute(
+        text(
+            "SELECT pc.concept_id, c.name, pc.weight FROM problem_concepts pc JOIN concepts c ON c.id = pc.concept_id"
+            " WHERE pc.problem_id = :p ORDER BY c.name"
+        ),
+        {"p": problem_id},
+    ).mappings().all()
+    tests = conn.execute(
+        text("SELECT input, expected, hidden, category FROM test_cases WHERE problem_id = :p ORDER BY id"),
+        {"p": problem_id},
+    ).mappings().all()
+    return {**row, "reference_solution": row["reference_solution"] or "", "concepts": [dict(c) for c in concepts],
+            "test_cases": [dict(t) for t in tests]}
+
+
+def update_code_problem(
+    conn: Connection, problem_id: int, *, title: str, statement: str, difficulty_b: float, discrimination_a: float,
+    reference_solution: str, concept_weights: list[tuple[int, float]], tests: list[dict],
+) -> None:
+    """Replace a coding problem's content. It needs a fresh human review; past run results stay as they were."""
+    conn.execute(
+        text(
+            "UPDATE problems SET title = :t, statement = :s, difficulty_b = :b, discrimination_a = :a,"
+            " reference_solution = :ref, review_status = 'needs human review' WHERE id = :p"
+        ),
+        {"t": title, "s": statement, "b": difficulty_b, "a": discrimination_a, "ref": reference_solution,
+         "p": problem_id},
+    )
+    for table in ("test_cases", "problem_concepts"):
+        conn.execute(text(f"DELETE FROM {table} WHERE problem_id = :p"), {"p": problem_id})
+    for concept_id, weight in concept_weights:
+        conn.execute(text("INSERT INTO problem_concepts VALUES (:p, :c, :w)"),
+                     {"p": problem_id, "c": concept_id, "w": weight})
+    for t in tests:
+        conn.execute(
+            text("INSERT INTO test_cases (problem_id, input, expected, hidden, category) VALUES (:p, :i, :e, :h, :c)"),
+            {"p": problem_id, "i": t["input"], "e": t["expected"], "h": t["hidden"], "c": t["category"]},
+        )

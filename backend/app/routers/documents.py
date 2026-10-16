@@ -3,7 +3,7 @@ import base64
 import binascii
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import text
 
 from app.auth import Conn, CurrentUser, can_access_course, require_role
@@ -59,3 +59,18 @@ def list_documents(course_id: int, user: Instructor, conn: Conn):
         {"c": course_id},
     ).mappings()
     return [DocumentOut(**r) for r in rows]
+
+
+@router.delete("/{document_id}", status_code=204)
+def delete_document(course_id: int, document_id: int, user: Instructor, conn: Conn):
+    """Removes the notes and their search chunks; a stored explanation that cited them is checked again before use."""
+    if not can_access_course(conn, user, course_id):
+        raise HTTPException(403, "not your course")
+    found = conn.execute(
+        text("SELECT 1 FROM documents WHERE id = :d AND course_id = :c"), {"d": document_id, "c": course_id}
+    ).first()
+    if found is None:
+        raise HTTPException(404, "notes not found")
+    conn.execute(text("DELETE FROM chunks WHERE document_id = :d"), {"d": document_id})
+    conn.execute(text("DELETE FROM documents WHERE id = :d"), {"d": document_id})
+    return Response(status_code=204)

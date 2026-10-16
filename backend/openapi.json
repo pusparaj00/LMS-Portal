@@ -585,6 +585,11 @@
       },
       "Course": {
         "properties": {
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
           "enrolled": {
             "title": "Enrolled",
             "type": "boolean"
@@ -642,6 +647,21 @@
           "title"
         ],
         "title": "CourseCreate",
+        "type": "object"
+      },
+      "CourseRename": {
+        "properties": {
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "CourseRename",
         "type": "object"
       },
       "Dashboard": {
@@ -1918,6 +1938,11 @@
           }
         ],
         "properties": {
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
           "concepts": {
             "items": {
               "$ref": "#/components/schemas/ConceptTag"
@@ -2061,6 +2086,11 @@
           }
         ],
         "properties": {
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
           "concepts": {
             "items": {
               "$ref": "#/components/schemas/ConceptTag"
@@ -2165,6 +2195,61 @@
           "max_hint_level"
         ],
         "title": "ProblemPolicy",
+        "type": "object"
+      },
+      "ProblemSource": {
+        "description": "Everything an instructor needs to edit a coding problem, hidden tests and reference solution included.",
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptTag"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "difficulty_b": {
+            "title": "Difficulty B",
+            "type": "number"
+          },
+          "discrimination_a": {
+            "title": "Discrimination A",
+            "type": "number"
+          },
+          "reference_solution": {
+            "title": "Reference Solution",
+            "type": "string"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "test_cases": {
+            "items": {
+              "$ref": "#/components/schemas/TestCaseIn"
+            },
+            "title": "Test Cases",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "title",
+          "statement",
+          "difficulty_b",
+          "discrimination_a",
+          "concepts",
+          "reference_solution",
+          "test_cases"
+        ],
+        "title": "ProblemSource",
         "type": "object"
       },
       "RecentSubmission": {
@@ -2954,6 +3039,7 @@
     },
     "/api/v1/courses": {
       "get": {
+        "description": "Archived courses are listed only for their own teacher, who can restore them.",
         "operationId": "list_courses_api_v1_courses_get",
         "responses": {
           "200": {
@@ -3021,6 +3107,63 @@
           }
         ],
         "summary": "Create Course",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}": {
+      "patch": {
+        "operationId": "rename_course_api_v1_courses__course_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Course",
         "tags": [
           "courses"
         ]
@@ -3243,6 +3386,54 @@
         "summary": "Edit Announcement",
         "tags": [
           "announcements"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/archive": {
+      "post": {
+        "description": "Hidden from the course list and closed to new students; everything in it is kept and can be restored.",
+        "operationId": "archive_course_api_v1_courses__course_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Archive Course",
+        "tags": [
+          "courses"
         ]
       }
     },
@@ -3623,6 +3814,121 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/concepts/{concept_id}": {
+      "delete": {
+        "description": "Only an unused concept can be deleted; one in use can be renamed instead.",
+        "operationId": "delete_concept_api_v1_courses__course_id__concepts__concept_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Concept",
+        "tags": [
+          "courses"
+        ]
+      },
+      "patch": {
+        "description": "Renaming keeps every tag and the whole mastery history, which follow the concept, not its name.",
+        "operationId": "rename_concept_api_v1_courses__course_id__concepts__concept_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConceptCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseConcept"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Concept",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/documents": {
       "get": {
         "operationId": "list_documents_api_v1_courses__course_id__documents_get",
@@ -3729,7 +4035,96 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/documents/{document_id}": {
+      "delete": {
+        "description": "Removes the notes and their search chunks; a stored explanation that cited them is checked again before use.",
+        "operationId": "delete_document_api_v1_courses__course_id__documents__document_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Document",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/enroll": {
+      "delete": {
+        "description": "The student leaves; their work and mastery history stay (deleting data is the erasure request).",
+        "operationId": "leave_course_api_v1_courses__course_id__enroll_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Leave Course",
+        "tags": [
+          "courses"
+        ]
+      },
       "post": {
         "operationId": "enroll_api_v1_courses__course_id__enroll_post",
         "parameters": [
@@ -4151,6 +4546,103 @@
         "summary": "Misconceptions",
         "tags": [
           "instructor"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/restore": {
+      "post": {
+        "operationId": "restore_course_api_v1_courses__course_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Restore Course",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/students/{student_id}": {
+      "delete": {
+        "description": "The teacher removes a student from the course; their work and history stay.",
+        "operationId": "remove_student_api_v1_courses__course_id__students__student_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "student_id",
+            "required": true,
+            "schema": {
+              "title": "Student Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Student",
+        "tags": [
+          "courses"
         ]
       }
     },
@@ -4605,6 +5097,7 @@
     },
     "/api/v1/problems": {
       "get": {
+        "description": "Students see live problems only; staff also see archived ones, marked as such.",
         "operationId": "list_problems_api_v1_problems_get",
         "parameters": [
           {
@@ -4739,6 +5232,110 @@
         "tags": [
           "problems"
         ]
+      },
+      "put": {
+        "description": "Checked in the sandbox exactly like a new problem, then marked for review again. Past submissions keep the\nresults they had.",
+        "operationId": "edit_problem_api_v1_problems__problem_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit Problem",
+        "tags": [
+          "problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{problem_id}/archive": {
+      "post": {
+        "description": "Hidden from students and never chosen again; submissions, history and existing assignments keep it.",
+        "operationId": "archive_problem_api_v1_problems__problem_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Archive Problem",
+        "tags": [
+          "problems"
+        ]
       }
     },
     "/api/v1/problems/{problem_id}/policy": {
@@ -4795,6 +5392,149 @@
         "summary": "Set Policy",
         "tags": [
           "feedback"
+        ]
+      }
+    },
+    "/api/v1/problems/{problem_id}/restore": {
+      "post": {
+        "operationId": "restore_problem_api_v1_problems__problem_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Restore Problem",
+        "tags": [
+          "problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{problem_id}/review": {
+      "post": {
+        "description": "The instructor has read the problem and its tests; this clears the 'needs human review' flag.",
+        "operationId": "mark_reviewed_api_v1_problems__problem_id__review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark Reviewed",
+        "tags": [
+          "problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{problem_id}/source": {
+      "get": {
+        "description": "The full problem for its editor, hidden tests and reference solution included.",
+        "operationId": "problem_source_api_v1_problems__problem_id__source_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemSource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Problem Source",
+        "tags": [
+          "problems"
         ]
       }
     },

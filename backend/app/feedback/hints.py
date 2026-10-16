@@ -76,6 +76,7 @@ def worked_example(conn: Connection, ctx: ExplainContext) -> Hint:
             " JOIN problem_concepts pc ON pc.problem_id = p.id AND pc.concept_id = :c"
             " WHERE p.course_id = :course AND p.id <> :p AND p.kind = 'code' AND p.reference_solution IS NOT NULL"
             " AND NOT EXISTS (SELECT 1 FROM assignment_problems ap WHERE ap.problem_id = p.id)"
+            " AND p.archived_at IS NULL"
             " ORDER BY p.difficulty_b, p.id"
         ),
         {"c": ctx.primary_concept_id, "course": ctx.course_id, "p": ctx.problem_id},

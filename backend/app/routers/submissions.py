@@ -20,9 +20,9 @@ Student = Annotated[CurrentUser, Depends(consented_student)]
 
 def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) -> list[TestSpec]:
     problem = conn.execute(
-        text("SELECT course_id, kind FROM problems WHERE id = :id"), {"id": problem_id}
+        text("SELECT course_id, kind, archived_at FROM problems WHERE id = :id"), {"id": problem_id}
     ).first()
-    if problem is None or not can_access_course(conn, user, problem.course_id):
+    if problem is None or problem.archived_at is not None or not can_access_course(conn, user, problem.course_id):
         raise HTTPException(404, "problem not found")
     if problem.kind != "code":
         raise HTTPException(422, "this item is not a coding problem")
