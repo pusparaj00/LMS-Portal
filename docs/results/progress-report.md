@@ -1,7 +1,7 @@
 # Progress report: Adaptive AI-Powered LMS
 
-Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 28 steps, each on its own branch of
-`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-28-explain-budget`, with **656 automated tests passing**. Every number
+Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 29 steps, each on its own branch of
+`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-29-request-trace`, with **662 automated tests passing**. Every number
 below was measured and comes from a results file in this folder, which gives the command and the date.
 
 ## 1. Where the project stands
@@ -26,9 +26,9 @@ What is missing is mostly work only people can do:
 | Plan gates G0 to G4 | All passed (G2 with a caveat, see section 3) |
 | Gate G5 (demo readiness) | Technical part passed (10 of 10 clean demo runs); people part open |
 | PRD features (34) | 34 done |
-| TRD implementation requirements (69) | 53 done, 4 partly done, 3 not built or not run, 9 not applicable (custom sandbox instead of Judge0) |
+| TRD implementation requirements (69) | 55 done, 2 partly done, 3 not built or not run, 9 not applicable (custom sandbox instead of Judge0) |
 | Validation tests (12) | 7 pass, 1 fails (TR-V-05, simulation), 2 partly met, 2 not run (need raters or a local model) |
-| Automated tests | 656 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
+| Automated tests | 662 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
 
 ## 2. Plan gates
 
@@ -84,6 +84,7 @@ What is missing is mostly work only people can do:
 | 26 | `step-26-audit` | Audit: archived courses closed to students, chat skips them, estimate uses the course's concept names |
 | 27 | `step-27-audit-followups` | A course owner is not demoted to student; DOMPurify pinned to 3.4.16 (npm audit: 0) |
 | 28 | `step-28-explain-budget` | A new explanation always ends within 15 s; the template is shown when the model is too slow (TR-P-03) |
+| 29 | `step-29-request-trace` | One checked request ID through API and sandbox (TR-A-08); chat questions tagged with their concept (TR-M-08) |
 
 The three audits found and fixed 16 bugs, each with a test, and each recorded in `step-11-audit.md`,
 `step-15-audit.md` and `step-18-audit.md`. More defects were found and fixed during the steps themselves and are
