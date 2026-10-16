@@ -95,7 +95,7 @@ export function InstructorPage({ session, courseId }: { session: Session; course
               {grid.students.map((s) => (
                 <tr key={s.student_id}>
                   <th scope="row">
-                    {s.label}
+                    <a href={`#/class/${courseId}/student/${s.student_id}`}>{s.label}</a>
                     {s.synthetic && <span className="tag">synthetic</span>}
                     {session.role === "instructor" && (
                       <button className="link remove" onClick={() => remove(s)} aria-label={`Remove ${s.label}`}>

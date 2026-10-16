@@ -79,19 +79,23 @@ export function WhyPage({
   session,
   courseId,
   conceptId,
+  source,
+  back,
 }: {
   session: Session;
   courseId: number;
   conceptId: number;
+  source?: string;
+  back?: { href: string; label: string };
 }) {
   const [entries, setEntries] = useState<LedgerEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<LedgerEntry[]>(`/students/me/mastery/${conceptId}/history`, session)
+    api<LedgerEntry[]>(source ?? `/students/me/mastery/${conceptId}/history`, session)
       .then(setEntries)
       .catch((e: Error) => setError(e.message));
-  }, [conceptId]);
+  }, [conceptId, source]);
 
   if (error)
     return (
@@ -105,7 +109,7 @@ export function WhyPage({
   return (
     <>
       <p>
-        <a href={`#/mastery/${courseId}`}>Back to my mastery</a>
+        <a href={back?.href ?? `#/mastery/${courseId}`}>{back?.label ?? "Back to my mastery"}</a>
       </p>
       <h1>Why {name} changed</h1>
       {entries.length === 0 && <p className="empty">Nothing has changed yet. Answer a question or submit code.</p>}

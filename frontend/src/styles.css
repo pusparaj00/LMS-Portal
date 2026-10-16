@@ -915,3 +915,35 @@ code.secret {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.code-view {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.code-line {
+  display: block;
+  white-space: pre;
+}
+
+.line-no {
+  display: inline-block;
+  width: 2.5rem;
+  margin-right: 0.75rem;
+  color: var(--slate);
+  text-align: right;
+  user-select: none;
+}
+
+blockquote {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.9rem;
+  border-left: 4px solid var(--signal);
+  background: var(--panel);
+}

@@ -2,7 +2,15 @@ import { ConceptMastery, Misconception } from "../types";
 
 const pretty = (name: string) => name.replace(/_/g, " ");
 
-export function MasteryBars({ concepts, courseId }: { concepts: ConceptMastery[]; courseId?: number }) {
+export function MasteryBars({
+  concepts,
+  courseId,
+  link,
+}: {
+  concepts: ConceptMastery[];
+  courseId?: number;
+  link?: (conceptId: number) => string;
+}) {
   return (
     <ul className="bars">
       {concepts.map((c) => {
@@ -10,8 +18,8 @@ export function MasteryBars({ concepts, courseId }: { concepts: ConceptMastery[]
         return (
           <li key={c.concept_id}>
             <span className="name">
-              {courseId ? (
-                <a href={`#/mastery/${courseId}/concept/${c.concept_id}`}>{pretty(c.name)}</a>
+              {link || courseId ? (
+                <a href={link ? link(c.concept_id) : `#/mastery/${courseId}/concept/${c.concept_id}`}>{pretty(c.name)}</a>
               ) : (
                 pretty(c.name)
               )}

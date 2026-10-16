@@ -15,6 +15,7 @@ import { InstructorPage } from "./pages/InstructorPage";
 import { LtiLanding } from "./pages/LtiLanding";
 import { LoginPage } from "./pages/LoginPage";
 import { PlacementPage } from "./pages/PlacementPage";
+import { StudentWorkPage, SubmissionView } from "./pages/StudentWorkPage";
 import { ErasureBanner, ErasureState } from "./pages/ErasureSection";
 import { ConsentState, PrivacyPage } from "./pages/PrivacyPage";
 import { ProblemPage } from "./pages/ProblemPage";
@@ -110,6 +111,9 @@ export function App() {
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
   const problem = hash.match(/^#\/problem\/(\d+)$/);
   const classView = hash.match(/^#\/class\/(\d+)$/);
+  const studentWork = hash.match(/^#\/class\/(\d+)\/student\/(\d+)$/);
+  const studentSubmission = hash.match(/^#\/class\/(\d+)\/student\/(\d+)\/submission\/(\d+)$/);
+  const studentConcept = hash.match(/^#\/class\/(\d+)\/student\/(\d+)\/concept\/(\d+)$/);
   const placement = hash.match(/^#\/placement\/(\d+)$/);
   const mastery = hash.match(/^#\/mastery\/(\d+)$/);
   const why = hash.match(/^#\/mastery\/(\d+)\/concept\/(\d+)$/);
@@ -164,6 +168,23 @@ export function App() {
           <AssignmentsPage session={session} courseId={Number(assignments[1])} />
         ) : gradebook && session.role !== "student" ? (
           <GradebookPage session={session} courseId={Number(gradebook[1])} />
+        ) : studentWork && session.role === "instructor" ? (
+          <StudentWorkPage session={session} courseId={Number(studentWork[1])} studentId={Number(studentWork[2])} />
+        ) : studentSubmission && session.role === "instructor" ? (
+          <SubmissionView
+            session={session}
+            courseId={Number(studentSubmission[1])}
+            studentId={Number(studentSubmission[2])}
+            submissionId={Number(studentSubmission[3])}
+          />
+        ) : studentConcept && session.role === "instructor" ? (
+          <WhyPage
+            session={session}
+            courseId={Number(studentConcept[1])}
+            conceptId={Number(studentConcept[3])}
+            source={`/courses/${studentConcept[1]}/students/${studentConcept[2]}/mastery/${studentConcept[3]}/history`}
+            back={{ href: `#/class/${studentConcept[1]}/student/${studentConcept[2]}`, label: "Back to the student" }}
+          />
         ) : classView ? (
           <InstructorPage session={session} courseId={Number(classView[1])} />
         ) : why ? (
