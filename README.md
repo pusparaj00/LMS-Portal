@@ -103,6 +103,25 @@ docker compose exec -T api python -m app.breach_report --since 2026-10-16T00:00
 What to do when a breach is suspected is in [docs/breach-procedure.md](docs/breach-procedure.md) (a draft until the
 data protection contact has reviewed it and the contact names are filled in).
 
+## Launch from Moodle or Canvas (LTI 1.3, TR-A-09)
+
+Teachers and students can open the tool from their LMS course with no separate password. Only the core launch is
+supported: no grade passback, roster sync or deep linking yet.
+
+1. Set `TOOL_BASE_URL` in `.env` to the address the LMS and the browser use for this app (over HTTPS in production).
+2. In the LMS, add an external tool, LTI 1.3, opening **in a new window**, with name and email sharing off:
+   tool URL `TOOL_BASE_URL/`, initiate login URL `TOOL_BASE_URL/api/v1/lti/login`, redirection URI
+   `TOOL_BASE_URL/api/v1/lti/launch`. The LMS then shows its client id, deployment id and its own URLs.
+3. Register the LMS here:
+
+```sh
+docker compose exec -T api python -m app.manage lti-add-platform --issuer https://moodle.example.edu   --client-id CLIENT_ID --deployment-id 1   --auth-url https://moodle.example.edu/mod/lti/auth.php --jwks-url https://moodle.example.edu/mod/lti/certs.php
+```
+
+The first teacher to open the tool in an LMS course creates the matching course here and owns it; students are enrolled
+when they open it, and still see the privacy notice first. A second teacher in the same LMS course is refused for now
+(one teacher per course). Accounts made by a launch store no name or email from the LMS.
+
 ## Deletion and retention (TR-S-07)
 
 A student can delete their account, submissions, chat messages and mastery from Privacy in the top bar. It runs 48 hours

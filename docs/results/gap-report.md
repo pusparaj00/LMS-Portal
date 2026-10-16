@@ -13,7 +13,7 @@ The system is a working, tested prototype of the whole demo flow in the plan (ph
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
 1. **Features not built or only partly built:** 4 of 34 PRD features not built, 2 partly built.
-2. **Requirements not met:** of 69 implementation requirements, 51 done, 5 partly done, 4 not built or not run, 9 not
+2. **Requirements not met:** of 69 implementation requirements, 52 done, 5 partly done, 3 not built or not run, 9 not
    applicable by design (the sandbox is a custom runner, not Judge0). Compliance is built (TR-S-05 to S-08) but
    awaits the data protection contact's review.
 3. **Validation targets missed or unproven:** of 12 validation tests, 7 pass, 1 fails (adaptive selection, in simulation
@@ -36,9 +36,9 @@ Status of all 34 features. P0, P1 and P2 are the PRD's priorities.
 
 | Status | Features |
 | --- | --- |
-| Done (28) | F-01, F-02, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61 |
+| Done (29) | F-01, F-02, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61, F-70 |
 | Partly built (2) | **F-52** (P0) four of six routes work; `recommend` and `lms` answer "not available" by design. **F-62** (P1) the hint limit is per problem and approval of stored explanations works, but the leak threshold is global, not per problem. |
-| Not built (4) | **F-04** assignments with due dates and a gradebook (P1). **F-05** announcements (P2). **F-23** difficulty estimates for new items from text and tags (P2). **F-70** LTI 1.3 launch from Moodle or Canvas (P2). |
+| Not built (3) | **F-04** assignments with due dates and a gradebook (P1). **F-05** announcements (P2). **F-23** difficulty estimates for new items from text and tags (P2). |
 
 F-02 and F-03 are closed: a teacher can create a course and its concepts, add problems and upload notes (text, Markdown or
 PDF) in the browser.
@@ -50,14 +50,14 @@ PDF) in the browser.
 
 | Group | Done | Partly done | Not built or not run | Not applicable |
 | --- | --- | --- | --- | --- |
-| A architecture (9) | 7 | 1 | 1 | 0 |
+| A architecture (9) | 8 | 1 | 0 | 0 |
 | M mastery (12) | 7 | 3 | 0 | 2 |
 | X sandbox (9) | 2 | 0 | 0 | 7 |
 | L LLM (12) | 12 | 0 | 0 | 0 |
 | D data (8) | 7 | 0 | 1 | 0 |
 | S security and privacy (10) | 8 | 0 | 2 | 0 |
 | P performance (9) | 8 | 1 | 0 | 0 |
-| **Total (69)** | **51** | **5** | **4** | **9** |
+| **Total (69)** | **52** | **5** | **3** | **9** |
 
 ### 3.1 Partly done (5)
 
@@ -73,7 +73,7 @@ PDF) in the browser.
 
 | ID (priority) | Requirement | Note |
 | --- | --- | --- |
-| TR-A-09 (P2) | LTI 1.3 launch | Same as F-70. Planned for phase 7. |
+| TR-A-09 (P2) | LTI 1.3 launch | Done for the core launch, tested on Moodle 5.3; no grade passback, roster or deep linking ([step-13](step-13.md)). |
 | TR-D-05 (P2) | Offline experiments on CodeWorkout or FalconCode | Not started; licences not checked. Planned for phase 6. |
 | TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Done, with one gap: the notice is in the app only, so a student who never signs in is not told ([step-10](step-10.md)). |
 | TR-S-08 (P1) | Breach detection logs and a written breach procedure | Done: audit trail, breach report command and a draft procedure awaiting review ([step-12](step-12.md)). |
@@ -203,7 +203,7 @@ Measured results and commands are in `docs/results/step-9.md`.
 
 Defects found and fixed on the way: the problem page overflowed a 390 px phone; a passing check stored failure wording as
 its detail. Still open from the audit: TR-S-09 and TR-V-12 (a
-local-model demo, which needs a model installed), TR-S-10, TR-A-09, TR-D-05, F-04, F-05, F-23, F-70, and the people items in
+local-model demo, which needs a model installed), TR-S-10, TR-D-05, F-04, F-05, F-23, and the people items in
 section 5. The consent text is a draft awaiting the data protection contact.
 
 ## 11. What Step 10 changed
@@ -217,3 +217,9 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | Item | Before | After |
 | --- | --- | --- |
 | TR-S-08 breach detection and procedure | Request log lines without user or address, lost on every rebuild; no procedure | An append-only audit trail in the database, a breach report command and `docs/breach-procedure.md` (draft) ([step-12](step-12.md)) |
+
+## 13. What Step 13 changed
+
+| Item | Before | After |
+| --- | --- | --- |
+| TR-A-09, F-70 LTI 1.3 | No LMS integration | Core launch (OIDC login, signed id_token checks, role and course mapping, one-time code handover); a teacher and a student opened the tool from a local Moodle 5.3 ([step-13](step-13.md)) |
