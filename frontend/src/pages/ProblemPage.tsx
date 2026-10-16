@@ -1,5 +1,5 @@
 import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ApiError, BUSY_RETRIES, ProblemDetail, Session, SubmissionResult, api } from "../api";
 import { FeedbackPanel } from "./FeedbackPanel";
@@ -46,6 +46,9 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The problem now on screen: a run that finishes after the student moved to another problem must not show there.
+  const current = useRef(problemId);
+  current.current = problemId;
 
   useEffect(() => {
     setProblem(null);
@@ -58,6 +61,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
   }, [problemId]);
 
   async function execute(kind: "run" | "submit") {
+    const asked = problemId;
     setBusy(true);
     setError(null);
     try {
@@ -66,10 +70,11 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
         body: { problem_id: problemId, code },
         onBusy: (attempt) => setNotice(`The sandbox is busy, trying again (${attempt} of ${BUSY_RETRIES})…`),
       });
+      if (current.current !== asked) return;
       setResult(r);
       setSubmitted(kind === "submit");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "The server could not be reached.");
+      if (current.current === asked) setError(e instanceof ApiError ? e.message : "The server could not be reached.");
     } finally {
       setBusy(false);
       setNotice(null);
