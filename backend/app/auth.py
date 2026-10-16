@@ -97,11 +97,15 @@ def require_role(*roles: str):
 
 
 def can_access_course(conn: Connection, user: CurrentUser, course_id: int) -> bool:
-    """Admins see everything, instructors their own courses, students their enrolments."""
+    """Admins see everything, instructors their own courses, students their enrolments in courses that are not archived
+    (an archived course is hidden from its students until it is restored; nothing they did there is removed)."""
     if user.role == "admin":
         return True
     if user.role == "instructor":
         query = "SELECT 1 FROM courses WHERE id = :c AND instructor_id = :u"
     else:
-        query = "SELECT 1 FROM enrollments WHERE course_id = :c AND user_id = :u"
+        query = (
+            "SELECT 1 FROM enrollments e JOIN courses c ON c.id = e.course_id"
+            " WHERE e.course_id = :c AND e.user_id = :u AND c.archived_at IS NULL"
+        )
     return conn.execute(text(query), {"c": course_id, "u": user.id}).first() is not None

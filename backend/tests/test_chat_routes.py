@@ -108,6 +108,36 @@ def test_both_routes_work_with_the_model_switched_off(client, make_user, world, 
     assert nextup["route"] == "recommend" and "weakest area" in nextup["reply"]
 
 
+def test_recommend_skips_a_course_that_was_archived(client, make_user, world, llm):
+    _, teacher = make_user("instructor")
+    old = client.post(f"{API}/courses", headers=teacher, json={"title": "Last term"}).json()["id"]
+    client.post(f"{API}/courses/{old}/concepts", headers=teacher, json={"name": "recursion"})
+    _, headers = make_user("student")
+    assert client.post(f"{API}/courses/{old}/enroll", headers=headers).status_code == 204
+    assert client.post(f"{API}/courses/{world['course']}/enroll", headers=headers).status_code == 204
+    assert client.post(f"{API}/courses/{old}/archive", headers=teacher).status_code == 200
+    llm(FakeLLM())
+    reply = say(client, headers, "what should I do next", route="recommend")["reply"]
+    assert "loops is your weakest area" in reply and "recursion" not in reply
+
+
+def test_an_archived_course_is_closed_to_its_students_until_it_is_restored(client, make_user, world):
+    _, headers = new_student(client, make_user, world)
+    course, problem = world["course"], world["p"]
+    reach = [
+        lambda: client.get(f"{API}/problems", params={"course_id": course}, headers=headers),
+        lambda: client.get(f"{API}/problems/{problem}", headers=headers),
+        lambda: client.post(f"{API}/submissions", headers=headers, json={"problem_id": problem, "code": "print(2)"}),
+        lambda: client.get(f"{API}/students/me/mastery", params={"course_id": course}, headers=headers),
+    ]
+    assert client.post(f"{API}/courses/{course}/archive", headers=world["instructor"]).status_code == 200
+    try:
+        assert [r().status_code for r in reach] == [403, 404, 404, 403]
+    finally:
+        assert client.post(f"{API}/courses/{course}/restore", headers=world["instructor"]).status_code == 200
+    assert [r().status_code for r in reach[:2]] == [200, 200]
+
+
 def test_a_student_with_no_course_is_told_so(client, make_user, llm):
     _, headers = make_user("student")
     llm(FakeLLM())
