@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     mastery_service_url: str
     mastery_service_token: str
     jwt_expire_minutes: int = 60
+    retention_days: int = 0  # erase a student's data after this many days without activity; 0 keeps it
 
     llm_provider: str = "stub"
     llm_model: str = "stub"

@@ -807,6 +807,76 @@
         "title": "DocumentOut",
         "type": "object"
       },
+      "ErasureRequest": {
+        "properties": {
+          "password": {
+            "description": "the student's password, to confirm it is them",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "ErasureRequest",
+        "type": "object"
+      },
+      "ErasureStatus": {
+        "properties": {
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "requested",
+                  "retention"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "notified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notified At"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pending",
+          "kind",
+          "notified_at",
+          "due_at"
+        ],
+        "title": "ErasureStatus",
+        "type": "object"
+      },
       "Example": {
         "properties": {
           "expected": {
@@ -3147,6 +3217,101 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/me/erasure": {
+      "delete": {
+        "operationId": "cancel_erasure_api_v1_me_erasure_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Erasure",
+        "tags": [
+          "erasure"
+        ]
+      },
+      "get": {
+        "operationId": "my_erasure_api_v1_me_erasure_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My Erasure",
+        "tags": [
+          "erasure"
+        ]
+      },
+      "post": {
+        "description": "Schedules deletion of the whole account, its submissions, chat and mastery, 48 hours from now.",
+        "operationId": "request_erasure_api_v1_me_erasure_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErasureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Request Erasure",
+        "tags": [
+          "erasure"
         ]
       }
     },

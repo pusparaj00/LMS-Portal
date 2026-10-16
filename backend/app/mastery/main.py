@@ -89,6 +89,19 @@ def health():
     return {"status": "ok"}
 
 
+class Erasure(BaseModel):
+    user_id: int
+
+
+@app.post("/erase", dependencies=[Depends(authorised)])
+def erase(body: Erasure):
+    """TR-S-07: deletes one user's mastery, events and misconception state through the database function."""
+    with engine().begin() as conn:
+        rows = conn.execute(text("SELECT erase_user_mastery(:u)"), {"u": body.user_id}).scalar_one()
+    log.info("mastery erased", extra={"fields": {"user_id": body.user_id, "rows": rows}})
+    return {"rows": rows}
+
+
 @app.post("/evidence/submission", response_model=ChangesOut, dependencies=[Depends(authorised)])
 def submission(body: SubmissionEvidence):
     try:

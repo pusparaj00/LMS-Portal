@@ -27,6 +27,16 @@ def _post(path: str, payload: dict) -> list[MasteryChange]:
     ]
 
 
+def erase_user(user_id: int, *, url: str, token: str) -> None:
+    """Asks the mastery service to delete this user's mastery rows (TR-S-07); safe to repeat."""
+    try:
+        httpx.post(
+            f"{url}/erase", json={"user_id": user_id}, headers={"X-Service-Token": token}, timeout=10
+        ).raise_for_status()
+    except httpx.HTTPError as exc:
+        raise MasteryUnavailable(str(exc)) from exc
+
+
 def record_submission(submission_id: int) -> list[MasteryChange]:
     return _post("/evidence/submission", {"submission_id": submission_id})
 

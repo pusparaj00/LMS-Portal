@@ -108,6 +108,17 @@ class ConsentStatus(BaseModel):
     withdrawn_at: datetime | None
 
 
+class ErasureStatus(BaseModel):
+    pending: bool
+    kind: Literal["requested", "retention"] | None
+    notified_at: datetime | None
+    due_at: datetime | None
+
+
+class ErasureRequest(BaseModel):
+    password: Text = Field(max_length=200, description="the student's password, to confirm it is them")
+
+
 class ConsentAccept(BaseModel):
     version: Text = Field(max_length=40, description="the notice version the student was shown")
 
