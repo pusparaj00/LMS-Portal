@@ -70,6 +70,8 @@ def platform(owner):
             f"DELETE FROM consents WHERE user_id IN ({users})",
             "CREATE TEMP TABLE gone_users AS " + users,
             "CREATE TEMP TABLE gone_courses AS " + courses,
+            "DELETE FROM lti_line_items WHERE platform_id = :p",
+            f"DELETE FROM assignments WHERE course_id IN ({courses})",
             "DELETE FROM lti_contexts WHERE platform_id = :p",
             "DELETE FROM lti_users WHERE platform_id = :p",
             "DELETE FROM courses WHERE id IN (SELECT course_id FROM gone_courses)",

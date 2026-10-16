@@ -24,6 +24,8 @@ POLICY = {
     ("POST", "/lti/login"): PUBLIC,
     ("POST", "/lti/launch"): PUBLIC,
     ("POST", "/lti/session"): PUBLIC,
+    ("GET", "/lti/jwks"): PUBLIC,
+    ("POST", "/courses/{course_id}/gradebook/send"): INSTRUCTOR,
     ("GET", "/courses"): ANY,
     ("GET", "/consent/notice"): ANY,
     ("GET", "/consent"): STUDENT,
