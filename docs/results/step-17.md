@@ -24,7 +24,7 @@ basic); nothing else defines it.
 ## Tests
 
 `docker compose --profile test run --rm --build test`: **584 passed**, ruff clean. `backend/tests/test_announcements.py`
-has 15 tests:
+has 11 tests:
 - **Lifecycle:** post, edit (edited time set, created time kept), delete (a second delete gives 404), newest first,
   line breaks kept.
 - **Validation (7 cases):** empty, blank and over-long titles and bodies, and a NUL byte.
