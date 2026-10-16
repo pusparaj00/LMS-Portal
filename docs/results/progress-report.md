@@ -1,7 +1,7 @@
 # Progress report: Adaptive AI-Powered LMS
 
-Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 22 steps, each on its own branch of
-`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-22-student-work`, with **631 automated tests passing**. Every number
+Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 23 steps, each on its own branch of
+`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-23-chat-routes`, with **639 automated tests passing**. Every number
 below was measured and comes from a results file in this folder, which gives the command and the date.
 
 ## 1. Where the project stands
@@ -25,10 +25,10 @@ What is missing is mostly work only people can do:
 | --- | --- |
 | Plan gates G0 to G4 | All passed (G2 with a caveat, see section 3) |
 | Gate G5 (demo readiness) | Technical part passed (10 of 10 clean demo runs); people part open |
-| PRD features (34) | 31 done, 2 partly built (F-52, F-62), 1 not built (F-23) |
+| PRD features (34) | 32 done, 1 partly built (F-62), 1 not built (F-23) |
 | TRD implementation requirements (69) | 52 done, 5 partly done, 3 not built or not run, 9 not applicable (custom sandbox instead of Judge0) |
 | Validation tests (12) | 7 pass, 1 fails (TR-V-05, simulation), 2 partly met, 2 not run (need raters or a local model) |
-| Automated tests | 631 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
+| Automated tests | 639 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
 
 ## 2. Plan gates
 
@@ -78,6 +78,7 @@ What is missing is mostly work only people can do:
 | 20 | `step-20-accounts` | Password change, admin resets, display names, admin user page, sessions end on a change |
 | 21 | `step-21-test-database` | Tests run on their own database, Redis database and service copies; the app's data is untouched by a run |
 | 22 | `step-22-student-work` | The teacher sees a student's mastery history, submissions and code (audited), completing F-34's instructor side |
+| 23 | `step-23-chat-routes` | The assistant answers "what next" and deadlines, grades and announcements from records, completing F-52 |
 
 The three audits found and fixed 16 bugs, each with a test, and each recorded in `step-11-audit.md`,
 `step-15-audit.md` and `step-18-audit.md`. More defects were found and fixed during the steps themselves and are
@@ -99,7 +100,6 @@ listed in each step's results.
 - F-23 (difficulty estimates for new items).
 - TR-S-09 and TR-V-12 (demo on a local model; needs a model installed).
 - TR-S-10 (adult or parental-consent check).
-- The chat's `recommend` and `lms` routes (F-52).
 - A per-problem leak threshold (F-62).
 
 **Known limits:**

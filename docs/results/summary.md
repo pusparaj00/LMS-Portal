@@ -40,5 +40,6 @@ should not be quoted as rates.
 | Content management (F-02, F-03) | 7 tests plus 13 access cases; every action in a browser at 1366 and 390 px ([step-19](step-19.md)) | Instructors manage their content without losing student history | Pass |
 | Accounts (F-01, TR-S-01) | 7 tests plus 9 access cases; names absent from prompts; browser run at 1366 and 390 px ([step-20](step-20.md)) | Users manage their own access; admins manage people without the database | Pass |
 | Teacher's view of a student (F-61, F-34) | 7 tests plus 3 access cases; browser run at 1366 and 390 px ([step-22](step-22.md)) | Instructor sees why mastery changed; code visible to the student's instructors only | Pass |
+| F-52 recommend and lms routes | 8 tests; live: four questions answered correctly at 1366 and 390 px ([step-23](step-23.md)) | Each route answers with its own tool and sources | Pass |
 | TR-S-06 prompts | A test checks the explanation and chat prompts hold no email or local part ([step-9](step-9.md)) | No direct identifiers | Pass |
 | TR-L-05 claimed input | Example input tried in the sandbox on both programs; 13 tests; live: 7 of 8 replies named one, all confirmed ([step-9](step-9.md)) | Output must differ from the reference | Pass (small live sample) |
