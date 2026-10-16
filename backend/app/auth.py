@@ -4,7 +4,7 @@ from typing import Annotated
 
 import bcrypt
 import jwt
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import Connection, text
 
@@ -55,7 +55,7 @@ class CurrentUser:
 
 
 def current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)], conn: Conn
+    request: Request, credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)], conn: Conn
 ) -> CurrentUser:
     if credentials is None:
         raise HTTPException(401, "authentication required")
@@ -68,6 +68,7 @@ def current_user(
     role = conn.execute(text("SELECT role FROM users WHERE id = :id"), {"id": user_id}).scalar()
     if role is None:
         raise HTTPException(401, "unknown user")
+    request.state.user_id = user_id  # read by the request log and the audit trail (TR-S-08)
     return CurrentUser(user_id, role)
 
 

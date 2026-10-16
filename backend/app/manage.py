@@ -8,19 +8,22 @@ import os
 
 from sqlalchemy import text
 
+from app import audit
 from app.auth import hash_password
 from app.db import get_engine
 
 
 def create_user(email: str, role: str, password: str) -> int:
     with get_engine().begin() as conn:
-        return conn.execute(
+        user_id = conn.execute(
             text(
                 "INSERT INTO users (email, password_hash, role) VALUES (lower(:e), :h, :r)"
                 " RETURNING id"
             ),
             {"e": email, "h": hash_password(password), "r": role},
         ).scalar_one()
+        audit.record("staff.created", user_id=user_id, detail={"role": role, "via": "app.manage"}, conn=conn)
+        return user_id
 
 
 def main() -> None:

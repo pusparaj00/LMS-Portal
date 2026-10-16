@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException
 from sqlalchemy import Connection, text
 
+from app import audit
 from app.auth import Conn, CurrentUser, require_role
 from app.config import Settings, get_settings
 from app.llm.adapter import GEMINI_KEYS, LOCAL, OPENAI_COMPATIBLE
@@ -119,17 +120,20 @@ def accept(conn: Connection, user_id: int, version: str) -> ConsentStatus:
         conn.execute(
             text("INSERT INTO consents (user_id, version) VALUES (:u, :v)"), {"u": user_id, "v": CONSENT_VERSION}
         )
+        audit.record("consent.accepted", user_id=user_id, detail={"version": CONSENT_VERSION}, conn=conn)
     return status(conn, user_id)
 
 
 def withdraw(conn: Connection, user_id: int) -> ConsentStatus:
-    conn.execute(
+    withdrawn = conn.execute(
         text(
             "UPDATE consents SET withdrawn_at = now() WHERE id = (SELECT max(id) FROM consents WHERE user_id = :u)"
-            " AND withdrawn_at IS NULL"
+            " AND withdrawn_at IS NULL RETURNING version"
         ),
         {"u": user_id},
-    )
+    ).scalar()
+    if withdrawn is not None:
+        audit.record("consent.withdrawn", user_id=user_id, detail={"version": withdrawn}, conn=conn)
     return status(conn, user_id)
 
 

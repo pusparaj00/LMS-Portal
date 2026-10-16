@@ -11,7 +11,7 @@ import time
 import redis
 from sqlalchemy import create_engine, text
 
-from app import erasure
+from app import audit, erasure
 from app.logging import configure_logging
 from app.mastery.client import erase_user
 from app.retrieval import store
@@ -55,7 +55,12 @@ def process(r: redis.Redis, engine, job: bytes) -> None:
 
 
 def sweep_erasures(engine, r: redis.Redis) -> None:
-    """Schedules retention erasures (TR-S-07) and carries out requests whose 48-hour notice is over."""
+    """Schedules retention erasures (TR-S-07), carries out requests whose 48-hour notice is over, and removes audit
+    events past their retention (TR-S-08)."""
+    audit_days = int(os.environ.get("AUDIT_RETENTION_DAYS", "0"))
+    if audit_days:
+        with engine.begin() as conn:
+            audit.purge(conn, audit_days)
     days = int(os.environ.get("RETENTION_DAYS", "0"))
     if days:
         with engine.begin() as conn:

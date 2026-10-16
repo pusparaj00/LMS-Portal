@@ -7,11 +7,13 @@ import csv
 import io
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import text
 
+from app import audit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
+from app.ratelimit import client_ip
 from app.synthetic import SYNTHETIC_NAME
 
 router = APIRouter(prefix="/courses/{course_id}/export", tags=["export"])
@@ -55,9 +57,13 @@ def _respond(rows: list[dict], columns: list[str], fmt: str, name: str) -> Respo
     )
 
 
-def _check(conn, user: CurrentUser, course_id: int) -> None:
+def _check(conn, user: CurrentUser, course_id: int, request: Request, kind: str, fmt: str) -> None:
     if not can_access_course(conn, user, course_id):
         raise HTTPException(403, "not your course")
+    audit.record(
+        "export.download", user_id=user.id, ip=client_ip(request), status=200,
+        detail={"course_id": course_id, "kind": kind, "format": fmt},
+    )
 
 
 def _is_synthetic(email: str) -> bool:
@@ -65,9 +71,9 @@ def _is_synthetic(email: str) -> bool:
 
 
 @router.get("/mastery", response_model=None)
-def export_mastery(course_id: int, user: Staff, conn: Conn, format: Format = "csv"):
+def export_mastery(course_id: int, user: Staff, conn: Conn, request: Request, format: Format = "csv"):
     """The current mastery value of every student for every concept in the course."""
-    _check(conn, user, course_id)
+    _check(conn, user, course_id, request, "mastery", format)
     rows = conn.execute(
         text(
             "SELECT m.user_id AS student_id, u.email, m.concept_id, c.name AS concept, m.p_known, m.updated_at"
@@ -81,9 +87,9 @@ def export_mastery(course_id: int, user: Staff, conn: Conn, format: Format = "cs
 
 
 @router.get("/mastery-events", response_model=None)
-def export_mastery_events(course_id: int, user: Staff, conn: Conn, format: Format = "csv"):
+def export_mastery_events(course_id: int, user: Staff, conn: Conn, request: Request, format: Format = "csv"):
     """The mastery ledger: every change with its before and after value, the rule and the evidence behind it."""
-    _check(conn, user, course_id)
+    _check(conn, user, course_id, request, "mastery_events", format)
     rows = conn.execute(
         text(
             "SELECT e.id AS event_id, e.user_id AS student_id, u.email, e.concept_id, c.name AS concept, e.p_before,"

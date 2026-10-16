@@ -19,6 +19,7 @@ x-backend-env: &backend-env
   LLM_THINKING_BUDGET: ${LLM_THINKING_BUDGET:-0}
   RETRIEVAL_MIN_SCORE: ${RETRIEVAL_MIN_SCORE:-0.67}
   RETENTION_DAYS: ${RETENTION_DAYS:-0}
+  AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-0}
 
 services:
   db:
@@ -113,6 +114,7 @@ services:
       MASTERY_SERVICE_URL: http://mastery:8001
       MASTERY_SERVICE_TOKEN: ${MASTERY_SERVICE_TOKEN:?set in .env}
       RETENTION_DAYS: ${RETENTION_DAYS:-0}
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-0}
     depends_on:
       migrate:
         condition: service_completed_successfully

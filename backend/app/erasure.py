@@ -10,6 +10,7 @@ from collections.abc import Callable
 import redis
 from sqlalchemy import Connection, Engine, text
 
+from app import audit
 from app.schemas import ErasureStatus
 
 log = logging.getLogger("app.erasure")
@@ -51,6 +52,7 @@ def request(conn: Connection, user_id: int, kind: str) -> bool:
     ).first()
     if created is not None:
         log.info("erasure scheduled", extra={"fields": {"user_id": user_id, "kind": kind}})
+        audit.record("erasure.scheduled", user_id=user_id, detail={"kind": kind}, conn=conn)
     return created is not None
 
 
@@ -61,6 +63,7 @@ def cancel(conn: Connection, user_id: int) -> bool:
     ).first()
     if cancelled is not None:
         log.info("erasure cancelled", extra={"fields": {"user_id": user_id}})
+        audit.record("erasure.cancelled", user_id=user_id, conn=conn)
     return cancelled is not None
 
 
@@ -112,6 +115,7 @@ def run_due(engine: Engine, r: redis.Redis, erase_mastery: Callable[[int], None]
                     text("UPDATE erasure_requests SET status = 'done', completed_at = now() WHERE id = :i"),
                     {"i": request_id},
                 )
+                audit.record("erasure.completed", user_id=user_id, conn=conn)
             done += 1
             log.info("erasure completed", extra={"fields": {"user_id": user_id}})
         except Exception:
