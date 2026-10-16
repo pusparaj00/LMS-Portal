@@ -1207,6 +1207,67 @@
         "title": "ExplanationOut",
         "type": "object"
       },
+      "GradeSendFailure": {
+        "properties": {
+          "assignment_id": {
+            "title": "Assignment Id",
+            "type": "integer"
+          },
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "student_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Student Id"
+          }
+        },
+        "required": [
+          "assignment_id",
+          "student_id",
+          "error"
+        ],
+        "title": "GradeSendFailure",
+        "type": "object"
+      },
+      "GradeSendResult": {
+        "properties": {
+          "assignments": {
+            "title": "Assignments",
+            "type": "integer"
+          },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/GradeSendFailure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "scores_sent": {
+            "title": "Scores Sent",
+            "type": "integer"
+          },
+          "students_not_from_lms": {
+            "title": "Students Not From Lms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assignments",
+          "scores_sent",
+          "students_not_from_lms",
+          "failures"
+        ],
+        "title": "GradeSendResult",
+        "type": "object"
+      },
       "Gradebook": {
         "properties": {
           "assignments": {
@@ -1215,6 +1276,17 @@
             },
             "title": "Assignments",
             "type": "array"
+          },
+          "lms_grades": {
+            "default": "none",
+            "description": "whether grades can be sent to the LMS the course was opened from",
+            "enum": [
+              "none",
+              "not_allowed",
+              "ready"
+            ],
+            "title": "Lms Grades",
+            "type": "string"
           },
           "possible": {
             "title": "Possible",
@@ -3693,6 +3765,54 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/gradebook/send": {
+      "post": {
+        "description": "Send every LMS student's on-time score for each assignment to the LMS the course was opened from.",
+        "operationId": "send_grades_api_v1_courses__course_id__gradebook_send_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradeSendResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Send Grades",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/misconceptions": {
       "get": {
         "operationId": "misconceptions_api_v1_courses__course_id__misconceptions_get",
@@ -3912,6 +4032,26 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/lti/jwks": {
+      "get": {
+        "description": "The tool's public key set. The LMS checks the tool's grade-service token requests against it.",
+        "operationId": "jwks_api_v1_lti_jwks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Jwks",
+        "tags": [
+          "lti"
         ]
       }
     },

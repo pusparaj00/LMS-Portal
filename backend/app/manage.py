@@ -11,7 +11,7 @@ import os
 
 from sqlalchemy import text
 
-from app import audit, lti
+from app import audit, lti, lti_grades
 from app.auth import hash_password
 from app.db import get_engine
 
@@ -41,17 +41,22 @@ def main() -> None:
     platform.add_argument("--auth-url", required=True, help="the platform's OIDC authentication request URL")
     platform.add_argument("--jwks-url", required=True, help="where the platform publishes its public keys")
     platform.add_argument("--deployment-id", required=True, action="append", help="repeat for several deployments")
+    platform.add_argument("--token-url", help="the platform's OAuth2 token URL; needed to send grades")
+    sub.add_parser("lti-tool-key", help="print a new LTI_TOOL_PRIVATE_KEY line for .env (keep it secret)")
     args = parser.parse_args()
     if args.command == "lti-add-platform":
         with get_engine().begin() as conn:
             platform_id = lti.register_platform(
                 conn, issuer=args.issuer, client_id=args.client_id, auth_login_url=args.auth_url,
-                jwks_url=args.jwks_url, deployment_ids=args.deployment_id,
+                jwks_url=args.jwks_url, deployment_ids=args.deployment_id, token_url=args.token_url,
             )
             audit.record(
                 "lti.platform_registered", detail={"platform_id": platform_id, "issuer": args.issuer}, conn=conn
             )
         print(f"registered LTI platform {platform_id}")
+        return
+    if args.command == "lti-tool-key":
+        print(f"LTI_TOOL_PRIVATE_KEY={lti_grades.new_tool_key()}")
         return
     password = os.environ.get("NEW_USER_PASSWORD") or getpass.getpass("Password: ")
     print(f"created user {create_user(args.email, args.role, password)}")

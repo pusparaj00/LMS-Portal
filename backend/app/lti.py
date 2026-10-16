@@ -14,6 +14,7 @@ import jwt
 import redis
 from sqlalchemy import Connection, text
 
+from app import lti_grades
 from app.auth import hash_password
 from app.config import get_settings
 
@@ -76,6 +77,7 @@ class Launch:
     role: str
     context_id: str
     context_title: str
+    grade_service: dict  # the Assignment and Grade Services endpoint claim, empty if the LMS offered none
 
 
 _PLATFORM_COLUMNS = "id, issuer, client_id, auth_login_url, jwks_url, deployment_ids"
@@ -98,16 +100,17 @@ def find_platform(conn: Connection, issuer: str, client_id: str | None) -> Platf
 
 
 def register_platform(
-    conn: Connection, *, issuer: str, client_id: str, auth_login_url: str, jwks_url: str, deployment_ids: list[str]
+    conn: Connection, *, issuer: str, client_id: str, auth_login_url: str, jwks_url: str, deployment_ids: list[str],
+    token_url: str | None = None,
 ) -> int:
     return conn.execute(
         text(
-            "INSERT INTO lti_platforms (issuer, client_id, auth_login_url, jwks_url, deployment_ids)"
-            " VALUES (:i, :c, :a, :j, :d) ON CONFLICT (issuer, client_id) DO UPDATE SET"
+            "INSERT INTO lti_platforms (issuer, client_id, auth_login_url, jwks_url, deployment_ids, token_url)"
+            " VALUES (:i, :c, :a, :j, :d, :t) ON CONFLICT (issuer, client_id) DO UPDATE SET"
             " auth_login_url = excluded.auth_login_url, jwks_url = excluded.jwks_url,"
-            " deployment_ids = excluded.deployment_ids RETURNING id"
+            " deployment_ids = excluded.deployment_ids, token_url = excluded.token_url RETURNING id"
         ),
-        {"i": issuer, "c": client_id, "a": auth_login_url, "j": jwks_url, "d": deployment_ids},
+        {"i": issuer, "c": client_id, "a": auth_login_url, "j": jwks_url, "d": deployment_ids, "t": token_url},
     ).scalar_one()
 
 
@@ -211,7 +214,9 @@ def validate(
     else:
         raise LaunchRefused("unsupported_role", " ".join(sorted(roles))[:200])
     title = str(context.get("title") or context.get("label") or "Course from the LMS")[:200]
-    return Launch(platform, str(claims["sub"]), role, str(context["id"]), title)
+    service = claims.get(lti_grades.ENDPOINT_CLAIM)
+    service = service if isinstance(service, dict) else {}
+    return Launch(platform, str(claims["sub"]), role, str(context["id"]), title, service)
 
 
 def provision(conn: Connection, launch: Launch) -> tuple[int, int]:
@@ -256,10 +261,12 @@ def provision(conn: Connection, launch: Launch) -> tuple[int, int]:
             text("INSERT INTO lti_contexts (platform_id, context_id, course_id) VALUES (:p, :c, :course)"),
             {"p": p.id, "c": launch.context_id, "course": course_id},
         )
+        lti_grades.remember_service(conn, p.id, launch.context_id, launch.grade_service)
         return user_id, course_id
     if launch.role == "instructor":
         if course.instructor_id != user_id:
             raise LaunchRefused("second_instructor")
+        lti_grades.remember_service(conn, p.id, launch.context_id, launch.grade_service)
     else:
         conn.execute(
             text("INSERT INTO enrollments (user_id, course_id) VALUES (:u, :c) ON CONFLICT DO NOTHING"),

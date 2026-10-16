@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from app import audit, lti, ratelimit
+from app import audit, lti, lti_grades, ratelimit
 from app.auth import create_token
 from app.config import get_settings
 from app.db import get_engine, get_redis
@@ -120,3 +120,9 @@ def session(body: LtiCode, request: Request):
         access_token=create_token(found["user_id"], found["role"]), token_type="bearer", role=found["role"],
         course_id=found["course_id"],
     )
+
+
+@router.get("/jwks")
+def jwks():
+    """The tool's public key set. The LMS checks the tool's grade-service token requests against it."""
+    return lti_grades.public_jwks()

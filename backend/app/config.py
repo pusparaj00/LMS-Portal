@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     retention_days: int = 0  # erase a student's data after this many days without activity; 0 keeps it
     audit_retention_days: int = 0  # remove audit events older than this; 0 keeps them
     tool_base_url: str = ""  # this app's public address as the LMS sees it (LTI, TR-A-09); empty turns LTI off
-    lti_keys_timeout_s: float = 5  # fetching a platform's public keys; they are then cached for an hour
+    lti_keys_timeout_s: float = 5  # each call to an LMS: its public keys (cached for an hour), tokens, grades
+    lti_tool_private_key: str = ""  # base64 PEM from `app.manage lti-tool-key`; signs grade requests. Secret.
 
     llm_provider: str = "stub"
     llm_model: str = "stub"

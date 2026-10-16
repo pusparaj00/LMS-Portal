@@ -214,6 +214,22 @@ class Gradebook(BaseModel):
     assignments: list[GradebookAssignment]
     students: list[GradebookRow]
     possible: float
+    lms_grades: Literal["none", "not_allowed", "ready"] = Field(
+        default="none", description="whether grades can be sent to the LMS the course was opened from"
+    )
+
+
+class GradeSendFailure(BaseModel):
+    assignment_id: int
+    student_id: int | None
+    error: str
+
+
+class GradeSendResult(BaseModel):
+    assignments: int
+    scores_sent: int
+    students_not_from_lms: int
+    failures: list[GradeSendFailure]
 
 
 class ConceptCreate(BaseModel):

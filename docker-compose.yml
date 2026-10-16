@@ -137,6 +137,7 @@ services:
     environment:
       <<: *backend-env
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LTI_TOOL_PRIVATE_KEY: ${LTI_TOOL_PRIVATE_KEY:-}
       GEMINI_PRO_API_KEY: ${GEMINI_PRO_API_KEY:-}
       LLM_MODEL_GEMINI: ${LLM_MODEL_GEMINI:-gemini-3.5-flash-lite}
       LLM_MODEL_GEMINI_PRO: ${LLM_MODEL_GEMINI_PRO:-gemini-3.5-flash-lite}

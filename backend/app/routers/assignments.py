@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import Connection, text
 
-from app import grading_book
+from app import audit, grading_book, lti_grades
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.schemas import (
     AssignmentIn,
@@ -14,6 +14,7 @@ from app.schemas import (
     GradebookAssignment,
     GradebookCell,
     GradebookRow,
+    GradeSendResult,
     MyScore,
 )
 
@@ -139,6 +140,7 @@ def gradebook(conn: Connection, course_id: int) -> Gradebook:
         assignments=[GradebookAssignment(id=a.id, title=a.title, due_at=a.due_at, possible=a.possible) for a in items],
         students=list(rows.values()),
         possible=sum(a.possible for a in items),
+        lms_grades=lti_grades.readiness(lti_grades.link(conn, course_id)),
     )
 
 
@@ -147,3 +149,20 @@ def read_gradebook(course_id: int, user: Staff, conn: Conn):
     """Students by assignment: the on-time score, what late work would make it, and a status for each."""
     _check(conn, user, course_id)
     return gradebook(conn, course_id)
+
+
+@router.post("/gradebook/send", response_model=GradeSendResult)
+def send_grades(course_id: int, user: Instructor, conn: Conn):
+    """Send every LMS student's on-time score for each assignment to the LMS the course was opened from."""
+    _check(conn, user, course_id)
+    try:
+        result = lti_grades.send(conn, course_id, gradebook(conn, course_id))
+    except lti_grades.GradeSyncError as exc:
+        audit.record("lti.grades_refused", user_id=user.id, status=exc.status,
+                     detail={"course_id": course_id, "reason": str(exc)[:200]})
+        raise HTTPException(exc.status, str(exc)) from None
+    audit.record("lti.grades_sent", user_id=user.id, status=200, detail={
+        "course_id": course_id, "assignments": result.assignments, "scores_sent": result.scores_sent,
+        "failures": len(result.failures),
+    })
+    return GradeSendResult(**vars(result))
