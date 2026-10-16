@@ -19,8 +19,8 @@ log = logging.getLogger("app.audit")
 
 # Reads of one student's data by id: a run of 404s here is someone guessing other students' records.
 PROBED_PATH = re.compile(r"^/api/v1/(submissions/\d+|students/me/mastery/\d+/history|probes/\d+/answer)")
-# Their own events are written by the login and register handlers.
-OWN_EVENTS_PATH = re.compile(r"^/api/v1/auth/")
+# These write their own, more precise events (login, register, LTI launch), so a refusal is not recorded twice.
+OWN_EVENTS_PATH = re.compile(r"^/api/v1/(auth|lti)/")
 
 _INSERT = text(
     "INSERT INTO audit_events (event, user_id, ip, request_id, status, detail)"
@@ -59,7 +59,7 @@ def record(
 
 def for_response(path: str, method: str, status: int, user_id: int | None, ip: str) -> None:
     """The middleware's part: refused, throttled and probing requests."""
-    if OWN_EVENTS_PATH.match(path) and status == 401:
+    if OWN_EVENTS_PATH.match(path) and status in (401, 403):
         return
     if status in (401, 403):
         event = "access.denied"

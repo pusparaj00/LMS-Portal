@@ -177,6 +177,7 @@ def refused(response, reason):
         ({lti.CLAIM + "message_type": "LtiDeepLinkingRequest"}, "unsupported_message"),
         ({lti.CLAIM + "version": "1.1"}, "unsupported_message"),
         ({lti.CLAIM + "target_link_uri": "https://evil.test/"}, "wrong_target"),
+        ({lti.CLAIM + "target_link_uri": "TOOL.evil.test/"}, "wrong_target"),  # starts with our address text
         ({lti.CLAIM + "context": None}, "no_context"),
         ({"roles": "observer"}, "unsupported_role"),
     ],
@@ -184,7 +185,7 @@ def refused(response, reason):
 def test_a_launch_that_fails_any_check_is_refused_and_creates_nothing(browser, platform, owner, token_args, reason):
     sub = f"x-{uuid.uuid4().hex[:6]}"
     state, nonce = start(browser, platform)
-    args = {"sub": sub, **token_args}
+    args = {"sub": sub, **{k: v.replace("TOOL", base()) if isinstance(v, str) else v for k, v in token_args.items()}}
     if "nonce" in args:
         nonce = args.pop("nonce")
     response = browser.post(f"{API}/lti/launch", data={"state": state, "id_token": id_token(platform, nonce, **args)})
@@ -193,10 +194,13 @@ def test_a_launch_that_fails_any_check_is_refused_and_creates_nothing(browser, p
         assert conn.execute(
             text("SELECT count(*) FROM lti_users WHERE platform_id = :p AND sub = :s"), {"p": platform["id"], "s": sub}
         ).scalar_one() == 0
-        event = conn.execute(
-            text("SELECT detail FROM audit_events WHERE event = 'lti.launch_refused' ORDER BY id DESC LIMIT 1")
+        event, request_id = conn.execute(
+            text("SELECT detail, request_id FROM audit_events WHERE event = 'lti.launch_refused' ORDER BY id DESC LIMIT 1")
+        ).one()
+        twice = conn.execute(
+            text("SELECT count(*) FROM audit_events WHERE request_id = :r AND event = 'access.denied'"), {"r": request_id}
         ).scalar_one()
-    assert event["reason"] == reason
+    assert event["reason"] == reason and twice == 0
 
 
 def test_a_launch_is_bound_to_the_browser_and_usable_once(browser, platform):
@@ -219,6 +223,8 @@ def test_login_initiation_checks_the_platform_and_the_target(browser, platform):
                                                      "target_link_uri": base() + "/"}), "unknown_platform")
     refused(browser.get(f"{API}/lti/login", params={"iss": platform["issuer"], "login_hint": "h",
                                                      "target_link_uri": "https://evil.test/"}), "wrong_target")
+    refused(browser.get(f"{API}/lti/login", params={"iss": platform["issuer"], "login_hint": "h",
+                                                     "target_link_uri": base() + ".evil.test/"}), "wrong_target")
     refused(browser.get(f"{API}/lti/login", params={"iss": platform["issuer"]}), "missing_fields")
     form = {"iss": platform["issuer"], "login_hint": "h", "target_link_uri": base() + "/"}  # Moodle may POST it
     assert browser.post(f"{API}/lti/login", data=form).status_code == 302
@@ -236,3 +242,18 @@ def test_one_teacher_per_course_a_student_needs_the_course_first_and_roles_do_no
 def test_the_lms_account_domain_cannot_be_registered_directly(client):
     response = client.post(f"{API}/auth/register", json={"email": "x@lti.local", "password": "a-long-password"})
     assert response.status_code == 422
+
+
+def test_a_student_from_the_lms_can_delete_their_data_without_a_password(browser, platform, make_user):
+    context = f"ctx-{uuid.uuid4().hex[:6]}"
+    session(browser, launch(browser, platform, sub="owner-e", context=context))
+    token = session(browser, launch(browser, platform, sub="leaver", roles="student", context=context)).json()
+    headers = {"Authorization": f"Bearer {token['access_token']}"}
+    assert browser.get(f"{API}/me/erasure", headers=headers).json()["confirm_with"] == "lms"
+    assert browser.post(f"{API}/me/erasure", headers=headers, json={}).status_code == 422
+    assert browser.post(f"{API}/me/erasure", headers=headers, json={"confirm": True}).status_code == 201
+
+    _, ordinary = make_user("student")  # an account with a password still needs it
+    assert browser.get(f"{API}/me/erasure", headers=ordinary).json()["confirm_with"] == "password"
+    assert browser.post(f"{API}/me/erasure", headers=ordinary, json={"confirm": True}).status_code == 403
+

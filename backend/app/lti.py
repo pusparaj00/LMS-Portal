@@ -111,6 +111,11 @@ def register_platform(
     ).scalar_one()
 
 
+def is_this_tool(url: str, base_url: str) -> bool:
+    """`base_url` itself or a path under it; a bare prefix test would accept https://tool.example.evil.test."""
+    return url == base_url or url.startswith(base_url + "/") or url.startswith(base_url + "?")
+
+
 def state_cookie_name(state: str) -> str:
     """One cookie per login in progress, so two launches in parallel do not overwrite each other's state."""
     return "lti_" + hashlib.sha256(state.encode()).hexdigest()[:16]
@@ -124,7 +129,7 @@ def start_login(conn: Connection, r: redis.Redis, params: dict[str, str], base_u
     platform = find_platform(conn, issuer, params.get("client_id"))
     if platform is None:
         raise LaunchRefused("unknown_platform", issuer)
-    if not target.startswith(base_url):
+    if not is_this_tool(target, base_url):
         raise LaunchRefused("wrong_target", target)
     state, nonce = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
     r.set(f"lti:state:{state}", json.dumps({"platform_id": platform.id, "nonce": nonce}), ex=STATE_TTL_SECONDS)
@@ -193,7 +198,7 @@ def validate(
     if claims.get(CLAIM + "message_type") != "LtiResourceLinkRequest" or claims.get(CLAIM + "version") != "1.3.0":
         kind = f"{claims.get(CLAIM + 'message_type')} {claims.get(CLAIM + 'version')}"
         raise LaunchRefused("unsupported_message", kind)
-    if not str(claims.get(CLAIM + "target_link_uri", "")).startswith(base_url):
+    if not is_this_tool(str(claims.get(CLAIM + "target_link_uri", "")), base_url):
         raise LaunchRefused("wrong_target", str(claims.get(CLAIM + "target_link_uri")))
     context = claims.get(CLAIM + "context") or {}
     if not context.get("id"):
