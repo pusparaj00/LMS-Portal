@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { Session, api, loadSession, saveSession } from "./api";
+import { ApiError, Session, api, loadSession, saveSession } from "./api";
+import { AccountPage, Me } from "./pages/AccountPage";
+import { AdminPage } from "./pages/AdminPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { ChatPanel } from "./pages/ChatPanel";
 import { CoursePage } from "./pages/CoursePage";
@@ -32,6 +34,7 @@ export function App() {
   const [consent, setConsent] = useState<ConsentState | null>(null);
   const [consentError, setConsentError] = useState<string | null>(null);
   const [erasure, setErasure] = useState<ErasureState | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
   const hash = useHash();
 
   const update = (next: Session | null) => {
@@ -39,12 +42,30 @@ export function App() {
     setSession(next);
     setConsent(null);
     setErasure(null);
+    setMe(null);
     window.location.hash = next ? "#/courses" : "#/login";
+  };
+
+  // Who is signed in, and whether they must choose a new password before anything else (F-01).
+  useEffect(() => {
+    if (!session) return;
+    api<Me>("/me", session)
+      .then(setMe)
+      .catch((e) => {
+        // a session that ended (password changed elsewhere, account disabled) goes back to the login page
+        if (e instanceof ApiError && e.status === 401) update(null);
+      });
+  }, [session?.token]);
+
+  // After a password change the new token replaces the old one without leaving the page.
+  const replaceToken = (next: Session) => {
+    saveSession(next);
+    setSession(next);
   };
 
   // A student's data is only processed after they agree to the privacy notice (TR-S-05).
   useEffect(() => {
-    if (session?.role !== "student") return;
+    if (session?.role !== "student" || !me || me.must_change_password) return;
     setConsentError(null);
     api<ConsentState>("/consent", session)
       .then(setConsent)
@@ -52,7 +73,7 @@ export function App() {
     api<ErasureState>("/me/erasure", session)
       .then(setErasure)
       .catch(() => setErasure(null));
-  }, [session?.token]);
+  }, [session?.token, me?.must_change_password]);
 
   const ltiCode = hash.match(/^#\/lti\/([\w-]+)$/);
   if (ltiCode)
@@ -66,6 +87,18 @@ export function App() {
       />
     );
   if (!session) return <LoginPage onSession={update} />;
+  if (!me) return <p>Loading…</p>;
+  if (me.must_change_password)
+    return (
+      <main>
+        <AccountPage session={session} me={me} onMe={setMe} onSession={replaceToken} />
+        <p className="narrow">
+          <button className="link" onClick={() => update(null)}>
+            Log out
+          </button>
+        </p>
+      </main>
+    );
   const waitingForConsent = session.role === "student" && consent === null;
   const mustAgree = session.role === "student" && consent !== null && !consent.accepted;
 
@@ -87,7 +120,9 @@ export function App() {
         <a className="brand" href="#/courses">
           Adaptive LMS
         </a>
-        <span className="who">{session.role}</span>
+        <span className="who">{me.display_name ? `${me.display_name} · ${session.role}` : session.role}</span>
+        {session.role === "admin" && <a href="#/admin">Users</a>}
+        <a href="#/account">Account</a>
         <a href="#/privacy">Privacy</a>
         <button className="link" onClick={() => update(null)}>
           Log out
@@ -101,6 +136,10 @@ export function App() {
           </p>
         ) : waitingForConsent ? (
           <p>Loading…</p>
+        ) : hash === "#/account" ? (
+          <AccountPage session={session} me={me} onMe={setMe} onSession={replaceToken} />
+        ) : hash === "#/admin" && session.role === "admin" ? (
+          <AdminPage session={session} myId={me.id} />
         ) : mustAgree || hash === "#/privacy" ? (
           <PrivacyPage
             session={session}

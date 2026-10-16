@@ -896,3 +896,22 @@ select {
   font-weight: 400;
   font-size: 0.85rem;
 }
+
+code.secret {
+  font-size: 1.05rem;
+  padding: 0.1rem 0.4rem;
+  user-select: all;
+}
+
+.users select {
+  width: auto;
+}
+
+.users li {
+  flex-wrap: wrap;
+}
+
+.users .grow {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
