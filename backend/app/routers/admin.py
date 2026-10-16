@@ -133,6 +133,14 @@ def change_role(user_id: int, body: RoleChange, request: Request, user: Admin, c
         raise HTTPException(409, "this is the last enabled admin")
     if target.opened_from_lms:
         raise HTTPException(409, "the LMS decides this account's role at each launch")
+    if body.role == "student":
+        # A student cannot manage a course, so its courses would be left with no teacher.
+        owned = conn.execute(
+            text("SELECT title FROM courses WHERE instructor_id = :u ORDER BY id"), {"u": user_id}
+        ).scalars().all()
+        if owned:
+            raise HTTPException(409, "this person still teaches " + ", ".join(f"'{t}'" for t in owned)
+                                + "; give those courses to another teacher or remove them first")
     conn.execute(text("UPDATE users SET role = :r WHERE id = :u"), {"r": body.role, "u": user_id})
     audit.record("account.role_changed", user_id=user_id, ip=ratelimit.client_ip(request), conn=conn,
                  detail={"from": target.role, "to": body.role, "by": user.id})

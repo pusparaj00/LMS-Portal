@@ -128,6 +128,16 @@ def test_a_disabled_account_cannot_sign_in_and_its_sessions_end(client, make_use
     assert login(client, email_of(owner, user_id), PASSWORD).status_code == 200
 
 
+def test_a_teacher_who_still_teaches_a_course_is_not_made_a_student(client, make_user, admin):
+    _, admin_headers = admin
+    teacher_id, teacher = make_user("instructor")
+    assert client.post(f"{API}/courses", headers=teacher, json={"title": "Still taught"}).status_code == 201
+    refused = client.patch(f"{API}/admin/users/{teacher_id}/role", headers=admin_headers, json={"role": "student"})
+    assert refused.status_code == 409 and "'Still taught'" in refused.json()["error"]["message"]
+    promoted = client.patch(f"{API}/admin/users/{teacher_id}/role", headers=admin_headers, json={"role": "admin"})
+    assert promoted.status_code == 200  # an admin manages every course, so nothing is left without a teacher
+
+
 def test_roles_change_at_once_and_the_last_admin_cannot_be_removed(client, make_user, owner, admin):
     admin_id, admin_headers = admin
     user_id, headers = make_user("student")
