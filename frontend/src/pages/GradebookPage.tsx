@@ -14,12 +14,34 @@ type Gradebook = {
     total_with_late: number;
   }[];
   possible: number;
+  lms_grades: "none" | "not_allowed" | "ready";
+};
+type SendResult = {
+  assignments: number;
+  scores_sent: number;
+  students_not_from_lms: number;
+  failures: { assignment_id: number; student_id: number | null; error: string }[];
 };
 
 /** F-04: students by assignment, with on-time scores, what late work would make them, and a download. */
 export function GradebookPage({ session, courseId }: { session: Session; courseId: number }) {
   const [book, setBook] = useState<Gradebook | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState<SendResult | null>(null);
+
+  async function sendToLms() {
+    setSending(true);
+    setError(null);
+    setSent(null);
+    try {
+      setSent(await api<SendResult>(`/courses/${courseId}/gradebook/send`, session, { method: "POST" }));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "The grades could not be sent.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   useEffect(() => {
     api<Gradebook>(`/courses/${courseId}/gradebook`, session)
@@ -61,7 +83,38 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
         <>
           <p className="actions">
             <button onClick={download}>Download CSV</button>
+            {book.lms_grades === "ready" && session.role === "instructor" && (
+              <button className="primary" onClick={sendToLms} disabled={sending}>
+                {sending ? "Sending…" : "Send grades to the LMS"}
+              </button>
+            )}
           </p>
+          {book.lms_grades === "not_allowed" && (
+            <p className="notice">
+              This course was opened from an LMS that has not allowed this tool to send grades. Turn on grade sync for
+              the tool in the LMS, then open the tool from the course again.
+            </p>
+          )}
+          {sent && (
+            <div role="status" className={sent.failures.length ? "notice" : undefined}>
+              <p>
+                Sent {sent.scores_sent} {sent.scores_sent === 1 ? "score" : "scores"} for {sent.assignments}{" "}
+                {sent.assignments === 1 ? "assignment" : "assignments"} (on-time scores only).
+                {sent.students_not_from_lms > 0 &&
+                  ` ${sent.students_not_from_lms} enrolled ${sent.students_not_from_lms === 1 ? "student has" : "students have"} no LMS account, so nothing was sent for them.`}
+              </p>
+              {sent.failures.length > 0 && (
+                <ul>
+                  {sent.failures.map((f, i) => (
+                    <li key={i}>
+                      Not sent: assignment {f.assignment_id}
+                      {f.student_id !== null && `, student ${f.student_id}`} ({f.error})
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           {book.students.length === 0 ? (
             <p className="empty">No students are enrolled yet.</p>
           ) : (
