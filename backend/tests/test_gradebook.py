@@ -214,3 +214,39 @@ def test_cells_follow_the_columns_when_a_later_assignment_is_due_sooner(client, 
     assert [c["assignment_id"] for c in row["cells"]] == columns
     assert row["cells"][columns.index(first["id"])]["score"] == 1
     assert row["cells"][columns.index(second["id"])]["score"] == 0
+
+
+def test_a_hint_never_shows_the_solution_of_a_problem_set_in_an_assignment(client, make_user):
+    _, teacher = make_user("instructor")
+    course_id = client.post(f"{API}/courses", headers=teacher, json={"title": "Hints and grades"}).json()["id"]
+    concept = client.post(f"{API}/courses/{course_id}/concepts", headers=teacher, json={"name": "loops"}).json()
+
+    def problem(title, reference, expected, difficulty):
+        made = client.post(f"{API}/problems", headers=teacher, json={
+            "course_id": course_id, "title": title, "statement": "s", "difficulty_b": difficulty, "discrimination_a": 1,
+            "concepts": [{"concept_id": concept["concept_id"], "name": "loops", "weight": 1}],
+            "reference_solution": reference,
+            "test_cases": [{"input": "3\n", "expected": expected, "hidden": False, "category": "basic"}],
+        })
+        assert made.status_code == 201, made.text
+        return made.json()["id"]
+
+    practice = problem("Practice", "n = int(input())\nprint(sum(range(n + 1)))\n", "6\n", 0.0)
+    graded = problem("Graded", "n = int(input())\nr = 1\nfor i in range(2, n + 1):\n    r *= i\nprint(r)\n", "6\n", -1.0)
+    assignment = client.post(f"{API}/courses/{course_id}/assignments", headers=teacher, json={
+        "title": "Graded week", "due_at": iso(datetime.now(UTC) + timedelta(days=3)), "problems": [{"problem_id": graded}],
+    }).json()
+
+    def third_hint():
+        _, headers = make_user("student")
+        client.post(f"{API}/courses/{course_id}/enroll", headers=headers)
+        sid = client.post(f"{API}/submissions", headers=headers, json={"problem_id": practice, "code": "print(0)\n"}).json()
+        for _ in range(3):
+            hint = client.post(f"{API}/submissions/{sid['submission_id']}/hint", headers=headers).json()
+        return hint
+
+    hint = third_hint()
+    assert hint["kind"] == "example" and hint["example_title"] is None and hint["example_solution"] is None
+    assert "r *= i" not in hint["text"]
+    client.delete(f"{API}/courses/{course_id}/assignments/{assignment['id']}", headers=teacher)
+    assert third_hint()["example_title"] == "Graded"  # once it is no longer graded work it may serve as an example

@@ -68,12 +68,14 @@ def location_hint(ctx: ExplainContext) -> Hint:
 
 
 def worked_example(conn: Connection, ctx: ExplainContext) -> Hint:
-    """The reference solution of a *different* problem on the same concept, never a close copy of this one."""
+    """The reference solution of a *different* problem on the same concept, never a close copy of this one, and never
+    one that is set in an assignment: that would hand over the answer to graded work (F-04)."""
     rows = conn.execute(
         text(
             "SELECT p.title, p.statement, p.reference_solution FROM problems p"
             " JOIN problem_concepts pc ON pc.problem_id = p.id AND pc.concept_id = :c"
             " WHERE p.course_id = :course AND p.id <> :p AND p.kind = 'code' AND p.reference_solution IS NOT NULL"
+            " AND NOT EXISTS (SELECT 1 FROM assignment_problems ap WHERE ap.problem_id = p.id)"
             " ORDER BY p.difficulty_b, p.id"
         ),
         {"c": ctx.primary_concept_id, "course": ctx.course_id, "p": ctx.problem_id},
