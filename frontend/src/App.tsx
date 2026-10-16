@@ -8,6 +8,7 @@ import { DashboardPage, WhyPage } from "./pages/DashboardPage";
 import { NewProblemPage } from "./pages/NewProblemPage";
 import { NotesPage } from "./pages/NotesPage";
 import { InstructorPage } from "./pages/InstructorPage";
+import { LtiLanding } from "./pages/LtiLanding";
 import { LoginPage } from "./pages/LoginPage";
 import { PlacementPage } from "./pages/PlacementPage";
 import { ErasureBanner, ErasureState } from "./pages/ErasureSection";
@@ -51,6 +52,17 @@ export function App() {
       .catch(() => setErasure(null));
   }, [session?.token]);
 
+  const ltiCode = hash.match(/^#\/lti\/([\w-]+)$/);
+  if (ltiCode)
+    return (
+      <LtiLanding
+        code={ltiCode[1]}
+        onSession={(next, courseId) => {
+          update(next);
+          window.location.hash = `#/course/${courseId}`;
+        }}
+      />
+    );
   if (!session) return <LoginPage onSession={update} />;
   const waitingForConsent = session.role === "student" && consent === null;
   const mustAgree = session.role === "student" && consent !== null && !consent.accepted;
