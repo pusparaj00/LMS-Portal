@@ -146,6 +146,8 @@ def test_the_prompts_sent_to_the_model_hold_no_email_address_or_name(client, wor
     user_id, headers = new_student(client, make_user, world)
     with owner.connect() as conn:
         email = conn.execute(text("SELECT email FROM users WHERE id = :u"), {"u": user_id}).scalar_one()
+    name = "Zephyrine Okonkwo-Lindqvist"  # a display name the teacher sees (F-01); it must never reach the model
+    assert client.patch(f"{API}/me", headers=headers, json={"display_name": name}).status_code == 200
     sid = failed_submission(client, world, headers)
     fake = llm(FakeLLM(good_reply(owner, sid, world)))
     assert explain(client, headers, sid).json()["status"] == "verified"
@@ -154,3 +156,4 @@ def test_the_prompts_sent_to_the_model_hold_no_email_address_or_name(client, wor
     prompts = " ".join(system + user for system, user in [*fake.calls, *chat_fake.calls])
     assert fake.calls and chat_fake.calls
     assert email not in prompts and email.split("@")[0] not in prompts
+    assert "Zephyrine" not in prompts and "Lindqvist" not in prompts

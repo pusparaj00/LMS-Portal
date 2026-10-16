@@ -15,6 +15,7 @@ ANY = "any signed-in user"
 STUDENT = "student"
 INSTRUCTOR = "instructor"
 STAFF = "instructor or admin"
+ADMIN = "admin only"
 
 POLICY = {
     ("GET", "/health"): PUBLIC,
@@ -28,6 +29,15 @@ POLICY = {
     ("POST", "/courses/{course_id}/gradebook/send"): INSTRUCTOR,
     ("GET", "/courses"): ANY,
     ("GET", "/consent/notice"): ANY,
+    ("GET", "/me"): ANY,
+    ("PATCH", "/me"): ANY,
+    ("POST", "/me/password"): ANY,
+    ("GET", "/admin/users"): ADMIN,
+    ("POST", "/admin/users"): ADMIN,
+    ("POST", "/admin/users/{user_id}/reset-password"): ADMIN,
+    ("POST", "/admin/users/{user_id}/disable"): ADMIN,
+    ("POST", "/admin/users/{user_id}/enable"): ADMIN,
+    ("PATCH", "/admin/users/{user_id}/role"): ADMIN,
     ("GET", "/consent"): STUDENT,
     ("POST", "/consent/accept"): STUDENT,
     ("POST", "/consent/withdraw"): STUDENT,
@@ -91,6 +101,7 @@ ALLOWED = {
     STUDENT: {"student"},
     INSTRUCTOR: {"instructor"},
     STAFF: {"instructor", "admin"},
+    ADMIN: {"admin"},
 }
 
 
@@ -143,5 +154,5 @@ def test_each_role_gets_exactly_the_access_it_should(client, principals, method,
 
 
 def test_admin_has_no_extra_reach_today():
-    """Documented behaviour, not a goal: admin can read the class views but cannot create courses or problems."""
+    """Documented behaviour, not a goal: admin can read the class views and manage users, but cannot create courses or problems."""
     assert not any("admin" in ALLOWED[rule] for rule in (INSTRUCTOR, STUDENT))

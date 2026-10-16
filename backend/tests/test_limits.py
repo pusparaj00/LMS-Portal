@@ -15,7 +15,16 @@ def wrong_login(client, email="nobody@limits.test", **kw):
     return client.post(f"{API}/auth/login", json={"email": email, "password": "wrong-password"}, **kw)
 
 
-def test_repeated_wrong_passwords_for_one_account_are_stopped(client, monkeypatch):
+@pytest.fixture
+def clock(monkeypatch):
+    """The rate limiter's own clock, frozen inside one window: limits use fixed minutes, so a minute boundary between
+    two requests would reset the count and make these tests fail at random. Move it with clock["now"] += seconds."""
+    state = {"now": ratelimit.time.time()}
+    monkeypatch.setattr(ratelimit, "time", type("Clock", (), {"time": staticmethod(lambda: state["now"])}))
+    return state
+
+
+def test_repeated_wrong_passwords_for_one_account_are_stopped(client, monkeypatch, clock):
     monkeypatch.setitem(ratelimit.RULES, "login_email", Rule(3, 60))
     assert [wrong_login(client).status_code for _ in range(3)] == [401, 401, 401]
     blocked = wrong_login(client)
@@ -27,14 +36,13 @@ def test_repeated_wrong_passwords_for_one_account_are_stopped(client, monkeypatc
     assert wrong_login(client, "someone.else@limits.test").status_code == 401  # other accounts are unaffected
 
 
-def test_the_limit_is_per_address_too_and_the_window_resets(client, monkeypatch):
+def test_the_limit_is_per_address_too_and_the_window_resets(client, monkeypatch, clock):
     monkeypatch.setitem(ratelimit.RULES, "login_ip", Rule(2, 60))
     first = {"headers": {"X-Forwarded-For": "10.1.1.1"}}
     assert [wrong_login(client, f"a{n}@limits.test", **first).status_code for n in range(2)] == [401, 401]
     assert wrong_login(client, "a9@limits.test", **first).status_code == 429
     assert wrong_login(client, "b@limits.test", headers={"X-Forwarded-For": "10.2.2.2"}).status_code == 401
-    real_time = ratelimit.time.time
-    monkeypatch.setattr(ratelimit.time, "time", lambda: real_time() + 61)
+    clock["now"] += 61
     assert wrong_login(client, "c@limits.test", **first).status_code == 401
 
 
@@ -58,13 +66,11 @@ def remove_limit_test_users(owner):
         conn.execute(text("DELETE FROM users WHERE email LIKE '%@limits.test'"))
 
 
-def test_submissions_and_runs_are_limited_per_student_before_any_work_is_done(client, make_user, course, owner, monkeypatch):
+def test_submissions_and_runs_are_limited_per_student_before_any_work_is_done(
+    client, make_user, course, owner, monkeypatch, clock
+):
     monkeypatch.setitem(ratelimit.RULES, "submit", Rule(2, 60))
     monkeypatch.setitem(ratelimit.RULES, "run", Rule(2, 60))
-    # Windows are fixed minutes and each graded request takes seconds; keep the clock inside one window, or a minute
-    # boundary between requests resets the count and the test fails at random.
-    frozen = ratelimit.time.time()
-    monkeypatch.setattr(ratelimit, "time", type("Clock", (), {"time": staticmethod(lambda: frozen)}))
     user_id, headers = make_user("student")
     client.post(f"{API}/courses/{course['id']}/enroll", headers=headers)
     body = {"problem_id": course["problem_id"], "code": "print(int(input()) + 1)\n"}
