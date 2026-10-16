@@ -287,3 +287,43 @@ def test_backfill_leaves_fresh_submissions_to_the_api(owner, mastery_db, make_us
     with mastery_db.begin() as conn:
         service.backfill(conn)
     assert events(owner, user_id) == []
+
+
+# The statuses sandbox/supervisor.py `_classify` can report for a failed run.
+@pytest.mark.parametrize("error_type", ["runtime_error", "time_limit", "output_limit", "memory_limit"])
+def test_every_failure_the_sandbox_reports_updates_mastery(owner, mastery_db, make_user, world, error_type):
+    user_id, sid = submit(owner, make_user, world["two"], status="failed", passed=0, failed=3, error_type=error_type,
+                          categories=["basic"])
+    changes = record(mastery_db, sid)
+    assert changes and all(c.after < c.before for c in changes)
+    assert {e["evidence_type"] for e in events(owner, user_id)} == {error_type}
+
+
+def test_backfill_skips_a_submission_it_cannot_apply_and_still_applies_the_rest(owner, mastery_db, make_user, world):
+    _, broken = submit(owner, make_user, world["two"], status="failed", passed=0, failed=1, error_type="unknown_status")
+    fixable_user, fixable = submit(owner, make_user, world["two"], status="passed", passed=3, failed=0)
+    with owner.begin() as conn:
+        conn.execute(
+            text("UPDATE submissions SET created_at = now() - interval '1 minute' WHERE id = ANY(:ids)"),
+            {"ids": [broken, fixable]},
+        )
+    with mastery_db.begin() as conn:
+        service.backfill(conn)
+    assert events(owner, fixable_user)
+    with owner.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM mastery_events WHERE submission_id = :s"), {"s": broken}).scalar() == 0
+    with owner.begin() as conn:  # leave nothing for the running service's own backfill to trip over
+        conn.execute(text("DELETE FROM run_results WHERE submission_id = :s"), {"s": broken})
+        conn.execute(text("DELETE FROM submissions WHERE id = :s"), {"s": broken})
+
+
+def test_the_ledger_sentence_joins_the_error_and_the_failed_categories():
+    from types import SimpleNamespace
+
+    from app.routers.students import _explain
+
+    row = SimpleNamespace(rule_id="bayes_update", submission_id=7, problem_id=1, evidence_type="syntax_error",
+                          run_error_type="syntax_error", failed_categories=["basic", "edge"])
+    assert _explain(row, {1: "Add one"}) == (
+        "Submission #7 to 'Add one' stopped with a syntax error and failed tests in: basic, edge."
+    )

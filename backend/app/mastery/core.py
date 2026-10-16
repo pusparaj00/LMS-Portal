@@ -14,6 +14,8 @@ DEFAULT_PARAMS: dict[str, tuple[float, float]] = {
     "syntax_error": (0.20, 0.20),
     "runtime_error": (0.25, 0.20),
     "time_limit": (0.30, 0.20),
+    "output_limit": (0.30, 0.20),  # a runaway loop, like time_limit
+    "memory_limit": (0.25, 0.20),  # a crash at run time, like runtime_error
     "diagnostic_mcq": (0.10, 0.25),
     "diagnostic_code": (0.10, 0.20),
     "probe_mcq": (0.10, 0.25),

@@ -15,8 +15,10 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import Engine, create_engine, text
 
+from app.logging import configure_logging
 from app.mastery import service
 
+configure_logging()
 log = logging.getLogger("app.mastery")
 BACKFILL_INTERVAL_SECONDS = 30
 
@@ -107,7 +109,7 @@ def submission(body: SubmissionEvidence):
     try:
         with engine().begin() as conn:
             return _out(service.record_submission(conn, body.submission_id))
-    except LookupError as exc:
+    except service.SubmissionNotFound as exc:
         raise HTTPException(404, str(exc)) from None
 
 

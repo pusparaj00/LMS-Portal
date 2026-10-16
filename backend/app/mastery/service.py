@@ -1,5 +1,6 @@
 """The mastery service's database logic. The only code that writes mastery and mastery_events
 (TR-A-02, F-32): it runs in its own container with the lms_mastery database role."""
+import logging
 from dataclasses import dataclass
 
 from sqlalchemy import Connection, text
@@ -7,9 +8,14 @@ from sqlalchemy import Connection, text
 from app.mastery import core
 from app.mastery.plan import Plan, plan_submission
 
+log = logging.getLogger("app.mastery")
 RULE_BAYES = "bayes_update"
 RULE_PROPAGATION = "prerequisite_propagation"
 DEFAULT_MISCONCEPTION_PRIOR = 0.1
+
+
+class SubmissionNotFound(Exception):
+    pass
 
 
 @dataclass
@@ -129,7 +135,7 @@ def record_submission(conn: Connection, submission_id: int) -> list[Change]:
         {"id": submission_id},
     ).first()
     if row is None:
-        raise LookupError(f"no run result for submission {submission_id}")
+        raise SubmissionNotFound(f"no run result for submission {submission_id}")
     problem = dict(
         conn.execute(
             text("SELECT concept_id, weight FROM problem_concepts WHERE problem_id = :p"),
@@ -161,7 +167,8 @@ BACKFILL_BATCH = 100
 def backfill(conn: Connection) -> int:
     """Apply evidence for graded submissions that never reached the service (it was down).
 
-    Safe to run any time: applying evidence is idempotent per submission.
+    Safe to run any time: applying evidence is idempotent per submission. Each submission gets its own savepoint, so
+    one that fails is logged and skipped instead of blocking the ones after it.
     """
     pending = conn.execute(
         text(
@@ -171,7 +178,14 @@ def backfill(conn: Connection) -> int:
         ),
         {"age": BACKFILL_MIN_AGE_SECONDS, "n": BACKFILL_BATCH},
     ).scalars().all()
-    return sum(1 for submission_id in pending if record_submission(conn, submission_id))
+    applied = 0
+    for submission_id in pending:
+        try:
+            with conn.begin_nested():
+                applied += bool(record_submission(conn, submission_id))
+        except Exception:
+            log.exception("backfill skipped a submission", extra={"fields": {"submission_id": submission_id}})
+    return applied
 
 
 def _update_misconception(
