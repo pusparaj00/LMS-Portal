@@ -139,13 +139,12 @@ def test_a_model_outage_still_routes_by_keywords(client, make_user, world, llm):
     assert (body["route"], body["router"]["how"]) == ("progress", "keyword") and body["reply"]
 
 
-def test_recommend_and_lms_are_not_built_and_say_so(client, make_user, world, llm):
+def test_recommend_and_lms_are_routed(client, make_user, world, llm):
+    """The answers themselves are tested in test_chat_routes.py (F-52)."""
     _, headers = new_student(client, make_user, world)
     llm(FakeLLM(route("recommend"), route("lms")))
-    first = say(client, headers, "what should I do next")
-    second = say(client, headers, "when is the deadline")
-    assert first["route"] == "recommend" and "not available in the assistant yet" in first["reply"]
-    assert second["route"] == "lms" and "not available" in second["reply"]
+    assert say(client, headers, "what should I do next")["route"] == "recommend"
+    assert say(client, headers, "when is the deadline")["route"] == "lms"
 
 
 def test_a_general_answer_is_grounded_in_retrieved_notes_with_sources(client, make_user, world, owner, llm, open_notes):
