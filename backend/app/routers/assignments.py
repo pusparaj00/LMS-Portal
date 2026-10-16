@@ -132,6 +132,9 @@ def gradebook(conn: Connection, course_id: int) -> Gradebook:
                                        status=s.status))
         row.total = round(row.total + s.score, 4)
         row.total_with_late = round(row.total_with_late + s.with_late, 4)
+    order = {a.id: n for n, a in enumerate(items)}  # the columns' order (by due date), not the id order of the query
+    for row in rows.values():
+        row.cells.sort(key=lambda c: order[c.assignment_id])
     return Gradebook(
         assignments=[GradebookAssignment(id=a.id, title=a.title, due_at=a.due_at, possible=a.possible) for a in items],
         students=list(rows.values()),

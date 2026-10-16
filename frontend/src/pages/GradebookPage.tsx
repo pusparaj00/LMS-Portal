@@ -94,7 +94,7 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
                         {s.label}
                         {s.synthetic && <span className="tag">synthetic</span>}
                       </th>
-                      {s.cells.map((c) => (
+                      {book.assignments.map((a) => s.cells.find((c) => c.assignment_id === a.id)!).map((c) => (
                         <td key={c.assignment_id} className={`status-${c.status}`}>
                           {points(c.score)}
                           <br />

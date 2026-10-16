@@ -199,3 +199,18 @@ def test_an_erased_student_leaves_the_gradebook_and_deleting_an_assignment_keeps
     assert client.delete(path, headers=course["instructor"]).status_code == 404
     with owner.connect() as conn:
         assert conn.execute(text("SELECT count(*) FROM submissions WHERE user_id = :u"), {"u": keeper}).scalar_one() == 1
+
+
+def test_cells_follow_the_columns_when_a_later_assignment_is_due_sooner(client, make_user, owner, course, extra):
+    now = datetime.now(UTC)
+    first = create(client, course, now + timedelta(days=30), [{"problem_id": course["problem_id"]}], title="Due later").json()
+    second = create(client, course, now + timedelta(days=20), [{"problem_id": extra["second"]}], title="Due sooner").json()
+    learner, _ = student(client, make_user, course)
+    attempt(owner, learner, course["problem_id"], now, 4, 0)  # solves only "Due later"
+    book = client.get(f"{API}/courses/{course['id']}/gradebook", headers=course["instructor"]).json()
+    columns = [a["id"] for a in book["assignments"]]
+    assert columns.index(second["id"]) < columns.index(first["id"])
+    row = next(r for r in book["students"] if r["student_id"] == learner)
+    assert [c["assignment_id"] for c in row["cells"]] == columns
+    assert row["cells"][columns.index(first["id"])]["score"] == 1
+    assert row["cells"][columns.index(second["id"])]["score"] == 0
