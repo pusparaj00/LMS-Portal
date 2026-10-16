@@ -120,8 +120,12 @@ docker compose exec -T api python -m app.manage lti-add-platform --issuer https:
 
 To send gradebook scores back to the LMS (LTI Assignment and Grade Services), also:
 
-- generate the tool's signing key once, straight into `.env` (it is a secret; it is never shown or committed):
-  `docker compose run --rm --no-deps -T api python -m app.manage lti-tool-key >> .env`, then `docker compose up -d`;
+- generate the tool's signing key once, straight into `.env` (it is a secret; it is never shown or committed). Make
+  sure `.env` ends with a newline first, and run it only once:
+  `docker compose run --rm --no-deps -T api python -m app.manage lti-tool-key >> .env` (macOS, Linux, Git Bash), or in
+  Windows PowerShell, whose `>>` writes UTF-16 and breaks `.env`:
+  `docker compose run --rm --no-deps -T api python -m app.manage lti-tool-key | Add-Content -Encoding ascii .env`.
+  Then `docker compose up -d`;
 - in the LMS tool settings, set the public key type to a key set URL, `TOOL_BASE_URL/api/v1/lti/jwks`, accept grades
   from the tool, and allow grade sync with column management;
 - add `--token-url https://moodle.example.edu/mod/lti/token.php` when registering the platform.
