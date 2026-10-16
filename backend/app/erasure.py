@@ -7,6 +7,7 @@ deleted in one transaction. Both steps can be repeated safely, so a failure half
 import logging
 from collections.abc import Callable
 
+import redis
 from sqlalchemy import Connection, Engine, text
 
 from app.schemas import ErasureStatus
@@ -80,7 +81,19 @@ def schedule_retention(conn: Connection, days: int) -> int:
     return sum(request(conn, user_id, "retention") for user_id in rows)
 
 
-def run_due(engine: Engine, erase_mastery: Callable[[int], None]) -> int:
+def redis_keys(conn: Connection, r: redis.Redis, user_id: int) -> list[str]:
+    """Copies of the student's data held in Redis: chat history, explanations, probes, hint and placement state."""
+    submissions = conn.execute(text("SELECT id FROM submissions WHERE user_id = :u"), {"u": user_id}).scalars()
+    sessions = conn.execute(text("SELECT id FROM diagnostic_sessions WHERE user_id = :u"), {"u": user_id}).scalars()
+    return [
+        f"chat:{user_id}:history", f"chat:{user_id}:problem",
+        *(key for s in submissions for key in (f"explain:{s}", f"probe:{s}")),
+        *(f"diagnostic:{s}" for s in sessions),
+        *(key.decode() for key in r.scan_iter(f"hint:{user_id}:*")),
+    ]
+
+
+def run_due(engine: Engine, r: redis.Redis, erase_mastery: Callable[[int], None]) -> int:
     """Carries out every request whose notice period is over. One that fails is left pending and tried again."""
     with engine.connect() as conn:
         due = conn.execute(
@@ -92,6 +105,7 @@ def run_due(engine: Engine, erase_mastery: Callable[[int], None]) -> int:
         try:
             erase_mastery(user_id)
             with engine.begin() as conn:
+                r.delete(*redis_keys(conn, r, user_id))
                 for statement in _DELETIONS:
                     conn.execute(text(statement), {"u": user_id})
                 conn.execute(

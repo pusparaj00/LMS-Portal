@@ -54,14 +54,14 @@ def process(r: redis.Redis, engine, job: bytes) -> None:
                 _fail(conn, document_id, f"{type(exc).__name__}: {exc}")
 
 
-def sweep_erasures(engine) -> None:
+def sweep_erasures(engine, r: redis.Redis) -> None:
     """Schedules retention erasures (TR-S-07) and carries out requests whose 48-hour notice is over."""
     days = int(os.environ.get("RETENTION_DAYS", "0"))
     if days:
         with engine.begin() as conn:
             erasure.schedule_retention(conn, days)
     url, token = os.environ["MASTERY_SERVICE_URL"], os.environ["MASTERY_SERVICE_TOKEN"]
-    erasure.run_due(engine, lambda user_id: erase_user(user_id, url=url, token=token))
+    erasure.run_due(engine, r, lambda user_id: erase_user(user_id, url=url, token=token))
 
 
 def requeue_interrupted(r: redis.Redis) -> int:
@@ -85,7 +85,7 @@ def main() -> None:
             if time.monotonic() - last_sweep >= ERASURE_SWEEP_SECONDS:
                 last_sweep = time.monotonic()
                 try:
-                    sweep_erasures(engine)
+                    sweep_erasures(engine, r)
                 except Exception:
                     log.exception("erasure sweep failed")
             job = r.blmove(store.QUEUE, PROCESSING, POLL_SECONDS, "LEFT", "RIGHT")

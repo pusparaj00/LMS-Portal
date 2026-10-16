@@ -137,7 +137,7 @@ export function PrivacyPage({
           )}
         </div>
       )}
-      {student && !gate && erasure && <ErasureSection session={session} state={erasure} onChange={onErasureChange} />}
+      {student && erasure && <ErasureSection session={session} state={erasure} onChange={onErasureChange} />}
     </article>
   );
 }

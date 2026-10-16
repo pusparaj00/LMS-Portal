@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 
 from app import erasure
-from app.db import get_engine
+from app.db import get_engine, get_redis
 from app.mastery.client import erase_user
 
 API = "/api/v1"
@@ -117,7 +117,7 @@ def test_a_request_needs_the_password_and_waits_at_least_48_hours(client, make_u
         ).scalar_one()
     assert hours >= 48
 
-    assert erasure.run_due(get_engine(), erase_mastery) == 0  # not due yet
+    assert erasure.run_due(get_engine(), get_redis(), erase_mastery) == 0  # not due yet
     assert all(count > 0 for count in rows_of(owner, user_id).values())
     assert ask(client, headers).status_code == 409
 
@@ -128,7 +128,7 @@ def test_a_cancelled_request_never_runs(client, make_user, owner, course):
     ask(client, headers)
     assert client.delete(f"{API}/me/erasure", headers=headers).json()["pending"] is False
     make_due(owner, user_id)
-    assert erasure.run_due(get_engine(), erase_mastery) == 0
+    assert erasure.run_due(get_engine(), get_redis(), erase_mastery) == 0
     assert all(count > 0 for count in rows_of(owner, user_id).values())
 
 
@@ -142,7 +142,7 @@ def test_erasure_removes_every_row_of_the_student_and_nobody_elses(client, make_
 
     ask(client, headers)
     make_due(owner, gone)
-    assert erasure.run_due(get_engine(), erase_mastery) >= 1
+    assert erasure.run_due(get_engine(), get_redis(), erase_mastery) >= 1
 
     assert {t: n for t, n in rows_of(owner, gone).items() if n} == {}
     assert rows_of(owner, kept) == before
@@ -176,11 +176,11 @@ def test_a_failure_halfway_changes_nothing_and_the_next_sweep_finishes(client, m
     def unavailable(_user_id):
         raise ConnectionError("mastery service down")
 
-    assert erasure.run_due(get_engine(), unavailable) == 0
+    assert erasure.run_due(get_engine(), get_redis(), unavailable) == 0
     assert all(count > 0 for count in rows_of(owner, user_id).values())
     assert client.get(f"{API}/me/erasure", headers=headers).json()["pending"] is True
 
-    assert erasure.run_due(get_engine(), erase_mastery) >= 1
+    assert erasure.run_due(get_engine(), get_redis(), erase_mastery) >= 1
     assert {t: n for t, n in rows_of(owner, user_id).items() if n} == {}
 
 
@@ -224,3 +224,25 @@ def test_the_mastery_endpoint_needs_the_service_token(client):
     from app.mastery.main import app as mastery_app
 
     assert TestClient(mastery_app).post("/erase", json={"user_id": 0}).status_code == 401
+
+
+def test_erasure_also_removes_the_students_copies_in_redis(client, make_user, owner, course):
+    gone, headers = make_user("student")
+    kept, _ = make_user("student")
+    submission = fill(owner, gone, course)
+    with owner.connect() as conn:
+        session = conn.execute(text("SELECT id FROM diagnostic_sessions WHERE user_id = :u"), {"u": gone}).scalar_one()
+    r = get_redis()
+    theirs = [f"chat:{gone}:history", f"chat:{gone}:problem", f"explain:{submission}", f"probe:{submission}",
+              f"hint:{gone}:{course['problem_id']}", f"diagnostic:{session}"]
+    others = [f"chat:{kept}:history", f"hint:{kept}:{course['problem_id']}"]
+    for key in theirs + others:
+        r.set(key, "x", ex=600)
+
+    ask(client, headers)
+    make_due(owner, gone)
+    erasure.run_due(get_engine(), r, erase_mastery)
+
+    assert [k for k in theirs if r.exists(k)] == []
+    assert all(r.exists(k) for k in others)
+    r.delete(*others)
