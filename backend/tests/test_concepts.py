@@ -82,3 +82,22 @@ def test_a_new_concept_can_be_used_for_a_problem_a_note_and_mastery_with_no_othe
     assert result.json()["status"] == "passed"
     after = client.get(f"{API}/students/me/mastery", params={"course_id": teacher["course"]}, headers=student).json()
     assert after["concepts"][0]["p_known"] > 0.5  # evidence moved it, using the default slip and guess rates
+
+
+def test_a_second_problem_with_the_same_title_is_refused_and_the_first_is_kept(client, teacher):
+    concept = add(client, teacher, "titles").json()
+
+    def create(statement, reference, expected):
+        return client.post(f"{API}/problems", headers=teacher["headers"], json={
+            "course_id": teacher["course"], "title": "Same title", "statement": statement,
+            "difficulty_b": 0, "discrimination_a": 1, "reference_solution": reference,
+            "concepts": [{"concept_id": concept["concept_id"], "name": "titles", "weight": 1.0}],
+            "test_cases": [{"input": "1\n", "expected": expected, "hidden": False, "category": "basic"}],
+        })
+
+    first = create("Print n + 1.", "print(int(input()) + 1)\n", "2\n")
+    assert first.status_code == 201
+    second = create("Print n * 10.", "print(int(input()) * 10)\n", "10\n")
+    assert second.status_code == 409
+    kept = client.get(f"{API}/problems/{first.json()['id']}", headers=teacher["headers"]).json()
+    assert kept["statement"] == "Print n + 1." and kept["examples"][0]["expected"] == "2\n"

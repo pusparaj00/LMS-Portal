@@ -36,6 +36,12 @@ def create_problem(
 ):
     if not can_access_course(conn, user, body.course_id):
         raise HTTPException(403, "not your course")
+    # save_problem replaces a same-titled problem (for re-importing the bank); here that would silently overwrite one.
+    taken = conn.execute(
+        text("SELECT 1 FROM problems WHERE course_id = :c AND title = :t"), {"c": body.course_id, "t": body.title}
+    ).first()
+    if taken:
+        raise HTTPException(409, f"this course already has a problem called '{body.title}'")
     known = {
         r.id: r.name
         for r in conn.execute(
