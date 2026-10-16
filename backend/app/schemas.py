@@ -326,6 +326,7 @@ class Problem(BaseModel):
     review_status: Literal["needs human review", "reviewed"]
     concepts: list[ConceptTag]
     archived: bool = False
+    param_source: Literal["prior", "estimated"] = "prior"
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -373,7 +374,9 @@ class ProblemCreate(BaseModel):
     course_id: int
     title: Text
     statement: Text
-    difficulty_b: float
+    difficulty_b: float | None = Field(
+        ge=-2, le=2, description="empty: estimated from the text and concepts (F-23), and marked as estimated",
+    )
     discrimination_a: float
     concepts: list[ConceptTag]
     reference_solution: Text
@@ -382,6 +385,8 @@ class ProblemCreate(BaseModel):
 
 class ProblemSource(ProblemCreate):
     """Everything an instructor needs to edit a coding problem, hidden tests and reference solution included."""
+
+    param_source: Literal["prior", "estimated"]
 
 
 class SubmissionCreate(BaseModel):

@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
+from app import difficulty
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.errors import sandbox_error
 from app.sandbox import SandboxUnavailable
@@ -53,6 +54,17 @@ def _validated(conn: Connection, body: ProblemCreate) -> tuple[list[dict], list[
     return tests, [(c.concept_id, c.weight) for c in body.concepts]
 
 
+def _difficulty(body: ProblemCreate) -> tuple[float, str]:
+    """The teacher's choice, or an estimate from the text and concepts when they left it empty (F-23)."""
+    if body.difficulty_b is not None:
+        return body.difficulty_b, "prior"
+    try:
+        value = difficulty.estimate(body.statement, body.reference_solution, [c.name for c in body.concepts])
+    except difficulty.NoBank as exc:
+        raise HTTPException(422, str(exc)) from None
+    return value, "estimated"
+
+
 def _title_taken(conn: Connection, course_id: int, title: str, other_than: int | None = None) -> None:
     taken = conn.execute(
         text("SELECT 1 FROM problems WHERE course_id = :c AND title = :t AND id IS DISTINCT FROM :p"),
@@ -69,15 +81,16 @@ def create_problem(body: ProblemCreate, user: Instructor, conn: Conn):
     # save_problem replaces a same-titled problem (for re-importing the bank); here that would silently overwrite one.
     _title_taken(conn, body.course_id, body.title)
     tests, weights = _validated(conn, body)
+    difficulty_b, source = _difficulty(body)
     problem_id, _ = repo.save_problem(
         conn,
         course_id=body.course_id,
         title=body.title,
         statement=body.statement,
         kind="code",
-        difficulty_b=body.difficulty_b,
+        difficulty_b=difficulty_b,
         discrimination_a=body.discrimination_a,
-        param_source="prior",
+        param_source=source,
         reference_solution=body.reference_solution,
         concept_weights=weights,
         tests=tests,
@@ -114,10 +127,11 @@ def edit_problem(problem_id: int, body: ProblemCreate, user: Instructor, conn: C
         raise HTTPException(422, "a problem cannot be moved to another course")
     _title_taken(conn, problem.course_id, body.title, other_than=problem_id)
     tests, weights = _validated(conn, body)
+    difficulty_b, source = _difficulty(body)
     repo.update_code_problem(
-        conn, problem_id, title=body.title, statement=body.statement, difficulty_b=body.difficulty_b,
+        conn, problem_id, title=body.title, statement=body.statement, difficulty_b=difficulty_b,
         discrimination_a=body.discrimination_a, reference_solution=body.reference_solution, concept_weights=weights,
-        tests=tests,
+        tests=tests, param_source=source,
     )
     return repo.get_problem(conn, problem_id)
 

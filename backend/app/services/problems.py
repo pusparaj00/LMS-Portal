@@ -6,7 +6,7 @@ from app.schemas import ConceptTag, Problem, ProblemDetail
 
 PROBLEM_COLUMNS = (
     "id, course_id, title, statement, language, kind, difficulty_b, discrimination_a, review_status,"
-    " archived_at IS NOT NULL AS archived"
+    " archived_at IS NOT NULL AS archived, param_source"
 )
 
 
@@ -172,7 +172,8 @@ def source(conn: Connection, problem_id: int) -> dict | None:
     """A coding problem as its editor needs it: hidden tests and the reference solution included (instructors only)."""
     row = conn.execute(
         text(
-            "SELECT course_id, title, statement, difficulty_b, discrimination_a, reference_solution FROM problems"
+            "SELECT course_id, title, statement, difficulty_b, discrimination_a, reference_solution, param_source"
+            " FROM problems"
             " WHERE id = :p AND kind = 'code'"
         ),
         {"p": problem_id},
@@ -196,16 +197,16 @@ def source(conn: Connection, problem_id: int) -> dict | None:
 
 def update_code_problem(
     conn: Connection, problem_id: int, *, title: str, statement: str, difficulty_b: float, discrimination_a: float,
-    reference_solution: str, concept_weights: list[tuple[int, float]], tests: list[dict],
+    reference_solution: str, concept_weights: list[tuple[int, float]], tests: list[dict], param_source: str,
 ) -> None:
     """Replace a coding problem's content. It needs a fresh human review; past run results stay as they were."""
     conn.execute(
         text(
             "UPDATE problems SET title = :t, statement = :s, difficulty_b = :b, discrimination_a = :a,"
-            " reference_solution = :ref, review_status = 'needs human review' WHERE id = :p"
+            " reference_solution = :ref, param_source = :ps, review_status = 'needs human review' WHERE id = :p"
         ),
         {"t": title, "s": statement, "b": difficulty_b, "a": discrimination_a, "ref": reference_solution,
-         "p": problem_id},
+         "ps": param_source, "p": problem_id},
     )
     for table in ("test_cases", "problem_concepts"):
         conn.execute(text(f"DELETE FROM {table} WHERE problem_id = :p"), {"p": problem_id})

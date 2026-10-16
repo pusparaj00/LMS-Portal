@@ -2164,6 +2164,15 @@
             "title": "Language",
             "type": "string"
           },
+          "param_source": {
+            "default": "prior",
+            "enum": [
+              "prior",
+              "estimated"
+            ],
+            "title": "Param Source",
+            "type": "string"
+          },
           "review_status": {
             "enum": [
               "needs human review",
@@ -2210,8 +2219,18 @@
             "type": "integer"
           },
           "difficulty_b": {
-            "title": "Difficulty B",
-            "type": "number"
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": -2.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "empty: estimated from the text and concepts (F-23), and marked as estimated",
+            "title": "Difficulty B"
           },
           "discrimination_a": {
             "title": "Discrimination A",
@@ -2317,6 +2336,15 @@
           },
           "language": {
             "title": "Language",
+            "type": "string"
+          },
+          "param_source": {
+            "default": "prior",
+            "enum": [
+              "prior",
+              "estimated"
+            ],
+            "title": "Param Source",
             "type": "string"
           },
           "review_status": {
@@ -2446,12 +2474,30 @@
             "type": "integer"
           },
           "difficulty_b": {
-            "title": "Difficulty B",
-            "type": "number"
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": -2.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "empty: estimated from the text and concepts (F-23), and marked as estimated",
+            "title": "Difficulty B"
           },
           "discrimination_a": {
             "title": "Discrimination A",
             "type": "number"
+          },
+          "param_source": {
+            "enum": [
+              "prior",
+              "estimated"
+            ],
+            "title": "Param Source",
+            "type": "string"
           },
           "reference_solution": {
             "title": "Reference Solution",
@@ -2481,7 +2527,8 @@
           "discrimination_a",
           "concepts",
           "reference_solution",
-          "test_cases"
+          "test_cases",
+          "param_source"
         ],
         "title": "ProblemSource",
         "type": "object"
