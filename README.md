@@ -88,6 +88,21 @@ A dump keeps data a student has since had erased (TR-S-07), and a restore brings
 dumps are kept, delete old ones, and after a restore erase again anyone whose erasure completed after the dump was made
 (the worker's log lists each completed erasure by user number). This repository sets no backup expiry.
 
+## Audit trail and breach procedure (TR-S-08)
+
+Logins, failed logins, refused (401, 403) and throttled (429) requests, not-found reads of submission ids, exports,
+staff accounts created, consent changes and erasures are written to the `audit_events` table with the user number, IP
+address and request id; never a password, token, email address, code or message. The API role can add and read events
+but not change or delete them. `AUDIT_RETENTION_DAYS` (default 0, keep) removes older events. To see what happened in a
+window:
+
+```sh
+docker compose exec -T api python -m app.breach_report --since 2026-10-16T00:00
+```
+
+What to do when a breach is suspected is in [docs/breach-procedure.md](docs/breach-procedure.md) (a draft until the
+data protection contact has reviewed it and the contact names are filled in).
+
 ## Deletion and retention (TR-S-07)
 
 A student can delete their account, submissions, chat messages and mastery from Privacy in the top bar. It runs 48 hours
