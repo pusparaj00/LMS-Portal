@@ -29,8 +29,8 @@ def make_due(owner, user_id: int) -> None:
         )
 
 
-def fill(owner, user_id: int, course) -> int:
-    """One of everything a student owns; returns the submission id."""
+def fill(owner, user_id: int, course, lms: bool = False) -> int:
+    """One of everything a student owns; returns the submission id. With `lms`, the account was opened from an LMS."""
     with owner.begin() as conn:
         concept = conn.execute(
             text("SELECT id FROM concepts WHERE course_id = :c LIMIT 1"), {"c": course["id"]}
@@ -75,6 +75,9 @@ def fill(owner, user_id: int, course) -> int:
             text("INSERT INTO misconception_state (user_id, misconception_id, probability) VALUES (:u, :m, 0.5)"),
             {"u": user_id, "m": misconception},
         )
+    if not lms:
+        return submission
+    with owner.begin() as conn:
         platform = conn.execute(
             text(
                 "INSERT INTO lti_platforms (issuer, client_id, auth_login_url, jwks_url, deployment_ids)"
@@ -107,6 +110,11 @@ def rows_of(owner, user_id: int) -> dict[str, int]:
         return counts
 
 
+def has_data(owner, user_id: int) -> bool:
+    """Every table holds this student's data, apart from the LMS link a password account does not have."""
+    return all(n > 0 for table, n in rows_of(owner, user_id).items() if table != "lti_users")
+
+
 def ask(client, headers, password=PASSWORD):
     return client.post(f"{API}/me/erasure", headers=headers, json={"password": password})
 
@@ -129,7 +137,7 @@ def test_a_request_needs_the_password_and_waits_at_least_48_hours(client, make_u
     assert hours >= 48
 
     assert erasure.run_due(get_engine(), get_redis(), erase_mastery) == 0  # not due yet
-    assert all(count > 0 for count in rows_of(owner, user_id).values())
+    assert has_data(owner, user_id)
     assert ask(client, headers).status_code == 409
 
 
@@ -140,18 +148,18 @@ def test_a_cancelled_request_never_runs(client, make_user, owner, course):
     assert client.delete(f"{API}/me/erasure", headers=headers).json()["pending"] is False
     make_due(owner, user_id)
     assert erasure.run_due(get_engine(), get_redis(), erase_mastery) == 0
-    assert all(count > 0 for count in rows_of(owner, user_id).values())
+    assert has_data(owner, user_id)
 
 
 def test_erasure_removes_every_row_of_the_student_and_nobody_elses(client, make_user, owner, course):
     gone, headers = make_user("student")
     kept, _ = make_user("student")
-    fill(owner, gone, course)
-    fill(owner, kept, course)
+    fill(owner, gone, course, lms=True)
+    fill(owner, kept, course, lms=True)
     before = rows_of(owner, kept)
     assert {"mastery", "mastery_events", "misconception_state", "chat_messages", "submissions", "consents"} <= set(before)
 
-    ask(client, headers)
+    assert client.post(f"{API}/me/erasure", headers=headers, json={"confirm": True}).status_code == 201
     make_due(owner, gone)
     assert erasure.run_due(get_engine(), get_redis(), erase_mastery) >= 1
 
@@ -188,7 +196,7 @@ def test_a_failure_halfway_changes_nothing_and_the_next_sweep_finishes(client, m
         raise ConnectionError("mastery service down")
 
     assert erasure.run_due(get_engine(), get_redis(), unavailable) == 0
-    assert all(count > 0 for count in rows_of(owner, user_id).values())
+    assert has_data(owner, user_id)
     assert client.get(f"{API}/me/erasure", headers=headers).json()["pending"] is True
 
     assert erasure.run_due(get_engine(), get_redis(), erase_mastery) >= 1
@@ -210,7 +218,7 @@ def test_retention_asks_for_erasure_of_inactive_students_but_does_not_delete_yet
         assert erasure.status(conn, idle).kind == "retention"
         assert not erasure.status(conn, active).pending
         assert erasure.schedule_retention(conn, 365) == 0  # asking again adds nothing
-    assert all(count > 0 for count in rows_of(owner, idle).values())
+    assert has_data(owner, idle)
 
 
 def test_no_role_can_delete_mastery_directly_and_only_the_mastery_role_can_call_the_function(owner, make_user):

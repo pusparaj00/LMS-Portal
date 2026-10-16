@@ -22,9 +22,16 @@ def my_erasure(user: Student, conn: Conn):
 def request_erasure(body: ErasureRequest, user: Student, conn: Conn):
     """Schedules deletion of the whole account, its submissions, chat and mastery, 48 hours from now."""
     ratelimit.check("login_email", f"erase:{user.id}")
-    password_hash = conn.execute(text("SELECT password_hash FROM users WHERE id = :u"), {"u": user.id}).scalar_one()
-    if not verify_password(body.password, password_hash):
-        raise HTTPException(403, "wrong password")
+    if erasure.opened_from_lms(conn, user.id):
+        # The account's password is random and unknown: the LMS sign-in is the proof, the confirmation the intent.
+        if not body.confirm:
+            raise HTTPException(422, "confirm that you want your data deleted")
+    else:
+        password_hash = conn.execute(
+            text("SELECT password_hash FROM users WHERE id = :u"), {"u": user.id}
+        ).scalar_one()
+        if body.password is None or not verify_password(body.password, password_hash):
+            raise HTTPException(403, "wrong password")
     if not erasure.request(conn, user.id, "requested"):
         raise HTTPException(409, "deletion is already scheduled")
     return erasure.status(conn, user.id)

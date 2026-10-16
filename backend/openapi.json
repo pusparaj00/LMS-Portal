@@ -936,21 +936,40 @@
       },
       "ErasureRequest": {
         "properties": {
+          "confirm": {
+            "default": false,
+            "description": "for an account opened from an LMS, which has no password",
+            "title": "Confirm",
+            "type": "boolean"
+          },
           "password": {
-            "description": "the student's password, to confirm it is them",
-            "maxLength": 200,
-            "title": "Password",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the student's password, to confirm",
+            "title": "Password"
           }
         },
-        "required": [
-          "password"
-        ],
         "title": "ErasureRequest",
         "type": "object"
       },
       "ErasureStatus": {
         "properties": {
+          "confirm_with": {
+            "description": "how a request is confirmed: the password, or (for an account opened from an LMS) a confirmation",
+            "enum": [
+              "password",
+              "lms"
+            ],
+            "title": "Confirm With",
+            "type": "string"
+          },
           "due_at": {
             "anyOf": [
               {
@@ -996,6 +1015,7 @@
           }
         },
         "required": [
+          "confirm_with",
           "pending",
           "kind",
           "notified_at",

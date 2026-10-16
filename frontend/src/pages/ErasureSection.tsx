@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { ApiError, Session, api } from "../api";
 
-export type ErasureState = { pending: boolean; kind: "requested" | "retention" | null; notified_at: string | null; due_at: string | null };
+export type ErasureState = { confirm_with: "password" | "lms"; pending: boolean; kind: "requested" | "retention" | null; notified_at: string | null; due_at: string | null };
 
 const when = (iso: string) => new Date(iso).toLocaleString();
 
@@ -18,6 +18,8 @@ export function ErasureSection({
 }) {
   const [confirming, setConfirming] = useState(false);
   const [password, setPassword] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const lms = state.confirm_with === "lms";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +30,7 @@ export function ErasureSection({
       onChange(await call());
       setConfirming(false);
       setPassword("");
+      setConfirmed(false);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "The server could not be reached.");
     } finally {
@@ -57,18 +60,26 @@ export function ErasureSection({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            run(() => api<ErasureState>("/me/erasure", session, { method: "POST", body: { password } }));
+            const body = lms ? { confirm: confirmed } : { password };
+            run(() => api<ErasureState>("/me/erasure", session, { method: "POST", body }));
           }}
         >
           <p>
             This deletes your account, submissions, chat messages and mastery in 48 hours. It cannot be undone after that.
-            Enter your password to confirm.
+            {lms ? "You opened this tool from your LMS, so tick the box to confirm." : "Enter your password to confirm."}
           </p>
-          <label>
-            Password
-            <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </label>{" "}
-          <button className="primary" type="submit" disabled={busy || !password}>
+          {lms ? (
+            <label className="inline">
+              <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+              Yes, delete my data
+            </label>
+          ) : (
+            <label>
+              Password
+              <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </label>
+          )}{" "}
+          <button className="primary" type="submit" disabled={busy || (lms ? !confirmed : !password)}>
             Delete my data in 48 hours
           </button>{" "}
           <button type="button" disabled={busy} onClick={() => setConfirming(false)}>

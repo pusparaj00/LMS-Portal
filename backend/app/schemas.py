@@ -120,6 +120,9 @@ class ConsentStatus(BaseModel):
 
 
 class ErasureStatus(BaseModel):
+    confirm_with: Literal["password", "lms"] = Field(
+        description="how a request is confirmed: the password, or (for an account opened from an LMS) a confirmation"
+    )
     pending: bool
     kind: Literal["requested", "retention"] | None
     notified_at: datetime | None
@@ -127,7 +130,8 @@ class ErasureStatus(BaseModel):
 
 
 class ErasureRequest(BaseModel):
-    password: Text = Field(max_length=200, description="the student's password, to confirm it is them")
+    password: Text | None = Field(default=None, max_length=200, description="the student's password, to confirm")
+    confirm: bool = Field(default=False, description="for an account opened from an LMS, which has no password")
 
 
 class ConsentAccept(BaseModel):

@@ -31,14 +31,21 @@ _DELETIONS = [
 ]
 
 
+def opened_from_lms(conn: Connection, user_id: int) -> bool:
+    return conn.execute(text("SELECT 1 FROM lti_users WHERE user_id = :u"), {"u": user_id}).first() is not None
+
+
 def status(conn: Connection, user_id: int) -> ErasureStatus:
+    confirm_with = "lms" if opened_from_lms(conn, user_id) else "password"
     row = conn.execute(
         text("SELECT kind, notified_at, due_at FROM erasure_requests WHERE user_id = :u AND status = 'pending'"),
         {"u": user_id},
     ).first()
     if row is None:
-        return ErasureStatus(pending=False, kind=None, notified_at=None, due_at=None)
-    return ErasureStatus(pending=True, kind=row.kind, notified_at=row.notified_at, due_at=row.due_at)
+        return ErasureStatus(confirm_with=confirm_with, pending=False, kind=None, notified_at=None, due_at=None)
+    return ErasureStatus(
+        confirm_with=confirm_with, pending=True, kind=row.kind, notified_at=row.notified_at, due_at=row.due_at
+    )
 
 
 def request(conn: Connection, user_id: int, kind: str) -> bool:
