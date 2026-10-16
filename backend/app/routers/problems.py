@@ -33,7 +33,7 @@ def get_problem(problem_id: int, user: Annotated[CurrentUser, Depends(current_us
     return problem
 
 
-def _validated(conn: Connection, body: ProblemCreate) -> tuple[list[dict], list[tuple[int, float]]]:
+def _validated(conn: Connection, body: ProblemCreate) -> tuple[list[dict], list[tuple[int, float]], list[str]]:
     """The checks every coding problem passes before it is saved (TR-D-04): concepts of this course, categories, and a
     reference solution that passes every test in the sandbox."""
     known = {
@@ -51,15 +51,15 @@ def _validated(conn: Connection, body: ProblemCreate) -> tuple[list[dict], list[
         raise sandbox_error(exc) from None
     if errors:
         raise HTTPException(422, "; ".join(errors))
-    return tests, [(c.concept_id, c.weight) for c in body.concepts]
+    return tests, [(c.concept_id, c.weight) for c in body.concepts], names
 
 
-def _difficulty(body: ProblemCreate) -> tuple[float, str]:
-    """The teacher's choice, or an estimate from the text and concepts when they left it empty (F-23)."""
+def _difficulty(body: ProblemCreate, concept_names: list[str]) -> tuple[float, str]:
+    """The teacher's choice, or an estimate from the text and the course's own concept names when it is empty (F-23)."""
     if body.difficulty_b is not None:
         return body.difficulty_b, "prior"
     try:
-        value = difficulty.estimate(body.statement, body.reference_solution, [c.name for c in body.concepts])
+        value = difficulty.estimate(body.statement, body.reference_solution, concept_names)
     except difficulty.NoBank as exc:
         raise HTTPException(422, str(exc)) from None
     return value, "estimated"
@@ -80,8 +80,8 @@ def create_problem(body: ProblemCreate, user: Instructor, conn: Conn):
         raise HTTPException(403, "not your course")
     # save_problem replaces a same-titled problem (for re-importing the bank); here that would silently overwrite one.
     _title_taken(conn, body.course_id, body.title)
-    tests, weights = _validated(conn, body)
-    difficulty_b, source = _difficulty(body)
+    tests, weights, names = _validated(conn, body)
+    difficulty_b, source = _difficulty(body, names)
     problem_id, _ = repo.save_problem(
         conn,
         course_id=body.course_id,
@@ -126,8 +126,8 @@ def edit_problem(problem_id: int, body: ProblemCreate, user: Instructor, conn: C
     if body.course_id != problem.course_id:
         raise HTTPException(422, "a problem cannot be moved to another course")
     _title_taken(conn, problem.course_id, body.title, other_than=problem_id)
-    tests, weights = _validated(conn, body)
-    difficulty_b, source = _difficulty(body)
+    tests, weights, names = _validated(conn, body)
+    difficulty_b, source = _difficulty(body, names)
     repo.update_code_problem(
         conn, problem_id, title=body.title, statement=body.statement, difficulty_b=difficulty_b,
         discrimination_a=body.discrimination_a, reference_solution=body.reference_solution, concept_weights=weights,

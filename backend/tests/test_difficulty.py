@@ -52,3 +52,12 @@ def test_an_empty_difficulty_is_estimated_and_marked_and_a_chosen_one_is_kept(cl
                         json={**source, "title": "Chosen", "difficulty_b": None})
     assert edited.status_code == 200 and edited.json()["param_source"] == "estimated"
     assert create(client, teacher, course, concept, title="Too hard", difficulty_b=3).status_code == 422
+
+
+def test_the_estimate_uses_the_courses_concept_names_not_the_ones_the_client_sends(client, make_user):
+    _, teacher = make_user("instructor")
+    course = client.post(f"{API}/courses", headers=teacher, json={"title": "Names"}).json()["id"]
+    concept = client.post(f"{API}/courses/{course}/concepts", headers=teacher, json={"name": "classes"}).json()["concept_id"]
+    claimed = create(client, teacher, course, concept, concepts=[{"concept_id": concept, "name": "loops", "weight": 1}])
+    assert claimed.status_code == 201, claimed.text
+    assert claimed.json()["difficulty_b"] == difficulty.estimate("Read n, print n + 1.", ONE_LINER, ["classes"])
