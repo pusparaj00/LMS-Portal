@@ -1,7 +1,7 @@
 # Progress report: Adaptive AI-Powered LMS
 
-Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 29 steps, each on its own branch of
-`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-29-request-trace`, with **662 automated tests passing**. Every number
+Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 30 steps, each on its own branch of
+`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-30-g5-evidence`, with **662 automated tests passing**. Every number
 below was measured and comes from a results file in this folder, which gives the command and the date.
 
 ## 1. Where the project stands
@@ -24,7 +24,7 @@ What is missing is mostly work only people can do:
 | Measure | Status |
 | --- | --- |
 | Plan gates G0 to G4 | All passed (G2 with a caveat, see section 3) |
-| Gate G5 (demo readiness) | Technical part passed (10 of 10 clean demo runs); people part open |
+| Gate G5 (demo readiness) | Technical part passed again on 17 Oct on the current code: 10 of 10 clean runs, 10 concurrent students, restart and cache ([step-30](step-30-g5-evidence.md)); people part open |
 | PRD features (34) | 34 done |
 | TRD implementation requirements (69) | 55 done, 2 partly done, 3 not built or not run, 9 not applicable (custom sandbox instead of Judge0) |
 | Validation tests (12) | 7 pass, 1 fails (TR-V-05, simulation), 2 partly met, 2 not run (need raters or a local model) |
@@ -85,6 +85,7 @@ What is missing is mostly work only people can do:
 | 27 | `step-27-audit-followups` | A course owner is not demoted to student; DOMPurify pinned to 3.4.16 (npm audit: 0) |
 | 28 | `step-28-explain-budget` | A new explanation always ends within 15 s; the template is shown when the model is too slow (TR-P-03) |
 | 29 | `step-29-request-trace` | One checked request ID through API and sandbox (TR-A-08); chat questions tagged with their concept (TR-M-08) |
+| 30 | `step-30-g5-evidence` | Gate G5 evidence measured again on the current code: 0 of 420 steps failed, restart and cache pass, fresh dump |
 
 The three audits found and fixed 16 bugs, each with a test, and each recorded in `step-11-audit.md`,
 `step-15-audit.md` and `step-18-audit.md`. More defects were found and fixed during the steps themselves and are
@@ -93,7 +94,7 @@ listed in each step's results.
 ## 5. What is open
 
 **Needs people or decisions (cannot be built):**
-- Two reviewers to rate the 20 blinded explanations (TR-V-03).
+- Two reviewers to rate the 20 blinded explanations (TR-V-03); moved to after the review, no reviewers before 21 Oct.
 - The backup video, the updated report, two demo rehearsals and the IPR conversation (gate G5).
 - The data-protection contact's review of the consent notice, retention, and the breach procedure, whose contact names
   are blank. The rules apply from May 2027.
