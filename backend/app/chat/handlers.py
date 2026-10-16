@@ -1,10 +1,14 @@
 """Route handlers (F-52). Each handler has its own narrow tools and returns a reply with its sources.
 
-Handlers cannot change mastery: `progress` reads through the read-only lms_chat role, and the other handlers
-have no mastery tool at all (TR-A-02). Student text reaches the model only inside delimited blocks (TR-L-08).
+Handlers cannot change mastery: `progress`, `recommend` and `lms` read through the read-only lms_chat role, and the
+other handlers have no mastery tool at all (TR-A-02). Student text reaches the model only inside delimited blocks
+(TR-L-08). The `recommend` and `lms` replies are built from records with fixed sentences, never written by the model,
+so a deadline or a score cannot be misstated (DRD: "direct answer from records").
 """
 import json
+import re
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from sqlalchemy import Connection, text
 
@@ -13,6 +17,7 @@ from app.config import Settings
 from app.feedback import hints, leak, service
 from app.feedback.context import NotExplainable
 from app.feedback.prompt import neutralise
+from app.grading_book import status as score_status
 from app.llm.adapter import LLMAdapter, LLMError
 from app.retrieval import store
 from app.retrieval.store import Source
@@ -21,9 +26,12 @@ from app.schemas import SourceOut
 MAX_ANSWER_CHARS = 900
 NO_SOURCE = "No course source was found for that question, so I can't answer it from the course notes."
 UNAVAILABLE = (
-    "That kind of question ({route}) is not available in the assistant yet. You can still ask me to explain a "
-    "failed submission, give a hint, summarise your progress, or answer a Python question from the course notes."
+    "That kind of question ({route}) is not something I can answer. You can ask me to explain a failed submission, "
+    "give a hint, summarise your progress, suggest what to do next, tell you about deadlines, grades and "
+    "announcements, or answer a Python question from the course notes."
 )
+NOT_ENROLLED = "You are not enrolled in a course yet, so there is nothing to show."
+MAX_LISTED = 5
 
 GENERAL_SYSTEM = """You answer a Python student's question using ONLY the course notes in <course_notes>.
 
@@ -192,7 +200,163 @@ def general(turn: Turn) -> Reply:
     return Reply(answer, ["retrieval", "grounded_answer"], out)
 
 
-HANDLERS = {"explain": explain, "hint": hint, "progress": progress, "general": general}
+def _pct(p: float) -> str:
+    return f"{round(p * 100)}%"
+
+
+def _concepts(turn: Turn, course_id: int) -> list:
+    """The student's mastery per concept in one course, weakest first (ties in concept order, as on the dashboard)."""
+    rows = turn.chat_conn.execute(
+        text(
+            "SELECT c.id, c.name, COALESCE(m.p_known, c.prior) AS p FROM concepts c"
+            " LEFT JOIN mastery m ON m.concept_id = c.id AND m.user_id = :u WHERE c.course_id = :c ORDER BY c.id"
+        ),
+        {"u": turn.user_id, "c": course_id},
+    ).all()
+    return sorted(rows, key=lambda r: r.p)
+
+
+def recommend(turn: Turn) -> Reply:
+    """The next problem by the dashboard's own rule, with the reason, and a notes section on that concept (F-52)."""
+    course = _course_id(turn)
+    if course is None:
+        return Reply(NOT_ENROLLED, ["mastery_read"])
+    for concept in _concepts(turn, course):
+        problem = turn.chat_conn.execute(
+            text("SELECT problem_id, title FROM next_problem(:u, :course, :k)"),
+            {"u": turn.user_id, "course": course, "k": concept.id},
+        ).first()
+        if problem is None:
+            continue
+        name = concept.name.replace("_", " ")
+        reply = f"Try \"{problem.title}\" next: {name} is your weakest area ({_pct(concept.p)} mastery)."
+        note = turn.chat_conn.execute(
+            text(
+                "SELECT c.id, d.title, c.section, c.text FROM chunks c JOIN documents d ON d.id = c.document_id"
+                " WHERE d.course_id = :course AND d.concept_id = :k AND d.status = 'ready'"
+                " ORDER BY d.id, c.chunk_index LIMIT 1"
+            ),
+            {"course": course, "k": concept.id},
+        ).first()
+        sources = []
+        if note is not None:
+            reply += f" It may help to read \"{note.title} > {note.section}\" in the course notes first."
+            sources = [SourceOut(chunk_id=note.id, title=note.title, section=note.section, text=note.text)]
+        return Reply(reply, ["mastery_read", "next_problem", f"problem:{problem.problem_id}"], sources)
+    return Reply("You have solved every coding problem in this course for now. Well done.",
+                 ["mastery_read", "next_problem"])
+
+
+GRADES = re.compile(r"\b(grades?|scores?|marks?|results?|points?)\b", re.I)
+NEWS = re.compile(r"\b(announce\w*|news|notices?)\b", re.I)
+DEADLINES = re.compile(r"\b(deadlines?|due|assignments?|when|homework)\b", re.I)
+
+
+def _when(moment: datetime) -> str:
+    return moment.strftime("%d %b %Y, %H:%M UTC")
+
+
+def _courses(turn: Turn) -> list:
+    """The open problem's course, else every course the student is enrolled in."""
+    only = _course_id(turn) if turn.problem_id is not None else None
+    return turn.chat_conn.execute(
+        text(
+            "SELECT c.id, c.title FROM enrollments e JOIN courses c ON c.id = e.course_id"
+            " WHERE e.user_id = :u AND c.archived_at IS NULL AND (CAST(:only AS integer) IS NULL OR c.id = :only)"
+            " ORDER BY c.id"
+        ),
+        {"u": turn.user_id, "only": only},
+    ).all()
+
+
+def _assignments(turn: Turn, courses: list) -> list[dict]:
+    """The student's own assignments with their on-time score, by the gradebook's rule (assignment_scores)."""
+    found = []
+    for course in courses:
+        for r in turn.chat_conn.execute(
+            text(
+                "SELECT a.title, a.due_at, s.score, s.with_late, s.possible, s.tried_on_time, s.tried_late,"
+                " s.past_due FROM assignment_scores(:c, :u) s JOIN assignments a ON a.id = s.assignment_id"
+                " ORDER BY a.due_at, a.id"
+            ),
+            {"c": course.id, "u": turn.user_id},
+        ):
+            found.append({
+                "course": course.title, "title": r.title, "due_at": r.due_at, "score": round(r.score, 2),
+                "with_late": round(r.with_late, 2), "possible": r.possible, "past_due": r.past_due,
+                "status": score_status(r.score, r.with_late, r.possible, r.tried_on_time, r.tried_late, r.past_due),
+            })
+    return sorted(found, key=lambda a: a["due_at"])
+
+
+STATUS_WORDS = {"complete": "complete", "in_progress": "in progress", "late": "submitted late",
+                "missing": "missing", "not_started": "not started"}
+
+
+def _num(value: float) -> str:
+    return f"{value:g}"
+
+
+def _deadlines(items: list[dict]) -> str:
+    upcoming = [a for a in items if not a["past_due"]][:MAX_LISTED]
+    missing = [a for a in items if a["status"] == "missing"][:MAX_LISTED]
+    parts = [
+        f"\"{a['title']}\" ({a['course']}) is due {_when(a['due_at'])}: {STATUS_WORDS[a['status']]},"
+        f" {_num(a['score'])} of {_num(a['possible'])} points so far." for a in upcoming
+    ] or ["Nothing is due in your courses."]
+    parts += [f"Missed: \"{a['title']}\" ({a['course']}), due {_when(a['due_at'])}." for a in missing]
+    return " ".join(parts)
+
+
+def _grades(items: list[dict]) -> str:
+    if not items:
+        return "There are no assignments in your courses yet, so there are no grades."
+    parts = []
+    for a in items:
+        line = f"\"{a['title']}\": {_num(a['score'])} of {_num(a['possible'])}"
+        if a["with_late"] > a["score"]:
+            line += f" ({_num(a['with_late'])} counting late work, which is not counted)"
+        parts.append(line)
+    total, possible = sum(a["score"] for a in items), sum(a["possible"] for a in items)
+    return "Your on-time scores: " + "; ".join(parts) + f". Total {_num(round(total, 2))} of {_num(possible)}."
+
+
+def _news(turn: Turn, courses: list) -> str:
+    rows = turn.chat_conn.execute(
+        text(
+            "SELECT a.title, a.created_at, c.title AS course FROM announcements a JOIN courses c ON c.id = a.course_id"
+            " WHERE a.course_id = ANY(:ids) ORDER BY a.created_at DESC, a.id DESC LIMIT 3"
+        ),
+        {"ids": [c.id for c in courses]},
+    ).all()
+    if not rows:
+        return "There are no announcements in your courses."
+    return "Latest announcements: " + "; ".join(
+        f"\"{r.title}\" ({r.course}, {_when(r.created_at)})" for r in rows
+    ) + ". The course page shows them in full."
+
+
+def lms(turn: Turn) -> Reply:
+    """Deadlines, grades, announcements and enrolment, from the student's own records (F-52, DRD: lms route)."""
+    courses = _courses(turn)
+    if not courses:
+        return Reply(NOT_ENROLLED, ["lms_read"])
+    message = turn.message
+    if GRADES.search(message):
+        reply = _grades(_assignments(turn, courses))
+    elif NEWS.search(message):
+        reply = _news(turn, courses)
+    elif DEADLINES.search(message):
+        reply = _deadlines(_assignments(turn, courses))
+    else:
+        names = ", ".join(c.title for c in courses)
+        reply = f"You are enrolled in: {names}. " + _deadlines(_assignments(turn, courses)) + " " + _news(turn, courses)
+    return Reply(reply, ["lms_read"])
+
+
+HANDLERS = {
+    "explain": explain, "hint": hint, "progress": progress, "recommend": recommend, "lms": lms, "general": general,
+}
 
 
 def handle(route: str, turn: Turn) -> Reply:

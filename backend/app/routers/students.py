@@ -17,20 +17,13 @@ HISTORY_LIMIT = 50
 def _recommend(conn: Connection, user_id: int, course_id: int, concepts) -> RecommendedProblem | None:
     """The easiest unsolved coding problem on the weakest concept that still has one."""
     for concept in sorted(concepts, key=lambda c: c.p_known):
-        row = conn.execute(
-            text(
-                "SELECT p.id, p.title FROM problems p"
-                " JOIN problem_concepts pc ON pc.problem_id = p.id AND pc.concept_id = :c"
-                " WHERE p.kind = 'code' AND p.course_id = :course AND p.archived_at IS NULL AND NOT EXISTS ("
-                "   SELECT 1 FROM submissions s JOIN run_results r ON r.submission_id = s.id"
-                "   WHERE s.problem_id = p.id AND s.user_id = :u AND r.status = 'passed')"
-                " ORDER BY p.difficulty_b, p.id LIMIT 1"
-            ),
+        row = conn.execute(  # the rule is the database function next_problem, shared with the assistant (F-52)
+            text("SELECT problem_id, title FROM next_problem(:u, :course, :c)"),
             {"c": concept.concept_id, "course": course_id, "u": user_id},
         ).first()
         if row:
             reason = f"{concept.name} is your weakest area ({round(concept.p_known * 100)}% mastery)"
-            return RecommendedProblem(problem_id=row.id, title=row.title, reason=reason)
+            return RecommendedProblem(problem_id=row.problem_id, title=row.title, reason=reason)
     return None
 
 

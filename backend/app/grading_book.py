@@ -10,36 +10,12 @@ from sqlalchemy import Connection, text
 
 from app.synthetic import is_synthetic
 
+# The rule itself is the database function assignment_scores (migration 0017), shared with the assistant's lms route.
 _SCORES = """
-WITH items AS (
-    SELECT a.id AS assignment_id, a.due_at, ap.problem_id, ap.points
-    FROM assignments a JOIN assignment_problems ap ON ap.assignment_id = a.id WHERE a.course_id = :c
-),
-students AS (
-    SELECT u.id, u.email, u.display_name FROM enrollments e JOIN users u ON u.id = e.user_id
-    WHERE e.course_id = :c AND u.role = 'student' AND (CAST(:only AS integer) IS NULL OR u.id = :only)
-),
-attempts AS (
-    SELECT i.assignment_id, i.problem_id, s.user_id,
-           max(r.passed::float / NULLIF(r.passed + r.failed, 0)) FILTER (WHERE s.created_at <= i.due_at) AS on_time,
-           max(r.passed::float / NULLIF(r.passed + r.failed, 0)) FILTER (WHERE s.created_at > i.due_at) AS late,
-           bool_or(s.created_at <= i.due_at) AS tried_on_time,
-           bool_or(s.created_at > i.due_at) AS tried_late
-    FROM items i JOIN submissions s ON s.problem_id = i.problem_id JOIN run_results r ON r.submission_id = s.id
-    WHERE s.user_id IN (SELECT id FROM students)
-    GROUP BY i.assignment_id, i.problem_id, s.user_id
-)
-SELECT st.id AS student_id, st.email, st.display_name, i.assignment_id,
-       sum(i.points * COALESCE(a.on_time, 0)) AS score,
-       sum(i.points * GREATEST(COALESCE(a.on_time, 0), COALESCE(a.late, 0))) AS with_late,
-       sum(i.points) AS possible,
-       COALESCE(bool_or(a.tried_on_time), false) AS tried_on_time,
-       COALESCE(bool_or(a.tried_late), false) AS tried_late,
-       bool_and(now() > i.due_at) AS past_due
-FROM students st CROSS JOIN items i
-LEFT JOIN attempts a ON a.assignment_id = i.assignment_id AND a.problem_id = i.problem_id AND a.user_id = st.id
-GROUP BY st.id, st.email, st.display_name, i.assignment_id
-ORDER BY COALESCE(st.display_name, st.email), i.assignment_id
+SELECT s.student_id, u.email, u.display_name, s.assignment_id, s.score, s.with_late, s.possible,
+       s.tried_on_time, s.tried_late, s.past_due
+FROM assignment_scores(:c, CAST(:only AS integer)) s JOIN users u ON u.id = s.student_id
+ORDER BY COALESCE(u.display_name, u.email), s.assignment_id
 """
 
 
