@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 
 import { Session, api, loadSession, saveSession } from "./api";
+import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { ChatPanel } from "./pages/ChatPanel";
 import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { DashboardPage, WhyPage } from "./pages/DashboardPage";
+import { GradebookPage } from "./pages/GradebookPage";
 import { NewProblemPage } from "./pages/NewProblemPage";
 import { NotesPage } from "./pages/NotesPage";
 import { InstructorPage } from "./pages/InstructorPage";
@@ -70,6 +72,8 @@ export function App() {
   const course = hash.match(/^#\/course\/(\d+)$/);
   const newProblem = hash.match(/^#\/course\/(\d+)\/problem\/new$/);
   const notes = hash.match(/^#\/course\/(\d+)\/notes$/);
+  const assignments = hash.match(/^#\/course\/(\d+)\/assignments$/);
+  const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
   const problem = hash.match(/^#\/problem\/(\d+)$/);
   const classView = hash.match(/^#\/class\/(\d+)$/);
   const placement = hash.match(/^#\/placement\/(\d+)$/);
@@ -109,6 +113,10 @@ export function App() {
           <NewProblemPage session={session} courseId={Number(newProblem[1])} />
         ) : notes && session.role === "instructor" ? (
           <NotesPage session={session} courseId={Number(notes[1])} />
+        ) : assignments && session.role === "instructor" ? (
+          <AssignmentsPage session={session} courseId={Number(assignments[1])} />
+        ) : gradebook && session.role !== "student" ? (
+          <GradebookPage session={session} courseId={Number(gradebook[1])} />
         ) : classView ? (
           <InstructorPage session={session} courseId={Number(classView[1])} />
         ) : why ? (

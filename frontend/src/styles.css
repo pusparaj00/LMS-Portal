@@ -842,3 +842,21 @@ select {
   background: var(--fail-bg);
   color: var(--fail);
 }
+
+.status {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-complete {
+  color: var(--pass);
+}
+
+.status-missing,
+.status-late {
+  color: var(--fail);
+}
+
+.gradebook td small {
+  color: inherit;
+}

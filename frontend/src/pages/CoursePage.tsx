@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Problem, Session, api } from "../api";
+import { StudentAssignments } from "./AssignmentsPage";
 
 export function CoursePage({ session, courseId }: { session: Session; courseId: number }) {
   const [problems, setProblems] = useState<Problem[] | null>(null);
@@ -25,6 +26,9 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
           <a className="button" href={`#/class/${courseId}`}>
             Class overview
           </a>
+          <a className="button" href={`#/course/${courseId}/gradebook`}>
+            Gradebook
+          </a>
           {session.role === "instructor" && (
             <>
               <a className="button" href={`#/course/${courseId}/problem/new`}>
@@ -32,6 +36,9 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
               </a>
               <a className="button" href={`#/course/${courseId}/notes`}>
                 Course notes
+              </a>
+              <a className="button" href={`#/course/${courseId}/assignments`}>
+                Assignments
               </a>
             </>
           )}
@@ -47,6 +54,7 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
           </a>
         </p>
       )}
+      {session.role === "student" && <StudentAssignments session={session} courseId={courseId} />}
       {error && <p role="alert" className="error">{error}</p>}
       {problems && coding.length === 0 && (
         <p className="empty">This course has no coding problems yet.</p>
