@@ -3,6 +3,8 @@ from configuration; swapping provider needs no change elsewhere."""
 import json
 import logging
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Protocol
@@ -78,6 +80,18 @@ def _time_left(timeout_s: float) -> float:
     if left < MIN_USEFUL_SECONDS:
         raise LLMError("time budget used up")
     return min(timeout_s, left)
+
+
+@contextmanager
+def deadline_within(seconds: float) -> Iterator[None]:
+    """Every model call inside the block, retries and fallback providers included, ends within `seconds`."""
+    moment = time.monotonic() + seconds
+    current = _deadline.get()
+    token = _deadline.set(moment if current is None else min(current, moment))
+    try:
+        yield
+    finally:
+        _deadline.reset(token)
 
 
 def _pause(seconds: float) -> None:
@@ -251,8 +265,11 @@ class FallbackChain:
         return self.last.config
 
     def complete(self, system: str, user: str, json_schema: dict | None = None) -> str:
-        """One answer within `budget_s` seconds in total, however many providers have to be tried."""
-        token = _deadline.set(time.monotonic() + self.budget_s)
+        """One answer within `budget_s` seconds in total, however many providers have to be tried, and never past a
+        deadline the caller has already set."""
+        mine = time.monotonic() + self.budget_s
+        outer = _deadline.get()
+        token = _deadline.set(mine if outer is None else min(outer, mine))
         errors = []
         now = time.monotonic()
         cooling = [a for a in self.adapters if _cooling.get(_key(a), 0.0) > now]

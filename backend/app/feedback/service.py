@@ -61,7 +61,8 @@ def explain_submission(conn: Connection, user_id: int, submission_id: int, adapt
         response, offered = stored, probe.select_probe(conn, ctx)
         response.probe = _probe_out(offered)
     else:
-        outcome = run_explain(conn, ctx, adapter, get_settings().retrieval_min_score)
+        settings = get_settings()
+        outcome = run_explain(conn, ctx, adapter, settings.retrieval_min_score, settings.explain_budget_s)
         if outcome.explanation is not None:
             signature_cache.store(conn, ctx, outcome.explanation, [s.chunk_id for s in outcome.sources])
         offered = probe.select_probe(conn, ctx)

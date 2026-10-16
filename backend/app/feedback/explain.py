@@ -1,9 +1,10 @@
 """Verified explanations (F-40 to F-43, TR-L-03, TR-L-04, TR-L-11, TR-L-12).
 
-An explanation reaches the student only after every check passes. After two failed attempts the
-student gets a template hint instead. Nothing is shown or streamed before the verdict.
+An explanation reaches the student only after every check passes. After two failed attempts, or when the time budget
+runs out (TR-P-03), the student gets a template hint instead. Nothing is shown or streamed before the verdict.
 """
 import logging
+import time
 from dataclasses import dataclass, field
 
 from sqlalchemy import Connection, text
@@ -13,13 +14,15 @@ from app.feedback.claim_check import ExampleRun, verify_with_example
 from app.feedback.context import ExplainContext
 from app.feedback.prompt import PROMPT_VERSION, build_prompt
 from app.feedback.verifier import JSON_SCHEMA, Check, Evidence, Explanation, all_passed
-from app.llm.adapter import LLMAdapter, LLMError
+from app.llm.adapter import MIN_USEFUL_SECONDS, LLMAdapter, LLMError, deadline_within
 from app.retrieval import store
 from app.retrieval.store import Source
 
 log = logging.getLogger("app.feedback")
 MAX_ATTEMPTS = 2  # one try and one retry (TR-L-04, TR-P-08)
 SOURCES_PER_QUESTION = 3
+# Kept back from the model for checking its answer, the example run in the sandbox included (measured under 0.5 s).
+CHECK_RESERVE_S = 1.5
 
 
 @dataclass
@@ -64,7 +67,10 @@ def log_checks(
         )
 
 
-def run_explain(conn: Connection, ctx: ExplainContext, adapter: LLMAdapter, min_score: float) -> Outcome:
+def run_explain(
+    conn: Connection, ctx: ExplainContext, adapter: LLMAdapter, min_score: float, budget_s: float
+) -> Outcome:
+    started = time.monotonic()
     sources = retrieve(conn, ctx, min_score)
     evidence = Evidence(
         code=ctx.code, reference_solution=ctx.reference_solution, failed_tests=ctx.failed_tests,
@@ -76,8 +82,14 @@ def run_explain(conn: Connection, ctx: ExplainContext, adapter: LLMAdapter, min_
         system, user = build_prompt(ctx, sources, previous)
         explanation: Explanation | None = None
         example: ExampleRun | None = None
+        left = budget_s - (time.monotonic() - started) - CHECK_RESERVE_S
+        if left < MIN_USEFUL_SECONDS:
+            log_checks(conn, ctx.submission_id, attempt, adapter,
+                       [Check("time_budget", False, f"{budget_s:g} s used up before attempt {attempt}")])
+            break
         try:
-            raw = adapter.complete(system, user, JSON_SCHEMA)
+            with deadline_within(left):
+                raw = adapter.complete(system, user, JSON_SCHEMA)
             explanation, checks, example = verify_with_example(raw, evidence)
         except LLMError as exc:
             checks = [Check("llm_call", False, str(exc))]
