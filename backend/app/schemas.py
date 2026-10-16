@@ -232,6 +232,26 @@ class GradeSendResult(BaseModel):
     failures: list[GradeSendFailure]
 
 
+class AnnouncementIn(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
+    body: Text = Field(min_length=1, max_length=5000, description="plain text; line breaks are kept")
+
+    @model_validator(mode="after")
+    def _not_blank(self):
+        if not self.title.strip() or not self.body.strip():
+            raise ValueError("an announcement needs a title and some text")
+        return self
+
+
+class Announcement(BaseModel):
+    id: int
+    course_id: int
+    title: str
+    body: str
+    created_at: datetime
+    edited_at: datetime | None
+
+
 class ConceptCreate(BaseModel):
     name: Text = Field(min_length=2, max_length=60, examples=["string formatting"])
 
