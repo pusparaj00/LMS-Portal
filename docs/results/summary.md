@@ -41,5 +41,6 @@ should not be quoted as rates.
 | Accounts (F-01, TR-S-01) | 7 tests plus 9 access cases; names absent from prompts; browser run at 1366 and 390 px ([step-20](step-20.md)) | Users manage their own access; admins manage people without the database | Pass |
 | Teacher's view of a student (F-61, F-34) | 7 tests plus 3 access cases; browser run at 1366 and 390 px ([step-22](step-22.md)) | Instructor sees why mastery changed; code visible to the student's instructors only | Pass |
 | F-52 recommend and lms routes | 8 tests; live: four questions answered correctly at 1366 and 390 px ([step-23](step-23.md)) | Each route answers with its own tool and sources | Pass |
+| F-62 per-problem leak policy | 5 tests plus 1 access case; levels measured on the bank; browser run at 1366 and 390 px ([step-24](step-24.md)) | Hint and leak policy per problem | Pass (stricter only, by the project rule) |
 | TR-S-06 prompts | A test checks the explanation and chat prompts hold no email or local part ([step-9](step-9.md)) | No direct identifiers | Pass |
 | TR-L-05 claimed input | Example input tried in the sandbox on both programs; 13 tests; live: 7 of 8 replies named one, all confirmed ([step-9](step-9.md)) | Output must differ from the reference | Pass (small live sample) |
