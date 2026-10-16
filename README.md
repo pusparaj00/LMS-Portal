@@ -79,6 +79,8 @@ docker compose stop api worker mastery
 docker compose exec -T db dropdb -U lms_owner lms
 docker compose exec -T db createdb -U lms_owner lms
 docker compose exec -T db pg_restore -U lms_owner -d lms --no-owner < backup/lms.dump
+# Redis caches explanations, probe offers and hint counters by row id; the restored rows are not the ones it knew
+docker compose exec -T redis sh -c 'redis-cli -a "$REDIS_PASSWORD" --no-auth-warning -n 0 flushdb'
 docker compose up -d --wait
 ```
 
@@ -199,9 +201,13 @@ cd frontend && npm ci && npm run lint            # type check
 python backend/evaluation/secret_scan.py         # no key from .env or known key pattern in any file or commit
 ```
 
-The tests use the same database as the app and remove the synthetic class while they run, so run
-`python -m app.seed` again after the tests and before a demo. Enable the secret scan before every push with
-`git config core.hooksPath .githooks`.
+The tests never touch the app's data. They run against their own database, `lms_test`, on the same Postgres server,
+with their own Redis database (number 1) and their own copies of the mastery service and the worker (`testdb`,
+`mastery-test` and `worker-test`, started automatically by `run test` and not by `up`). Create or update it by hand with
+`docker compose --profile test run --rm testdb`, or start it again from nothing with
+`docker compose --profile test run --rm testdb python -m tests.prepare_db --reset`. A run refuses to start if any
+database URL names something other than `lms_test`. The demo class is therefore no longer wiped by a test run.
+Enable the secret scan before every push with `git config core.hooksPath .githooks`.
 
 CI (`.github/workflows/ci.yml`) runs the same checks on every push.
 

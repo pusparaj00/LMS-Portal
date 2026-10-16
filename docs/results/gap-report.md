@@ -144,7 +144,7 @@ statements and need no code.
    n-gram guard never fired; its own effect is unmeasured.
 5. **Explanation latency near the limit.** The 15 s target is met at the median and missed or touched at the worst case.
    The demo relies on prepared and stored explanations.
-6. **Tests share the app's database.** Running them removes the synthetic class; the seed must be run again before a demo.
+6. **Tests no longer share the app's database** (Step 21): they run on `lms_test`, and the demo class survives a test run.
 7. **Compliance partly done.** Consent, deletion and a breach procedure exist (the procedure is a draft with blank contacts), and the 48-hour erasure
    notice reaches only students who sign in. TR-S-05 to S-08 are P1 and are needed before any use by real students.
 8. **No second reviewer.** The CI is green on every branch, but code and content have had one author.
@@ -240,3 +240,4 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | Third audit | | A hint could reveal the solution of a problem set in an assignment; a late run result showed on another problem ([step-18](step-18-audit.md)). Overall status in [progress-report](progress-report.md) |
 | Content management | Content could only be added | Edit, archive and restore problems and courses, rename and delete concepts, delete notes, leave or remove from a course, with no history lost ([step-19](step-19.md)) |
 | Accounts | No password change or reset; no names; staff created only from the command line | Own password and name, admin user page (create, reset, disable, roles) with lockout safeguards, sessions end on a change ([step-20](step-20.md)) |
+| Test database | Tests shared the app's database, wiped the demo class and left 431-user clutter | Own database, Redis database and services; a full run leaves all 33 app tables unchanged ([step-21](step-21.md)). The one-off removal of old leftovers is prepared but not run |

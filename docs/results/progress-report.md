@@ -1,7 +1,7 @@
 # Progress report: Adaptive AI-Powered LMS
 
-Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 20 steps, each on its own branch of
-`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-20-accounts`, with **621 automated tests passing**. Every number
+Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 21 steps, each on its own branch of
+`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-21-test-database`, with **621 automated tests passing**. Every number
 below was measured and comes from a results file in this folder, which gives the command and the date.
 
 ## 1. Where the project stands
@@ -76,6 +76,7 @@ What is missing is mostly work only people can do:
 | 18 | `step-18-audit` | Third audit: 2 bugs fixed, including a hint that could reveal the answer to graded work |
 | 19 | `step-19-content-management` | Edit and archive problems and courses, manage concepts and notes, leave or remove from a course |
 | 20 | `step-20-accounts` | Password change, admin resets, display names, admin user page, sessions end on a change |
+| 21 | `step-21-test-database` | Tests run on their own database, Redis database and service copies; the app's data is untouched by a run |
 
 The three audits found and fixed 16 bugs, each with a test, and each recorded in `step-11-audit.md`,
 `step-15-audit.md` and `step-18-audit.md`. More defects were found and fixed during the steps themselves and are
@@ -105,7 +106,6 @@ listed in each step's results.
 - A new explanation can take just over 15 s.
 - LTI is tested on Moodle only, launches open in a new window, and a course has one teacher.
 - Grades go to Moodle when the teacher clicks.
-- The test suite shares the app database (the demo class must be re-seeded after a test run).
 - The development machine is short of memory (about 0.4 GB free during the last Moodle run).
 
 ## 6. Suggested next steps
