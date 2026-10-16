@@ -130,22 +130,26 @@ def progress(turn: Turn) -> Reply:
 
 
 def _course_id(turn: Turn) -> int | None:
-    """A course the student is enrolled in: the open problem's course, else their first one.
+    """A live course the student is enrolled in: the open problem's course, else their first one.
 
     The problem id comes from the client, so it is only used when the student is enrolled in that course.
     """
     if turn.problem_id is not None:
         found = turn.conn.execute(
             text(
-                "SELECT p.course_id FROM problems p JOIN enrollments e"
-                " ON e.course_id = p.course_id AND e.user_id = :u WHERE p.id = :p"
+                "SELECT p.course_id FROM problems p JOIN enrollments e ON e.course_id = p.course_id AND e.user_id = :u"
+                " JOIN courses c ON c.id = p.course_id WHERE p.id = :p AND c.archived_at IS NULL"
             ),
             {"u": turn.user_id, "p": turn.problem_id},
         ).scalar()
         if found is not None:
             return found
     return turn.conn.execute(
-        text("SELECT course_id FROM enrollments WHERE user_id = :u ORDER BY enrolled_at LIMIT 1"), {"u": turn.user_id}
+        text(
+            "SELECT e.course_id FROM enrollments e JOIN courses c ON c.id = e.course_id"
+            " WHERE e.user_id = :u AND c.archived_at IS NULL ORDER BY e.enrolled_at LIMIT 1"
+        ),
+        {"u": turn.user_id},
     ).scalar()
 
 
