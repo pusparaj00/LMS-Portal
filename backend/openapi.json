@@ -1253,6 +1253,53 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "LtiCode": {
+        "properties": {
+          "code": {
+            "maxLength": 100,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "LtiCode",
+        "type": "object"
+      },
+      "LtiSession": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "role": {
+            "enum": [
+              "student",
+              "instructor"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "token_type": {
+            "const": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "token_type",
+          "role",
+          "course_id"
+        ],
+        "title": "LtiSession",
+        "type": "object"
+      },
       "MasteryChange": {
         "properties": {
           "after": {
@@ -3217,6 +3264,112 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/lti/launch": {
+      "post": {
+        "description": "The signed launch from the platform: checked, then mapped to an account and a course.",
+        "operationId": "launch_api_v1_lti_launch_post",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Launch",
+        "tags": [
+          "lti"
+        ]
+      }
+    },
+    "/api/v1/lti/login": {
+      "get": {
+        "description": "OIDC login initiation from the platform, sent as a redirect.",
+        "operationId": "login_get_api_v1_lti_login_get",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Login Get",
+        "tags": [
+          "lti"
+        ]
+      },
+      "post": {
+        "description": "OIDC login initiation from the platform, sent as a form post.",
+        "operationId": "login_post_api_v1_lti_login_post",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Login Post",
+        "tags": [
+          "lti"
+        ]
+      }
+    },
+    "/api/v1/lti/session": {
+      "post": {
+        "description": "Swap a launch's one-time code (valid for a minute, usable once) for a session token.",
+        "operationId": "session_api_v1_lti_session_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LtiCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LtiSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Session",
+        "tags": [
+          "lti"
         ]
       }
     },

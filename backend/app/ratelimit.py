@@ -33,6 +33,7 @@ RULES: dict[str, Rule] = {
     "hint": Rule(30, 60),
     "diagnostic_answer": Rule(60, 60),
     "probe": Rule(30, 60),
+    "lti": Rule(120, 60),  # per address; a class opening the tool together shares one campus address
 }
 
 

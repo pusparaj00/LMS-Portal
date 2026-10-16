@@ -58,6 +58,17 @@ class LoginRequest(BaseModel):
     password: Text = Field(examples=["a-long-password"])
 
 
+class LtiCode(BaseModel):
+    code: Text = Field(max_length=100)
+
+
+class LtiSession(BaseModel):
+    access_token: str
+    token_type: Literal["bearer"]
+    role: Literal["student", "instructor"]
+    course_id: int
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"]

@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import audit, ratelimit
 from app.auth import Conn, create_token, hash_password, verify_password
+from app.lti import LTI_DOMAIN
 from app.schemas import LoginRequest, RegisterRequest, TokenResponse
 from app.synthetic import SYNTHETIC_DOMAIN
 
@@ -19,6 +20,8 @@ def register(body: RegisterRequest, request: Request, conn: Conn):
     ratelimit.check("register_ip", ratelimit.client_ip(request))
     if body.email.lower().endswith(SYNTHETIC_DOMAIN):
         raise HTTPException(422, "this email domain is reserved for the labelled synthetic class")
+    if body.email.lower().endswith(LTI_DOMAIN):
+        raise HTTPException(422, "this email domain is reserved for accounts opened from an LMS")
     try:
         user_id = conn.execute(
             text(
