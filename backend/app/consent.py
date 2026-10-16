@@ -14,7 +14,7 @@ from app.config import Settings, get_settings
 from app.llm.adapter import GEMINI_KEYS, LOCAL, OPENAI_COMPATIBLE
 from app.schemas import ConsentNotice, ConsentProvider, ConsentSection, ConsentStatus
 
-CONSENT_VERSION = "2026-10-v1"  # change it whenever the notice changes; everyone is then asked again
+CONSENT_VERSION = "2026-10-v2"  # change it whenever the notice changes; everyone is then asked again
 REQUIRED_MESSAGE = (
     "You have not agreed to the privacy notice, or you withdrew your agreement. "
     "Open Privacy in the top bar to read it."
@@ -77,8 +77,15 @@ def notice(settings: Settings) -> ConsentNotice:
                 "Your instructor can see your mastery and progress for the course, and class-level summaries.",
             ]),
             ConsentSection(heading="How long it is kept", paragraphs=[
-                "Your data is kept for as long as the course uses this system. Deleting it on request is not "
-                "available yet: ask your instructor.",
+                (f"Your data is erased {settings.retention_days} days after your last activity."
+                 if settings.retention_days else "Your data is kept for as long as the course uses this system."),
+                "You can ask for all of it to be deleted at any time from Privacy in the top bar: your account, "
+                "submissions, chat messages and mastery. Deletion happens 48 hours after you ask, and you can "
+                "cancel until then. The date is shown on every page.",
+                *(["Before an erasure for inactivity, the same 48-hour notice is shown when you next sign in. It "
+                   "still completes if you do not sign in."] if settings.retention_days else []),
+                "Backup copies made before a deletion are not changed; the operator removes them on the schedule "
+                "stated in the deployment instructions.",
             ]),
             ConsentSection(heading="Withdrawing", paragraphs=[
                 "You can withdraw at any time from Privacy in the top bar. From then on your code, answers and "
