@@ -172,6 +172,7 @@ _CONCEPT_USES = {
     "students' mastery": "SELECT count(*) FROM mastery WHERE concept_id = :k",
     "tuned rates": "SELECT count(*) FROM mastery_params WHERE concept_id = :k",
     "evidence links": "SELECT count(*) FROM evidence_concept_map WHERE concept_id = :k",
+    "students' chat questions": "SELECT count(*) FROM chat_messages WHERE concept_id = :k",
 }
 
 

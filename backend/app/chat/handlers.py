@@ -153,6 +153,45 @@ def _course_id(turn: Turn) -> int | None:
     ).scalar()
 
 
+def _forms(name: str) -> set[str]:
+    """How a question may name a concept: `tuples_sets` as "tuples sets", "tuples", "sets", "tuple" or "set"."""
+    whole = name.lower().replace("_", " ")
+    forms = {whole} | {part for part in whole.split() if len(part) >= 3}
+    for form in list(forms):
+        if form.endswith("ies"):
+            forms.add(form[:-3] + "y")
+        elif form.endswith(("sses", "ches", "shes", "xes")):
+            forms.add(form[:-2])
+        elif form.endswith("s"):
+            forms.add(form[:-1])
+    return forms
+
+
+def concept_tag(turn: Turn) -> int | None:
+    """The concept a question is about, by rule and never by the model (TR-M-08): the course concept the question names
+    (the longest match wins, so "list comprehension" is comprehensions), else the open problem's main concept."""
+    course = _course_id(turn)
+    if course is None:
+        return None
+    question = turn.message.lower()
+    best: tuple[int, int] | None = None
+    for concept in turn.conn.execute(text("SELECT id, name FROM concepts WHERE course_id = :c"), {"c": course}):
+        for form in _forms(concept.name):
+            if re.search(rf"\b{re.escape(form)}\b", question) and (best is None or len(form) > best[0]):
+                best = (len(form), concept.id)
+    if best is not None:
+        return best[1]
+    if turn.problem_id is None:
+        return None
+    return turn.conn.execute(
+        text(
+            "SELECT pc.concept_id FROM problem_concepts pc JOIN problems p ON p.id = pc.problem_id"
+            " WHERE pc.problem_id = :p AND p.course_id = :c ORDER BY pc.weight DESC, pc.concept_id LIMIT 1"
+        ),
+        {"p": turn.problem_id, "c": course},
+    ).scalar()
+
+
 def _general_prompt(turn: Turn, sources: list[Source]) -> tuple[str, str]:
     notes = "\n".join(f"[chunk {s.chunk_id}] {s.title} > {s.section}\n{s.text}" for s in sources)
     conversation = "\n".join(f"{t['role']}: {neutralise(t['text'])}" for t in turn.history) or "(none)"

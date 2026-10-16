@@ -61,9 +61,11 @@ def chat(
     meta = {"router": router_info.model_dump(), "tools": reply.tools, "problem_id": body.problem_id}
     conn.execute(
         text(
-            "INSERT INTO chat_messages (user_id, role, content, route, sources) VALUES (:u, 'user', :c, :r, :s)"
+            "INSERT INTO chat_messages (user_id, role, content, route, sources, concept_id)"
+            " VALUES (:u, 'user', :c, :r, :s, :k)"
         ),
-        {"u": user.id, "c": body.message, "r": decision.route, "s": json.dumps({"router": meta["router"]})},
+        {"u": user.id, "c": body.message, "r": decision.route, "s": json.dumps({"router": meta["router"]}),
+         "k": handlers.concept_tag(turn)},
     )
     message_id = conn.execute(
         text(
