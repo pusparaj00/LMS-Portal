@@ -40,8 +40,9 @@ export function ChatPanel({ session, problemId }: { session: Session; problemId:
     bottom.current?.scrollIntoView({ block: "end" });
   }, [entries, open]);
 
-  async function send(message: string, route?: Route, existing?: number) {
-    const id = existing ?? Date.now();
+  async function send(message: string, route?: Route, existing?: Entry) {
+    const id = existing?.id ?? Date.now();
+    const askedAbout = existing ? existing.problemId : problemId;
     setBusy(true);
     setEntries((all) =>
       existing
@@ -49,7 +50,7 @@ export function ChatPanel({ session, problemId }: { session: Session; problemId:
         : [...all, { id, student: message, problemId, reply: null }],
     );
     try {
-      const reply = await api<ChatReply>("/chat", session, { body: { message, problem_id: problemId, route } });
+      const reply = await api<ChatReply>("/chat", session, { body: { message, problem_id: askedAbout, route } });
       setEntries((all) => all.map((e) => (e.id === id ? { ...e, reply } : e)));
     } catch (e) {
       const error = e instanceof ApiError ? e.message : "The assistant could not be reached.";
@@ -108,7 +109,7 @@ export function ChatPanel({ session, problemId }: { session: Session; problemId:
                       <small>Wrong route?</small>
                       <select
                         value=""
-                        onChange={(e) => void send(entry.student, e.target.value as Route, entry.id)}
+                        onChange={(e) => void send(entry.student, e.target.value as Route, entry)}
                         disabled={busy}
                         aria-label="Choose the right route and ask again"
                       >

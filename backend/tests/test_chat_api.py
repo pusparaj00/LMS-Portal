@@ -112,6 +112,7 @@ def test_progress_reads_only_the_callers_mastery(client, make_user, world, llm):
     theirs = say(client, second, "how am I doing")
     assert mine["tools"] == ["mastery_read"] and "loops 11%" in mine["reply"]
     assert "loops 50%" in theirs["reply"]  # the second student sits at the prior
+    assert mine["reply"].count("loops") == 1  # never listed as both weakest and strongest
 
 
 def test_the_router_is_skipped_when_the_student_corrects_the_route(client, make_user, world, llm):

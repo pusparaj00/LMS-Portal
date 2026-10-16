@@ -77,12 +77,12 @@ def _explain(row, titles: dict[int, str]) -> str:
         title = titles.get(row.problem_id, "a problem")
         if row.evidence_type == "all_pass":
             return f"Submission #{row.submission_id} to '{title}' passed every test."
-        parts = [f"Submission #{row.submission_id} to '{title}'"]
+        parts = []
         if row.run_error_type:
-            parts.append(f"stopped with {row.run_error_type.replace('_', ' ')}")
+            parts.append(f"stopped with a {row.run_error_type.replace('_', ' ')}")
         if row.failed_categories:
             parts.append("failed tests in: " + ", ".join(row.failed_categories))
-        return " ".join(parts) + "."
+        return f"Submission #{row.submission_id} to '{title}' " + (" and ".join(parts) or "failed") + "."
     title = titles.get(row.diagnostic_problem_id)
     outcome = "correct" if row.correct else "incorrect"
     return f"Placement answer to '{title or 'an item'}' was {outcome}."

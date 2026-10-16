@@ -113,12 +113,12 @@ def progress(turn: Turn) -> Reply:
     if not rows:
         return Reply("You are not enrolled in a course yet, so there is no mastery to show.", ["mastery_read"])
     fmt = lambda r: f"{r.name.replace('_', ' ')} {round(r.p * 100)}%"  # noqa: E731
-    weakest, strongest = rows[:3], list(reversed(rows[-3:]))
-    return Reply(
-        f"Your weakest concepts: {', '.join(map(fmt, weakest))}. Your strongest: {', '.join(map(fmt, strongest))}. "
-        "The dashboard shows every concept and why each one changed.",
-        ["mastery_read"],
-    )
+    half = (len(rows) + 1) // 2  # with few concepts the two lists would otherwise share some
+    weakest, strongest = rows[: min(3, half)], list(reversed(rows[max(half, len(rows) - 3):]))
+    summary = f"Your weakest concepts: {', '.join(map(fmt, weakest))}."
+    if strongest:
+        summary += f" Your strongest: {', '.join(map(fmt, strongest))}."
+    return Reply(summary + " The dashboard shows every concept and why each one changed.", ["mastery_read"])
 
 
 def _course_id(turn: Turn) -> int | None:
