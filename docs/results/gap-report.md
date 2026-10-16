@@ -12,7 +12,7 @@ tests or a measured result; where a status could not be checked it says so.
 The system is a working, tested prototype of the whole demo flow in the plan (phases 0 to 5, gates G0 to G4 passed, the
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
-1. **Features not built or only partly built:** 4 of 34 PRD features not built, 2 partly built.
+1. **Features not built or only partly built:** 2 of 34 PRD features not built, 2 partly built.
 2. **Requirements not met:** of 69 implementation requirements, 52 done, 5 partly done, 3 not built or not run, 9 not
    applicable by design (the sandbox is a custom runner, not Judge0). Compliance is built (TR-S-05 to S-08) but
    awaits the data protection contact's review.
@@ -36,9 +36,9 @@ Status of all 34 features. P0, P1 and P2 are the PRD's priorities.
 
 | Status | Features |
 | --- | --- |
-| Done (29) | F-01, F-02, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61, F-70 |
+| Done (30) | F-01, F-04, F-02, F-03, F-10, F-11, F-12, F-13, F-20, F-21, F-22, F-24, F-30, F-31, F-32, F-33, F-34, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-50, F-51, F-53, F-60, F-61, F-70 |
 | Partly built (2) | **F-52** (P0) four of six routes work; `recommend` and `lms` answer "not available" by design. **F-62** (P1) the hint limit is per problem and approval of stored explanations works, but the leak threshold is global, not per problem. |
-| Not built (3) | **F-04** assignments with due dates and a gradebook (P1). **F-05** announcements (P2). **F-23** difficulty estimates for new items from text and tags (P2). |
+| Not built (2) | **F-05** announcements (P2). **F-23** difficulty estimates for new items from text and tags (P2). |
 
 F-02 and F-03 are closed: a teacher can create a course and its concepts, add problems and upload notes (text, Markdown or
 PDF) in the browser.
@@ -203,7 +203,7 @@ Measured results and commands are in `docs/results/step-9.md`.
 
 Defects found and fixed on the way: the problem page overflowed a 390 px phone; a passing check stored failure wording as
 its detail. Still open from the audit: TR-S-09 and TR-V-12 (a
-local-model demo, which needs a model installed), TR-S-10, TR-D-05, F-04, F-05, F-23, and the people items in
+local-model demo, which needs a model installed), TR-S-10, TR-D-05, F-05, F-23, and the people items in
 section 5. The consent text is a draft awaiting the data protection contact.
 
 ## 11. What Step 10 changed
@@ -223,3 +223,9 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | Item | Before | After |
 | --- | --- | --- |
 | TR-A-09, F-70 LTI 1.3 | No LMS integration | Core launch (OIDC login, signed id_token checks, role and course mapping, one-time code handover); a teacher and a student opened the tool from a local Moodle 5.3 ([step-13](step-13.md)) |
+
+## 14. What Step 14 changed
+
+| Item | Before | After |
+| --- | --- | --- |
+| F-04 assignments and gradebook | None | Assignments of coding problems with points and a due date; scores computed from stored run results (best on-time attempt, share of tests passed); late work shown, not counted; gradebook view and CSV/JSON download ([step-14](step-14.md)). The TRD has no requirement for F-04, so its tests are named after the PRD feature. |
