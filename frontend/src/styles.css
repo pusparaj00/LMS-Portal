@@ -879,3 +879,20 @@ select {
   overflow-wrap: anywhere;
   margin: 0.5rem 0 0;
 }
+
+.row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.course-settings {
+  margin: 0 0 1rem;
+}
+
+.heatmap button.remove {
+  margin-left: 0.5rem;
+  font-weight: 400;
+  font-size: 0.85rem;
+}

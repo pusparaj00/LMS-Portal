@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Session, api } from "../api";
+import { ApiError, Session, api } from "../api";
 import { StoredExplanations } from "./StoredExplanations";
 
 type Cell = { concept_id: number; name: string; p_known: number };
@@ -21,6 +21,16 @@ export function InstructorPage({ session, courseId }: { session: Session; course
   const [grid, setGrid] = useState<ClassMastery | null>(null);
   const [misconceptions, setMisconceptions] = useState<Misconception[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function remove(student: Student) {
+    if (!window.confirm(`Remove ${student.label} from the course? Their work and history are kept.`)) return;
+    try {
+      await api(`/courses/${courseId}/students/${student.student_id}`, session, { method: "DELETE" });
+      setGrid((g) => (g ? { ...g, students: g.students.filter((s) => s.student_id !== student.student_id) } : g));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "The student could not be removed.");
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -87,6 +97,11 @@ export function InstructorPage({ session, courseId }: { session: Session; course
                   <th scope="row">
                     {s.label}
                     {s.synthetic && <span className="tag">synthetic</span>}
+                    {session.role === "instructor" && (
+                      <button className="link remove" onClick={() => remove(s)} aria-label={`Remove ${s.label}`}>
+                        Remove
+                      </button>
+                    )}
                   </th>
                   {s.mastery.map((c) => (
                     <td key={c.concept_id} style={cellStyle(c.p_known)}>

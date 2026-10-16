@@ -14,8 +14,18 @@ const DIFFICULTY = [
 const pretty = (name: string) => name.replace(/_/g, " ");
 const blankTest = (): TestRow => ({ input: "", expected: "", hidden: false, category: "basic" });
 
-/** F-02: an instructor adds a coding problem. The server runs the reference solution against every test first. */
-export function NewProblemPage({ session, courseId }: { session: Session; courseId: number }) {
+type Source = {
+  title: string;
+  statement: string;
+  difficulty_b: number;
+  concepts: { concept_id: number; name: string; weight: number }[];
+  reference_solution: string;
+  test_cases: TestRow[];
+};
+
+/** F-02: an instructor adds a coding problem, or edits one. The server runs the reference solution against every test
+ * first, either way. */
+export function NewProblemPage({ session, courseId, problemId }: { session: Session; courseId: number; problemId?: number }) {
   const [concepts, setConcepts] = useState<Concept[] | null>(null);
   const [title, setTitle] = useState("");
   const [statement, setStatement] = useState("");
@@ -34,7 +44,18 @@ export function NewProblemPage({ session, courseId }: { session: Session; course
     api<Concept[]>(`/courses/${courseId}/concepts`, session)
       .then(setConcepts)
       .catch((e: Error) => setError(e.message));
-  }, [courseId]);
+    if (!problemId) return;
+    api<Source>(`/problems/${problemId}/source`, session)
+      .then((s) => {
+        setTitle(s.title);
+        setStatement(s.statement);
+        setDifficulty(s.difficulty_b);
+        setWeights(Object.fromEntries(s.concepts.map((c) => [c.concept_id, c.weight])));
+        setSolution(s.reference_solution);
+        setTests(s.test_cases);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [courseId, problemId]);
 
   const update = (index: number, change: Partial<TestRow>) =>
     setTests((rows) => rows.map((row, i) => (i === index ? { ...row, ...change } : row)));
@@ -45,7 +66,8 @@ export function NewProblemPage({ session, courseId }: { session: Session; course
     setError(null);
     try {
       const chosen = Object.entries(weights).filter(([, w]) => w > 0);
-      const problem = await api<Problem>("/problems", session, {
+      const problem = await api<Problem>(problemId ? `/problems/${problemId}` : "/problems", session, {
+        method: problemId ? "PUT" : "POST",
         body: {
           course_id: courseId,
           title,
@@ -78,11 +100,17 @@ export function NewProblemPage({ session, courseId }: { session: Session; course
       <p>
         <a href={`#/course/${courseId}`}>Back to problems</a>
       </p>
-      <h1>Add a coding problem</h1>
+      <h1>{problemId ? "Edit the problem" : "Add a coding problem"}</h1>
       <p>
         Students' programs read from standard input and print their answer. Before the problem is saved, your reference
         solution is run in the sandbox against every test and must pass them all.
       </p>
+      {problemId && (
+        <p className="notice">
+          Saving an edit marks the problem as needing review again. Submissions already made keep the results they had;
+          an explanation for an old submission may fall back to a template if its failing test was changed.
+        </p>
+      )}
       <form className="stack" onSubmit={save}>
         <label>
           Title

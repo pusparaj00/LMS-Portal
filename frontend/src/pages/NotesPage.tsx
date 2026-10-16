@@ -51,6 +51,17 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
     return () => clearInterval(timer);
   }, [notes]);
 
+  async function remove(note: Note) {
+    if (!window.confirm(`Delete the notes "${note.title}"? The assistant will no longer quote them.`)) return;
+    setError(null);
+    try {
+      await api(`/courses/${courseId}/documents/${note.id}`, session, { method: "DELETE" });
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "The notes could not be deleted.");
+    }
+  }
+
   async function upload(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -153,6 +164,9 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
               {n.status === "failed" && n.detail && <small className="error"> {n.detail}</small>}
             </span>
             <span className="tag">{STATUS_LABEL[n.status]}</span>
+            <button className="link" onClick={() => remove(n)}>
+              Delete
+            </button>
           </li>
         ))}
       </ul>

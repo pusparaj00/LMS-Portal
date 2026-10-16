@@ -2,7 +2,7 @@ export type Role = "student" | "instructor" | "admin";
 
 export type Session = { token: string; role: Role };
 
-export type Course = { id: number; title: string; instructor_id: number; enrolled: boolean };
+export type Course = { id: number; title: string; instructor_id: number; enrolled: boolean; archived?: boolean };
 
 export type ConceptTag = { concept_id: number; name: string; weight: number };
 
@@ -14,6 +14,7 @@ export type Problem = {
   kind: "code" | "mcq";
   review_status: "needs human review" | "reviewed";
   concepts: ConceptTag[];
+  archived?: boolean;
 };
 
 export type ProblemDetail = Problem & { examples: { input: string; expected: string }[] };

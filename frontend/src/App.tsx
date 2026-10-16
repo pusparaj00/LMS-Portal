@@ -71,6 +71,7 @@ export function App() {
 
   const course = hash.match(/^#\/course\/(\d+)$/);
   const newProblem = hash.match(/^#\/course\/(\d+)\/problem\/new$/);
+  const editProblem = hash.match(/^#\/course\/(\d+)\/problem\/(\d+)\/edit$/);
   const notes = hash.match(/^#\/course\/(\d+)\/notes$/);
   const assignments = hash.match(/^#\/course\/(\d+)\/assignments$/);
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
@@ -111,6 +112,13 @@ export function App() {
           />
         ) : newProblem && session.role === "instructor" ? (
           <NewProblemPage session={session} courseId={Number(newProblem[1])} />
+        ) : editProblem && session.role === "instructor" ? (
+          <NewProblemPage
+            key={editProblem[2]}
+            session={session}
+            courseId={Number(editProblem[1])}
+            problemId={Number(editProblem[2])}
+          />
         ) : notes && session.role === "instructor" ? (
           <NotesPage session={session} courseId={Number(notes[1])} />
         ) : assignments && session.role === "instructor" ? (

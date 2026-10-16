@@ -59,7 +59,9 @@ export function CoursesPage({ session }: { session: Session }) {
       <ul className="rows">
         {courses?.map((c) => (
           <li key={c.id}>
-            <span className="grow">{c.title}</span>
+            <span className="grow">
+              {c.title} {c.archived && <span className="flag">archived</span>}
+            </span>
             {session.role === "student" && !c.enrolled ? (
               <button className="primary" onClick={() => enroll(c.id)}>
                 Enrol
