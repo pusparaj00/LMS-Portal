@@ -16,7 +16,7 @@ WITH items AS (
     FROM assignments a JOIN assignment_problems ap ON ap.assignment_id = a.id WHERE a.course_id = :c
 ),
 students AS (
-    SELECT u.id, u.email FROM enrollments e JOIN users u ON u.id = e.user_id
+    SELECT u.id, u.email, u.display_name FROM enrollments e JOIN users u ON u.id = e.user_id
     WHERE e.course_id = :c AND u.role = 'student' AND (CAST(:only AS integer) IS NULL OR u.id = :only)
 ),
 attempts AS (
@@ -29,7 +29,7 @@ attempts AS (
     WHERE s.user_id IN (SELECT id FROM students)
     GROUP BY i.assignment_id, i.problem_id, s.user_id
 )
-SELECT st.id AS student_id, st.email, i.assignment_id,
+SELECT st.id AS student_id, st.email, st.display_name, i.assignment_id,
        sum(i.points * COALESCE(a.on_time, 0)) AS score,
        sum(i.points * GREATEST(COALESCE(a.on_time, 0), COALESCE(a.late, 0))) AS with_late,
        sum(i.points) AS possible,
@@ -38,9 +38,14 @@ SELECT st.id AS student_id, st.email, i.assignment_id,
        bool_and(now() > i.due_at) AS past_due
 FROM students st CROSS JOIN items i
 LEFT JOIN attempts a ON a.assignment_id = i.assignment_id AND a.problem_id = i.problem_id AND a.user_id = st.id
-GROUP BY st.id, st.email, i.assignment_id
-ORDER BY st.email, i.assignment_id
+GROUP BY st.id, st.email, st.display_name, i.assignment_id
+ORDER BY COALESCE(st.display_name, st.email), i.assignment_id
 """
+
+
+def label(email: str, display_name: str | None) -> str:
+    """How a teacher sees a student: their chosen name, else the part of their email before the @."""
+    return display_name or email.split("@")[0]
 
 
 @dataclass(frozen=True)
@@ -71,7 +76,7 @@ def scores(conn: Connection, course_id: int, only_student: int | None = None) ->
     rows = conn.execute(text(_SCORES), {"c": course_id, "only": only_student}).all()
     return [
         Score(
-            student_id=r.student_id, label=r.email.split("@")[0], synthetic=is_synthetic(r.email),
+            student_id=r.student_id, label=label(r.email, r.display_name), synthetic=is_synthetic(r.email),
             assignment_id=r.assignment_id, score=round(r.score, 4), with_late=round(r.with_late, 4),
             possible=r.possible,
             status=status(r.score, r.with_late, r.possible, r.tried_on_time, r.tried_late, r.past_due),

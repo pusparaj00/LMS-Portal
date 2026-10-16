@@ -43,7 +43,8 @@ def login(body: LoginRequest, request: Request, conn: Conn):
     ratelimit.check("login_ip", ratelimit.client_ip(request))
     ratelimit.check("login_email", body.email.strip().lower()[:254])
     row = conn.execute(
-        text("SELECT id, password_hash, role FROM users WHERE email = lower(:e)"), {"e": body.email}
+        text("SELECT id, password_hash, role, disabled_at, must_change_password FROM users WHERE email = lower(:e)"),
+        {"e": body.email},
     ).first()
     ip = ratelimit.client_ip(request)
     if row is None:
@@ -54,7 +55,11 @@ def login(body: LoginRequest, request: Request, conn: Conn):
             detail={"email_tag": audit.email_tag(body.email), "known_account": row is not None},
         )
         raise HTTPException(401, "wrong email or password")
+    if row.disabled_at is not None:  # said only after the right password, so it reveals nothing to a guesser
+        audit.record("auth.login_failed", user_id=row.id, ip=ip, status=401, detail={"reason": "disabled"})
+        raise HTTPException(401, "this account is disabled; ask an administrator")
     audit.record("auth.login", user_id=row.id, ip=ip, status=200)
     return TokenResponse(
-        access_token=create_token(row.id, row.role), token_type="bearer", role=row.role
+        access_token=create_token(row.id, row.role), token_type="bearer", role=row.role,
+        must_change_password=row.must_change_password,
     )

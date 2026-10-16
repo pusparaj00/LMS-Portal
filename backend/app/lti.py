@@ -44,6 +44,7 @@ REFUSALS = {
     "no_context": "Open the tool from inside a course.",
     "unsupported_role": "Only teachers and students of the course can open this tool.",
     "role_conflict": "Your account here is set up with a different role. Ask the administrator.",
+    "account_disabled": "Your account here has been disabled. Ask the administrator.",
     "course_not_ready": "Your teacher has not opened this tool in the course yet. Ask them to open it once first.",
     "second_instructor": "This course is already set up by another teacher, and only one teacher can manage it here.",
 }
@@ -224,11 +225,13 @@ def provision(conn: Connection, launch: Launch) -> tuple[int, int]:
     p = launch.platform
     found = conn.execute(
         text(
-            "SELECT u.id, u.role FROM lti_users l JOIN users u ON u.id = l.user_id"
+            "SELECT u.id, u.role, u.disabled_at FROM lti_users l JOIN users u ON u.id = l.user_id"
             " WHERE l.platform_id = :p AND l.sub = :s"
         ),
         {"p": p.id, "s": launch.sub},
     ).first()
+    if found is not None and found.disabled_at is not None:
+        raise LaunchRefused("account_disabled")
     if found is not None and found.role != launch.role:
         raise LaunchRefused("role_conflict", f"account is {found.role}, launch says {launch.role}")
     course = conn.execute(

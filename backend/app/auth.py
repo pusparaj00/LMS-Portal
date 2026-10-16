@@ -27,10 +27,15 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def create_token(user_id: int, role: str) -> str:
     settings = get_settings()
-    expires = datetime.now(UTC) + timedelta(minutes=settings.jwt_expire_minutes)
+    now = datetime.now(UTC)
+    expires = now + timedelta(minutes=settings.jwt_expire_minutes)
     return jwt.encode(
-        {"sub": str(user_id), "role": role, "exp": expires}, settings.jwt_secret, "HS256"
+        {"sub": str(user_id), "role": role, "iat": int(now.timestamp()), "exp": expires}, settings.jwt_secret, "HS256"
     )
+
+
+# While a user must choose a new password, these are the only requests they can make.
+PASSWORD_CHANGE_PATHS = {"/api/v1/me", "/api/v1/me/password"}
 
 
 def get_conn() -> Iterator[Connection]:
@@ -65,11 +70,21 @@ def current_user(
     except (jwt.PyJWTError, KeyError, ValueError):
         raise HTTPException(401, "invalid or expired token") from None
     # The role comes from the database, not the token, so a role change takes effect at once.
-    role = conn.execute(text("SELECT role FROM users WHERE id = :id"), {"id": user_id}).scalar()
-    if role is None:
+    row = conn.execute(
+        text("SELECT role, disabled_at, must_change_password, credentials_changed_at FROM users WHERE id = :id"),
+        {"id": user_id},
+    ).first()
+    if row is None:
         raise HTTPException(401, "unknown user")
+    if row.disabled_at is not None:
+        raise HTTPException(401, "this account is disabled; ask an administrator")
+    # A token issued before the password last changed (or was reset) no longer counts: every old session ends.
+    if row.credentials_changed_at is not None and claims.get("iat", 0) < int(row.credentials_changed_at.timestamp()):
+        raise HTTPException(401, "you were signed out because your password changed; please log in again")
     request.state.user_id = user_id  # read by the request log and the audit trail (TR-S-08)
-    return CurrentUser(user_id, role)
+    if row.must_change_password and request.url.path not in PASSWORD_CHANGE_PATHS:
+        raise HTTPException(403, "choose a new password first (Account in the top bar)")
+    return CurrentUser(user_id, row.role)
 
 
 def require_role(*roles: str):

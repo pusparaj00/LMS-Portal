@@ -12,6 +12,7 @@ from app.logging import configure_logging, request_id_var
 from app.ratelimit import client_ip
 from app.routers import (
     accounts,
+    admin,
     announcements,
     assignments,
     chat,
@@ -25,6 +26,7 @@ from app.routers import (
     health,
     instructor,
     lti,
+    me,
     problems,
     students,
     submissions,
@@ -77,6 +79,6 @@ async def request_context(request: Request, call_next):
 app.include_router(health.router, prefix="/api/v1")
 for module in (
     accounts, courses, documents, problems, submissions, feedback, diagnostic, students, chat, instructor, export,
-    consent, erasure, lti, assignments, announcements,
+    consent, erasure, lti, assignments, announcements, me, admin,
 ):
     app.include_router(module.router, prefix="/api/v1")

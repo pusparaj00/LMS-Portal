@@ -73,6 +73,55 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"]
     role: Literal["student", "instructor", "admin"]
+    must_change_password: bool = False
+
+
+Role = Literal["student", "instructor", "admin"]
+DisplayName = Annotated[Text, Field(min_length=1, max_length=80)]
+
+
+class Me(BaseModel):
+    id: int
+    email: str
+    role: Role
+    display_name: str | None
+    must_change_password: bool
+    opened_from_lms: bool
+
+
+class ProfileUpdate(BaseModel):
+    display_name: DisplayName | None = Field(description="shown to your teachers; never sent to the AI model")
+
+
+class PasswordChange(BaseModel):
+    current_password: Text = Field(max_length=200)
+    new_password: Text = Field(min_length=8, max_length=72)
+
+
+class AdminUser(BaseModel):
+    id: int
+    email: str
+    role: Role
+    display_name: str | None
+    disabled: bool
+    must_change_password: bool
+    opened_from_lms: bool
+    created_at: datetime
+
+
+class StaffCreate(BaseModel):
+    email: Text = Field(max_length=254)
+    role: Literal["instructor", "admin"]
+    display_name: DisplayName | None = None
+
+
+class RoleChange(BaseModel):
+    role: Role
+
+
+class TemporaryPassword(BaseModel):
+    user: AdminUser
+    temporary_password: str = Field(description="shown once; the user must replace it at their next login")
 
 
 

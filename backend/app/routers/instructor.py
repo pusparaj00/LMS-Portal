@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.feedback import review
+from app.grading_book import label
 from app.schemas import ClassMastery, ClassMisconception, ClassStudent, ConceptMastery, StoredExplanation
 from app.synthetic import is_synthetic
 
@@ -27,8 +28,8 @@ def class_mastery(course_id: int, user: Instructor, conn: Conn):
     ).all()
     students = conn.execute(
         text(
-            "SELECT u.id, u.email FROM enrollments e JOIN users u ON u.id = e.user_id"
-            " WHERE e.course_id = :c AND u.role = 'student' ORDER BY u.email"
+            "SELECT u.id, u.email, u.display_name FROM enrollments e JOIN users u ON u.id = e.user_id"
+            " WHERE e.course_id = :c AND u.role = 'student' ORDER BY COALESCE(u.display_name, u.email)"
         ),
         {"c": course_id},
     ).all()
@@ -45,7 +46,7 @@ def class_mastery(course_id: int, user: Instructor, conn: Conn):
     rows = [
         ClassStudent(
             student_id=s.id,
-            label=s.email.split("@")[0],
+            label=label(s.email, s.display_name),
             synthetic=is_synthetic(s.email),
             mastery=[
                 ConceptMastery(concept_id=c.id, name=c.name, p_known=known.get((s.id, c.id), c.prior))
