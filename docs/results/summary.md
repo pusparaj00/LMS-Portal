@@ -25,7 +25,7 @@ should not be quoted as rates.
 | --- | --- | --- | --- |
 | TR-P-01 sandbox run | 0.17 / 0.39 / 0.44 s, n = 20 | within 5 s | Pass |
 | TR-P-02 next diagnostic item | 0.1 / 0.2 / 9.3 ms, n = 200 | under 1 s | Pass |
-| TR-P-03 new verified explanation | 4.04 / 14.75 / 14.75 s, n = 8; and 2.32 s median, 15.31 s max, n = 10 in the provider comparison | within 15 s | Not reliably met: the worst case sits at or just over 15 s |
+| TR-P-03 new verified explanation | 14 s budget for the whole explanation (step 28): 40 of 40 replies within 15 s, max 12.69 s; verified 6 of 10 (gemini, median 8.57 s) and 9 of 10 (groq, median 0.27 s), the rest templates | within 15 s | Pass as a bound; how many are verified depends on the provider's speed ([step-28](step-28.md)) |
 | TR-P-03 prepared demo explanation | 0.04 / 0.07 / 0.07 s, n = 5 | within 1 s | Pass |
 | TR-P-05 busy sandbox | Queue limit 20, 3 s wait, 503 with Retry-After, automatic retry; tested and shown in a browser ([step-8](step-8.md)) | A busy message and a retry, no drop | Pass |
 | TR-P-08 model calls per 100 | 85.7 calls per 100 failed submissions, 21% served without a call (dev data, [step-8](step-8.md)); at most 2 calls for any submission | At most one call plus one retry; reported | Pass (dev data) |

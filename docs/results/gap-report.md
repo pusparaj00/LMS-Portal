@@ -13,7 +13,7 @@ The system is a working, tested prototype of the whole demo flow in the plan (ph
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
 1. **Features not built or only partly built:** none; all 34 PRD features are built (F-23 in Step 25, for problems a teacher adds; generated items are later work, TR-L-10).
-2. **Requirements not met:** of 69 implementation requirements, 52 done, 5 partly done, 3 not built or not run, 9 not
+2. **Requirements not met:** of 69 implementation requirements, 53 done, 4 partly done, 3 not built or not run, 9 not
    applicable by design (the sandbox is a custom runner, not Judge0). Compliance is built (TR-S-05 to S-08) but
    awaits the data protection contact's review.
 3. **Validation targets missed or unproven:** of 12 validation tests, 7 pass, 1 fails (adaptive selection, in simulation
@@ -56,10 +56,10 @@ PDF) in the browser.
 | L LLM (12) | 12 | 0 | 0 | 0 |
 | D data (8) | 7 | 0 | 1 | 0 |
 | S security and privacy (10) | 8 | 0 | 2 | 0 |
-| P performance (9) | 8 | 1 | 0 | 0 |
-| **Total (69)** | **52** | **5** | **3** | **9** |
+| P performance (9) | 9 | 0 | 0 | 0 |
+| **Total (69)** | **53** | **4** | **3** | **9** |
 
-### 3.1 Partly done (5)
+### 3.1 Partly done (4)
 
 | ID (priority) | What is missing | Detail |
 | --- | --- | --- |
@@ -67,7 +67,6 @@ PDF) in the browser.
 | TR-M-05 (P1) | Refitting item parameters | Difficulty and discrimination are stored with a source flag (`prior`), but there is no refit from pilot answers. It needs real answers first. |
 | TR-M-08 (P2) | Chat questions as a mastery signal | The route is stored with each chat message; the concept tag is not. |
 | TR-M-10 (P0) | 5-item test beats the mean | True on the concepts the five items tested (10 of 10 seeds); true on all 12 concepts in only 3 of 10 seeds. |
-| TR-P-03 (P0) | Explanation within 15 s | Median 4.04 s, but worst cases 14.75 s and 15.31 s in two measured runs; earlier runs reached 23 s. |
 
 ### 3.2 Not built or not run (6)
 
@@ -245,3 +244,4 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | F-52 routes | `recommend` and `lms` answered "not available" | Both answer from the student's records by the dashboard's and gradebook's own rules, through the read-only chat role, with no model writing the reply ([step-23](step-23.md)) |
 | F-62 leak policy | One global threshold | Per-problem leak level, stricter only (Standard 0.7, Strict 0.5, Very strict 0.3), with the measured cost of each; the PRD's "unless the instructor allows it" is not built, because the project rule says never ([step-24](step-24.md)) |
 | F-23 difficulty estimates | Teachers picked Easy, Medium or Hard | "Estimate it for me": a ridge model on the bank estimates from the code, statement and concepts, marked `estimated`; leave-one-out error 0.370 against 0.607 for the mean ([step-25](step-25.md)) |
+| TR-P-03 explanation time | Worst cases 14.75 s and 15.31 s; earlier 23 s | One 14 s budget for both attempts and their checks, then the template: 40 of 40 real replies within 15 s (max 12.69 s); on a slow Gemini 4 of 10 got the template ([step-28](step-28.md)) |

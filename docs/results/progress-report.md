@@ -1,7 +1,7 @@
 # Progress report: Adaptive AI-Powered LMS
 
-Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 27 steps, each on its own branch of
-`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-27-audit-followups`, with **652 automated tests passing**. Every number
+Status on **16 Oct 2026**. Development ran on 15 and 16 Oct 2026 in 28 steps, each on its own branch of
+`github.com/pusparaj00/LMS-Portal`. Latest branch: `step-28-explain-budget`, with **656 automated tests passing**. Every number
 below was measured and comes from a results file in this folder, which gives the command and the date.
 
 ## 1. Where the project stands
@@ -26,9 +26,9 @@ What is missing is mostly work only people can do:
 | Plan gates G0 to G4 | All passed (G2 with a caveat, see section 3) |
 | Gate G5 (demo readiness) | Technical part passed (10 of 10 clean demo runs); people part open |
 | PRD features (34) | 34 done |
-| TRD implementation requirements (69) | 52 done, 5 partly done, 3 not built or not run, 9 not applicable (custom sandbox instead of Judge0) |
+| TRD implementation requirements (69) | 53 done, 4 partly done, 3 not built or not run, 9 not applicable (custom sandbox instead of Judge0) |
 | Validation tests (12) | 7 pass, 1 fails (TR-V-05, simulation), 2 partly met, 2 not run (need raters or a local model) |
-| Automated tests | 652 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
+| Automated tests | 656 passing, lint clean; CI green on the final push of every step from Step 7 on (Step 15's first push failed on a flaky test, since fixed) |
 
 ## 2. Plan gates
 
@@ -51,7 +51,7 @@ What is missing is mostly work only people can do:
 | Course-note retrieval (TR-V-09) | Right chunk in the top 3 for 17 of 20 (85%) | 80% | Pass |
 | Reliability (TR-V-10) | 0 of 210 steps failed with 10 concurrent and 10 consecutive users; sessions survived restarts | No failures | Pass |
 | Stored explanation (TR-V-11) | 0.02 to 0.04 s for 5 of 5 later students, no model call | Under 1 s | Pass |
-| New verified explanation (TR-P-03) | Median 4.04 s, worst 14.75 s (n = 8); worst 15.31 s in the provider comparison | 15 s | Not reliably met |
+| New explanation (TR-P-03) | Always within 15 s since Step 28: 40 of 40, max 12.69 s; on a slow model some students get the template instead | 15 s | Pass (bounded) |
 | Adaptive placement (TR-V-05) | 10% fewer items (target 30%); mean error 0.27 after 10 items | 30% fewer; error under 0.15 | Fail (simulation only) |
 | Reference solutions (TR-V-02) | 47 of 47 pass; 20 of 21 wrong solutions fail (one passes: no test checks ties) | All | Partly met |
 | Explanation quality (TR-V-03) | Blinded sheet of 20 prepared | Two reviewers | Not run |
@@ -83,6 +83,7 @@ What is missing is mostly work only people can do:
 | 25 | `step-25-difficulty-estimates` | "Estimate it for me": a measured, model-free difficulty estimate for new problems, completing F-23 |
 | 26 | `step-26-audit` | Audit: archived courses closed to students, chat skips them, estimate uses the course's concept names |
 | 27 | `step-27-audit-followups` | A course owner is not demoted to student; DOMPurify pinned to 3.4.16 (npm audit: 0) |
+| 28 | `step-28-explain-budget` | A new explanation always ends within 15 s; the template is shown when the model is too slow (TR-P-03) |
 
 The three audits found and fixed 16 bugs, each with a test, and each recorded in `step-11-audit.md`,
 `step-15-audit.md` and `step-18-audit.md`. More defects were found and fixed during the steps themselves and are
@@ -106,7 +107,6 @@ listed in each step's results.
 
 **Known limits:**
 - Adaptive placement misses its efficiency target in simulation.
-- A new explanation can take just over 15 s.
 - LTI is tested on Moodle only, launches open in a new window, and a course has one teacher.
 - Grades go to Moodle when the teacher clicks.
 - The development machine is short of memory (about 0.4 GB free during the last Moodle run).
