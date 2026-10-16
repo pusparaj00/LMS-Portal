@@ -73,7 +73,7 @@ PDF) in the browser.
 
 | ID (priority) | Requirement | Note |
 | --- | --- | --- |
-| TR-A-09 (P2) | LTI 1.3 launch | Done for the core launch, tested on Moodle 5.3; no grade passback, roster or deep linking ([step-13](step-13.md)). |
+| TR-A-09 (P2) | LTI 1.3 launch | Done for the core launch ([step-13](step-13.md)) and grade passback ([step-16](step-16.md)), tested on Moodle 5.3; no roster sync or deep linking. |
 | TR-D-05 (P2) | Offline experiments on CodeWorkout or FalconCode | Not started; licences not checked. Planned for phase 6. |
 | TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Done, with one gap: the notice is in the app only, so a student who never signs in is not told ([step-10](step-10.md)). |
 | TR-S-08 (P1) | Breach detection logs and a written breach procedure | Done: audit trail, breach report command and a draft procedure awaiting review ([step-12](step-12.md)). |
@@ -229,3 +229,10 @@ section 5. The consent text is a draft awaiting the data protection contact.
 | Item | Before | After |
 | --- | --- | --- |
 | F-04 assignments and gradebook | None | Assignments of coding problems with points and a due date; scores computed from stored run results (best on-time attempt, share of tests passed); late work shown, not counted; gradebook view and CSV/JSON download ([step-14](step-14.md)). The TRD has no requirement for F-04, so its tests are named after the PRD feature. |
+
+## 15. What Steps 15 and 16 changed
+
+| Item | Before | After |
+| --- | --- | --- |
+| Second audit | | Gradebook column order, LMS students' deletion, LTI target check, double audit, a flaky test fixed ([step-15](step-15-audit.md)) |
+| Grade passback | Scores stayed in this app | The teacher sends on-time scores to the LMS; one column per assignment; shown live in Moodle's grader report ([step-16](step-16.md)) |

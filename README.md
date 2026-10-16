@@ -118,6 +118,18 @@ supported: no grade passback, roster sync or deep linking yet.
 docker compose exec -T api python -m app.manage lti-add-platform --issuer https://moodle.example.edu   --client-id CLIENT_ID --deployment-id 1   --auth-url https://moodle.example.edu/mod/lti/auth.php --jwks-url https://moodle.example.edu/mod/lti/certs.php
 ```
 
+To send gradebook scores back to the LMS (LTI Assignment and Grade Services), also:
+
+- generate the tool's signing key once, straight into `.env` (it is a secret; it is never shown or committed):
+  `docker compose run --rm --no-deps -T api python -m app.manage lti-tool-key >> .env`, then `docker compose up -d`;
+- in the LMS tool settings, set the public key type to a key set URL, `TOOL_BASE_URL/api/v1/lti/jwks`, accept grades
+  from the tool, and allow grade sync with column management;
+- add `--token-url https://moodle.example.edu/mod/lti/token.php` when registering the platform.
+
+The course's teacher then clicks **Send grades to the LMS** on the gradebook. Each assignment becomes one LMS grade
+column; each LMS student's on-time score is sent (late work is not). Students without an LMS account are counted and
+skipped, and any score the LMS refuses is listed.
+
 The first teacher to open the tool in an LMS course creates the matching course here and owns it; students are enrolled
 when they open it, and still see the privacy notice first. A second teacher in the same LMS course is refused for now
 (one teacher per course). Accounts made by a launch store no name or email from the LMS.
