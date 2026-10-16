@@ -79,8 +79,8 @@ export function ChatPanel({ session, problemId }: { session: Session; problemId:
           <div className="chat-log" aria-live="polite">
             {entries.length === 0 && (
               <p className="empty">
-                Ask about an error in your last submission, ask for a hint, check your progress, or ask a Python
-                question.
+                Ask about an error in your last submission, ask for a hint, check your progress, ask what to do next,
+                ask about deadlines, grades or announcements, or ask a Python question.
                 {problemId === null && " Open a problem to get help with a submission."}
               </p>
             )}
