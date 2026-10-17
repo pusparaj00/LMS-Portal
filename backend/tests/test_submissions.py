@@ -130,3 +130,23 @@ def test_a_graded_submission_moves_mastery_and_writes_the_ledger(client, course,
     expected = (f"submission:{passed['submission_id']}", "bayes_update")
     assert [tuple(r) for r in refs].count(expected) == 1
     assert len(refs) >= 2
+
+
+def test_the_problem_list_shows_each_student_only_their_own_progress(client, course, make_user):
+    """F-60: new until the first submission, tried after a failure, solved once any submission passes."""
+    def status(headers):
+        problems = client.get(f"{API}/problems?course_id={course['id']}", headers=headers).json()["problems"]
+        return next(p["my_status"] for p in problems if p["id"] == course["problem_id"])
+
+    _, mine = make_user("student")
+    _, other = make_user("student")
+    for headers in (mine, other):
+        assert client.post(f"{API}/courses/{course['id']}/enroll", headers=headers).status_code == 204
+    assert status(mine) == "new"
+    submit(client, course, mine, "print('wrong')\n")
+    assert status(mine) == "tried"
+    submit(client, course, mine, "print(int(input()) + 1)\n")
+    submit(client, course, mine, "print('wrong again')\n")
+    assert status(mine) == "solved"
+    assert status(other) == "new"
+    assert status(course["instructor"]) is None

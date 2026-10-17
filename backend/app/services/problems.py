@@ -37,6 +37,19 @@ def list_problems(conn: Connection, course_id: int, include_archived: bool = Fal
     return [Problem(**r, concepts=concepts[r["id"]]) for r in rows]
 
 
+def statuses_for(conn: Connection, user_id: int, course_id: int) -> dict[int, str]:
+    """Problem id to "solved" or "tried" for one student; problems they never submitted are absent."""
+    rows = conn.execute(
+        text(
+            "SELECT s.problem_id, bool_or(r.status = 'passed') AS solved FROM submissions s"
+            " JOIN problems p ON p.id = s.problem_id JOIN run_results r ON r.submission_id = s.id"
+            " WHERE s.user_id = :u AND p.course_id = :c GROUP BY s.problem_id"
+        ),
+        {"u": user_id, "c": course_id},
+    )
+    return {pid: "solved" if solved else "tried" for pid, solved in rows}
+
+
 def get_problem(conn: Connection, problem_id: int) -> ProblemDetail | None:
     row = conn.execute(
         text(f"SELECT {PROBLEM_COLUMNS} FROM problems WHERE id = :id"), {"id": problem_id}

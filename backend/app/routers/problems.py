@@ -20,7 +20,12 @@ def list_problems(course_id: int, user: Annotated[CurrentUser, Depends(current_u
     """Students see live problems only; staff also see archived ones, marked as such."""
     if not can_access_course(conn, user, course_id):
         raise HTTPException(403, "you have no access to this course")
-    return ProblemList(problems=repo.list_problems(conn, course_id, include_archived=user.role != "student"))
+    problems = repo.list_problems(conn, course_id, include_archived=user.role != "student")
+    if user.role == "student":
+        mine = repo.statuses_for(conn, user.id, course_id)
+        for problem in problems:
+            problem.my_status = mine.get(problem.id, "new")
+    return ProblemList(problems=problems)
 
 
 @router.get("/{problem_id}", response_model=ProblemDetail)

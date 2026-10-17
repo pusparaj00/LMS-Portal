@@ -2164,6 +2164,22 @@
             "title": "Language",
             "type": "string"
           },
+          "my_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "solved",
+                  "tried",
+                  "new"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Status"
+          },
           "param_source": {
             "default": "prior",
             "enum": [
@@ -2337,6 +2353,22 @@
           "language": {
             "title": "Language",
             "type": "string"
+          },
+          "my_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "solved",
+                  "tried",
+                  "new"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Status"
           },
           "param_source": {
             "default": "prior",

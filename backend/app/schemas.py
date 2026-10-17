@@ -327,6 +327,8 @@ class Problem(BaseModel):
     concepts: list[ConceptTag]
     archived: bool = False
     param_source: Literal["prior", "estimated"] = "prior"
+    # Only filled for the student who asks, from their own submissions (F-60).
+    my_status: Literal["solved", "tried", "new"] | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
