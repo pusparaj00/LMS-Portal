@@ -1,11 +1,95 @@
 import { useEffect, useState } from "react";
 
 import { ApiError, Problem, Session, api } from "../api";
+import { Dashboard } from "../types";
 import { Announcements } from "./Announcements";
 import { StudentAssignments } from "./AssignmentsPage";
 import { CourseSettings } from "./CourseSettings";
 
-export function CoursePage({ session, courseId }: { session: Session; courseId: number }) {
+const pretty = (name: string) => name.replace(/_/g, " ");
+const sentence = (name: string) => pretty(name).charAt(0).toUpperCase() + pretty(name).slice(1);
+const STATUS_LABEL = { solved: "Solved", tried: "In progress", new: "Not started" } as const;
+
+/** F-60: where a student stands in the course and what to do next, before the list of problems. */
+function StudentHome({ session, courseId, problems }: { session: Session; courseId: number; problems: Problem[] }) {
+  const [data, setData] = useState<Dashboard | null>(null);
+
+  useEffect(() => {
+    api<Dashboard>(`/students/me/mastery?course_id=${courseId}`, session)
+      .then(setData)
+      .catch(() => setData(null));
+  }, [courseId]);
+
+  const solved = problems.filter((p) => p.my_status === "solved").length;
+  const weakest = data ? [...data.concepts].sort((a, b) => a.p_known - b.p_known).slice(0, 3) : [];
+
+  return (
+    <section className="home-grid" aria-label="Your progress">
+      <div className="panel continue">
+        <p className="eyebrow">Continue</p>
+        {data && !data.placement_completed ? (
+          <>
+            <h2>Start with the placement test</h2>
+            <p>About ten short questions show which concepts you already know, so the next problems fit you.</p>
+            <a className="button primary" href={`#/placement/${courseId}`}>
+              Take the placement test
+            </a>
+          </>
+        ) : data?.recommended ? (
+          <>
+            <h2>{data.recommended.title}</h2>
+            <p>{data.recommended.reason}</p>
+            <a className="button primary" href={`#/problem/${data.recommended.problem_id}`}>
+              Open this problem
+            </a>
+          </>
+        ) : (
+          <>
+            <h2>Pick any problem below</h2>
+            <p>There is no recommendation yet.</p>
+          </>
+        )}
+      </div>
+      <div className="panel">
+        <p className="eyebrow">Progress</p>
+        <p className="big-number">
+          {solved}
+          <span> of {problems.length} solved</span>
+        </p>
+        <div className="meter" role="img" aria-label={`${solved} of ${problems.length} problems solved`}>
+          <span style={{ width: `${problems.length ? (solved / problems.length) * 100 : 0}%` }} />
+        </div>
+        {weakest.length > 0 && (
+          <>
+            <p className="eyebrow">Weakest concepts</p>
+            <ul className="mini-bars">
+              {weakest.map((c) => (
+                <li key={c.concept_id}>
+                  <span>{sentence(c.name)}</span>
+                  <span className="value">{Math.round(c.p_known * 100)}%</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <a href={`#/mastery/${courseId}`}>See all my progress</a>
+      </div>
+    </section>
+  );
+}
+
+/** Problems grouped under their main concept (the one with the highest weight). */
+function groupByConcept(problems: Problem[]): [string, Problem[]][] {
+  const groups = new Map<string, Problem[]>();
+  for (const p of problems) {
+    const main = [...p.concepts].sort((a, b) => b.weight - a.weight)[0];
+    const key = main ? sentence(main.name) : "Other";
+    groups.set(key, [...(groups.get(key) ?? []), p]);
+  }
+  return [...groups];
+}
+
+export function CoursePage({ session, courseId, title }: { session: Session; courseId: number; title?: string }) {
   const [problems, setProblems] = useState<Problem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,104 +123,107 @@ export function CoursePage({ session, courseId }: { session: Session; courseId: 
   }
 
   const coding = problems?.filter((p) => p.kind === "code") ?? [];
+  const student = session.role === "student";
 
   return (
     <>
-      <p>
-        <a href="#/courses">All courses</a>
-      </p>
-      <h1>Problems</h1>
-      {session.role !== "student" && (
-        <p className="actions">
-          <a className="button" href={`#/class/${courseId}`}>
-            Class overview
+      <div className="page-head">
+        <div>
+          <p className="eyebrow">{student ? "Course" : "Course problems"}</p>
+          <h1>{title ?? "Course"}</h1>
+        </div>
+        {session.role === "instructor" && (
+          <a className="button primary" href={`#/course/${courseId}/problem/new`}>
+            Add a problem
           </a>
-          <a className="button" href={`#/course/${courseId}/gradebook`}>
-            Gradebook
-          </a>
-          {session.role === "instructor" && (
-            <>
-              <a className="button" href={`#/course/${courseId}/problem/new`}>
-                Add a problem
+        )}
+      </div>
+      {error && <p role="alert" className="error">{error}</p>}
+      {student && problems && <StudentHome session={session} courseId={courseId} problems={coding} />}
+      {session.role === "instructor" && <CourseSettings session={session} courseId={courseId} />}
+      <Announcements session={session} courseId={courseId} />
+      {student && <StudentAssignments session={session} courseId={courseId} />}
+      {problems === null && !error && <p className="empty">Loading problems…</p>}
+      {problems && coding.length === 0 && <p className="empty">This course has no coding problems yet.</p>}
+
+      {student ? (
+        groupByConcept(coding).map(([concept, items]) => (
+          <section key={concept} className="group">
+            <h2>{concept}</h2>
+            <ul className="rows">
+              {items.map((p) => (
+                <li key={p.id}>
+                  <a className="grow" href={`#/problem/${p.id}`}>
+                    {p.title}
+                  </a>
+                  <span className="tags">
+                    {p.concepts.slice(1).map((c) => (
+                      <span key={c.concept_id} className="tag">
+                        {pretty(c.name)}
+                      </span>
+                    ))}
+                  </span>
+                  {p.my_status && <span className={`state state-${p.my_status}`}>{STATUS_LABEL[p.my_status]}</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      ) : (
+        <ul className="rows">
+          {coding.map((p) => (
+            <li key={p.id}>
+              <a className="grow" href={`#/problem/${p.id}`}>
+                {p.title}
               </a>
-              <a className="button" href={`#/course/${courseId}/notes`}>
-                Course notes
-              </a>
-              <a className="button" href={`#/course/${courseId}/assignments`}>
-                Assignments
-              </a>
-            </>
-          )}
-        </p>
+              <span className="tags">
+                {p.concepts.map((c) => (
+                  <span key={c.concept_id} className="tag">
+                    {pretty(c.name)}
+                  </span>
+                ))}
+              </span>
+              {p.archived && <span className="flag">archived</span>}
+              {!p.archived && p.review_status === "needs human review" && <span className="flag">needs review</span>}
+              {session.role === "instructor" && (
+                <span className="row-actions">
+                  <a href={`#/course/${courseId}/problem/${p.id}/edit`} aria-label={`Edit ${p.title}`}>
+                    Edit
+                  </a>
+                  {p.review_status === "needs human review" && !p.archived && (
+                    <button className="link" onClick={() => act(`/problems/${p.id}/review`)} aria-label={`Mark ${p.title} reviewed`}>
+                      Mark reviewed
+                    </button>
+                  )}
+                  {p.archived ? (
+                    <button className="link" onClick={() => act(`/problems/${p.id}/restore`)} aria-label={`Restore ${p.title}`}>
+                      Restore
+                    </button>
+                  ) : (
+                    <button
+                      className="link"
+                      aria-label={`Archive ${p.title}`}
+                      onClick={() => {
+                        if (window.confirm(`Archive "${p.title}"? Students stop seeing it; their work and grades are kept.`))
+                          act(`/problems/${p.id}/archive`);
+                      }}
+                    >
+                      Archive
+                    </button>
+                  )}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
-      {session.role === "student" && (
-        <p>
-          <a className="button" href={`#/placement/${courseId}`}>
-            Placement test
-          </a>{" "}
-          <a className="button" href={`#/mastery/${courseId}`}>
-            My mastery
-          </a>{" "}
+      {student && (
+        <p className="quiet-actions">
           <button className="link" onClick={leave}>
-            Leave course
+            Leave this course
           </button>
         </p>
       )}
-      {session.role === "instructor" && <CourseSettings session={session} courseId={courseId} />}
-      <Announcements session={session} courseId={courseId} />
-      {session.role === "student" && <StudentAssignments session={session} courseId={courseId} />}
-      {error && <p role="alert" className="error">{error}</p>}
-      {problems && coding.length === 0 && (
-        <p className="empty">This course has no coding problems yet.</p>
-      )}
-      <ul className="rows">
-        {coding.map((p) => (
-          <li key={p.id}>
-            <a className="grow" href={`#/problem/${p.id}`}>
-              {p.title}
-            </a>
-            <span className="tags">
-              {p.concepts.map((c) => (
-                <span key={c.concept_id} className="tag">
-                  {c.name}
-                </span>
-              ))}
-            </span>
-            {p.archived && <span className="flag">archived</span>}
-            {session.role !== "student" && !p.archived && p.review_status === "needs human review" && (
-              <span className="flag">needs review</span>
-            )}
-            {session.role === "instructor" && (
-              <span className="row-actions">
-                <a href={`#/course/${courseId}/problem/${p.id}/edit`} aria-label={`Edit ${p.title}`}>
-                  Edit
-                </a>
-                {p.review_status === "needs human review" && !p.archived && (
-                  <button className="link" onClick={() => act(`/problems/${p.id}/review`)} aria-label={`Mark ${p.title} reviewed`}>
-                    Mark reviewed
-                  </button>
-                )}
-                {p.archived ? (
-                  <button className="link" onClick={() => act(`/problems/${p.id}/restore`)} aria-label={`Restore ${p.title}`}>
-                    Restore
-                  </button>
-                ) : (
-                  <button
-                    className="link"
-                    aria-label={`Archive ${p.title}`}
-                    onClick={() => {
-                      if (window.confirm(`Archive "${p.title}"? Students stop seeing it; their work and grades are kept.`))
-                        act(`/problems/${p.id}/archive`);
-                    }}
-                  >
-                    Archive
-                  </button>
-                )}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
     </>
   );
 }

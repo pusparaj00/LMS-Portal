@@ -55,10 +55,12 @@ export function InstructorPage({ session, courseId }: { session: Session; course
 
   return (
     <>
-      <p>
-        <a href={`#/course/${courseId}`}>Back to problems</a>
-      </p>
-      <h1>Class overview</h1>
+      <div className="page-head">
+        <div>
+          <p className="eyebrow">Course insight</p>
+          <h1>Class overview</h1>
+        </div>
+      </div>
       {synthetic > 0 && (
         <p className="notice">
           {synthetic} of the {grid.students.length} students shown are <strong>synthetic</strong> demo data
@@ -114,7 +116,14 @@ export function InstructorPage({ session, courseId }: { session: Session; course
           </table>
         </div>
       )}
-      <small>Cells show percent mastery. Darker means higher.</small>
+      <p className="legend">
+        <span>Percent mastery:</span>
+        {[0, 0.25, 0.5, 0.75, 1].map((p) => (
+          <span key={p} className="swatch" style={cellStyle(p)}>
+            {p * 100}
+          </span>
+        ))}
+      </p>
 
       <h2>Common misconceptions</h2>
       {misconceptions.filter((m) => m.students > 0).length === 0 ? (

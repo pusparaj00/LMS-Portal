@@ -15,6 +15,7 @@ export type Problem = {
   review_status: "needs human review" | "reviewed";
   concepts: ConceptTag[];
   archived?: boolean;
+  my_status?: "solved" | "tried" | "new" | null;
 };
 
 export type ProblemDetail = Problem & { examples: { input: string; expected: string }[] };

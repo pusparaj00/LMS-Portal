@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { ApiError, Session, api, loadSession, saveSession } from "./api";
+import { ApiError, Course, Session, api, loadSession, saveSession } from "./api";
 import { AccountPage, Me } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
@@ -10,6 +10,7 @@ import { CoursesPage } from "./pages/CoursesPage";
 import { DashboardPage, WhyPage } from "./pages/DashboardPage";
 import { GradebookPage } from "./pages/GradebookPage";
 import { NewProblemPage } from "./pages/NewProblemPage";
+import { Nav } from "./pages/Nav";
 import { NotesPage } from "./pages/NotesPage";
 import { InstructorPage } from "./pages/InstructorPage";
 import { LtiLanding } from "./pages/LtiLanding";
@@ -23,7 +24,11 @@ import { ProblemPage } from "./pages/ProblemPage";
 function useHash(): string {
   const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
-    const onChange = () => setHash(window.location.hash);
+    const onChange = () => {
+      setHash(window.location.hash);
+      // a hash change keeps the old scroll position, so a new page would open part-way down
+      window.scrollTo(0, 0);
+    };
     window.addEventListener("hashchange", onChange);
     return () => window.removeEventListener("hashchange", onChange);
   }, []);
@@ -36,7 +41,15 @@ export function App() {
   const [consentError, setConsentError] = useState<string | null>(null);
   const [erasure, setErasure] = useState<ErasureState | null>(null);
   const [me, setMe] = useState<Me | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [lastCourse, setLastCourse] = useState<number | null>(null);
   const hash = useHash();
+  // The course menu stays on screen while a problem of that course is open, since a problem's address has no course id.
+  const hashCourse = hash.match(/^#\/(?:course|class|mastery|placement)\/(\d+)/);
+  useEffect(() => {
+    if (hashCourse) setLastCourse(Number(hashCourse[1]));
+    else if (!hash.startsWith("#/problem/")) setLastCourse(null);
+  }, [hash]);
 
   const update = (next: Session | null) => {
     saveSession(next);
@@ -44,7 +57,7 @@ export function App() {
     setConsent(null);
     setErasure(null);
     setMe(null);
-    window.location.hash = next ? "#/courses" : "#/login";
+    window.location.hash = !next ? "#/login" : next.role === "admin" ? "#/admin" : "#/courses";
   };
 
   // Who is signed in, and whether they must choose a new password before anything else (F-01).
@@ -75,6 +88,13 @@ export function App() {
       .then(setErasure)
       .catch(() => setErasure(null));
   }, [session?.token, me?.must_change_password]);
+
+  useEffect(() => {
+    if (!session || !me || me.must_change_password) return;
+    api<Course[]>("/courses", session)
+      .then(setCourses)
+      .catch(() => setCourses([]));
+  }, [session?.token, me?.must_change_password, lastCourse]);
 
   const ltiCode = hash.match(/^#\/lti\/([\w-]+)$/);
   if (ltiCode)
@@ -120,87 +140,112 @@ export function App() {
 
   return (
     <>
+      <a
+        className="skip"
+        href="#content"
+        onClick={(e) => {
+          // the app routes on the hash, so focus the content instead of navigating to "#content"
+          e.preventDefault();
+          document.getElementById("content")?.focus();
+        }}
+      >
+        Skip to content
+      </a>
       <header className="bar">
-        <a className="brand" href="#/courses">
+        <a className="brand" href={session.role === "admin" ? "#/admin" : "#/courses"}>
           Adaptive LMS
         </a>
-        <span className="who">{me.display_name ? `${me.display_name} · ${session.role}` : session.role}</span>
-        {session.role === "admin" && <a href="#/admin">Users</a>}
-        <a href="#/account">Account</a>
-        <a href="#/privacy">Privacy</a>
-        <button className="link" onClick={() => update(null)}>
+        <span className="who">
+          <span className="who-name">{me.display_name ?? me.email}</span>
+          <span className={`role role-${session.role}`}>{session.role}</span>
+        </span>
+        <button className="ghost" onClick={() => update(null)}>
           Log out
         </button>
       </header>
       {erasure && <ErasureBanner state={erasure} />}
-      <main>
-        {consentError ? (
-          <p role="alert" className="error">
-            {consentError}
-          </p>
-        ) : waitingForConsent ? (
-          <p>Loading…</p>
-        ) : hash === "#/account" ? (
-          <AccountPage session={session} me={me} onMe={setMe} onSession={replaceToken} />
-        ) : hash === "#/admin" && session.role === "admin" ? (
-          <AdminPage session={session} myId={me.id} />
-        ) : mustAgree || hash === "#/privacy" ? (
-          <PrivacyPage
-            session={session}
-            state={consent}
-            gate={mustAgree}
-            onChange={setConsent}
-            erasure={erasure}
-            onErasureChange={setErasure}
+      <div className="shell">
+        {!mustAgree && !waitingForConsent && (
+          <Nav
+            role={session.role}
+            courseId={lastCourse}
+            courseTitle={courses.find((c) => c.id === lastCourse)?.title}
+            hash={hash}
           />
-        ) : newProblem && session.role === "instructor" ? (
-          <NewProblemPage session={session} courseId={Number(newProblem[1])} />
-        ) : editProblem && session.role === "instructor" ? (
-          <NewProblemPage
-            key={editProblem[2]}
-            session={session}
-            courseId={Number(editProblem[1])}
-            problemId={Number(editProblem[2])}
-          />
-        ) : notes && session.role === "instructor" ? (
-          <NotesPage session={session} courseId={Number(notes[1])} />
-        ) : assignments && session.role === "instructor" ? (
-          <AssignmentsPage session={session} courseId={Number(assignments[1])} />
-        ) : gradebook && session.role !== "student" ? (
-          <GradebookPage session={session} courseId={Number(gradebook[1])} />
-        ) : studentWork && session.role === "instructor" ? (
-          <StudentWorkPage session={session} courseId={Number(studentWork[1])} studentId={Number(studentWork[2])} />
-        ) : studentSubmission && session.role === "instructor" ? (
-          <SubmissionView
-            session={session}
-            courseId={Number(studentSubmission[1])}
-            studentId={Number(studentSubmission[2])}
-            submissionId={Number(studentSubmission[3])}
-          />
-        ) : studentConcept && session.role === "instructor" ? (
-          <WhyPage
-            session={session}
-            courseId={Number(studentConcept[1])}
-            conceptId={Number(studentConcept[3])}
-            source={`/courses/${studentConcept[1]}/students/${studentConcept[2]}/mastery/${studentConcept[3]}/history`}
-            back={{ href: `#/class/${studentConcept[1]}/student/${studentConcept[2]}`, label: "Back to the student" }}
-          />
-        ) : classView ? (
-          <InstructorPage session={session} courseId={Number(classView[1])} />
-        ) : why ? (
-          <WhyPage session={session} courseId={Number(why[1])} conceptId={Number(why[2])} />
-        ) : mastery ? (
-          <DashboardPage session={session} courseId={Number(mastery[1])} />
-        ) : placement ? (
-          <PlacementPage session={session} courseId={Number(placement[1])} />
-        ) : problem ? (
-          <ProblemPage session={session} problemId={Number(problem[1])} />
-        ) : course ? (
-          <CoursePage session={session} courseId={Number(course[1])} />
-        ) : (
-          <CoursesPage session={session} />
         )}
-      </main>
+        <main id="content" tabIndex={-1}>
+          {consentError ? (
+            <p role="alert" className="error">
+              {consentError}
+            </p>
+          ) : waitingForConsent ? (
+            <p>Loading…</p>
+          ) : hash === "#/account" ? (
+            <AccountPage session={session} me={me} onMe={setMe} onSession={replaceToken} />
+          ) : hash === "#/admin" && session.role === "admin" ? (
+            <AdminPage session={session} myId={me.id} />
+          ) : mustAgree || hash === "#/privacy" ? (
+            <PrivacyPage
+              session={session}
+              state={consent}
+              gate={mustAgree}
+              onChange={setConsent}
+              erasure={erasure}
+              onErasureChange={setErasure}
+            />
+          ) : newProblem && session.role === "instructor" ? (
+            <NewProblemPage session={session} courseId={Number(newProblem[1])} />
+          ) : editProblem && session.role === "instructor" ? (
+            <NewProblemPage
+              key={editProblem[2]}
+              session={session}
+              courseId={Number(editProblem[1])}
+              problemId={Number(editProblem[2])}
+            />
+          ) : notes && session.role === "instructor" ? (
+            <NotesPage session={session} courseId={Number(notes[1])} />
+          ) : assignments && session.role === "instructor" ? (
+            <AssignmentsPage session={session} courseId={Number(assignments[1])} />
+          ) : gradebook && session.role !== "student" ? (
+            <GradebookPage session={session} courseId={Number(gradebook[1])} />
+          ) : studentWork && session.role === "instructor" ? (
+            <StudentWorkPage session={session} courseId={Number(studentWork[1])} studentId={Number(studentWork[2])} />
+          ) : studentSubmission && session.role === "instructor" ? (
+            <SubmissionView
+              session={session}
+              courseId={Number(studentSubmission[1])}
+              studentId={Number(studentSubmission[2])}
+              submissionId={Number(studentSubmission[3])}
+            />
+          ) : studentConcept && session.role === "instructor" ? (
+            <WhyPage
+              session={session}
+              courseId={Number(studentConcept[1])}
+              conceptId={Number(studentConcept[3])}
+              source={`/courses/${studentConcept[1]}/students/${studentConcept[2]}/mastery/${studentConcept[3]}/history`}
+              back={{ href: `#/class/${studentConcept[1]}/student/${studentConcept[2]}`, label: "Back to the student" }}
+            />
+          ) : classView ? (
+            <InstructorPage session={session} courseId={Number(classView[1])} />
+          ) : why ? (
+            <WhyPage session={session} courseId={Number(why[1])} conceptId={Number(why[2])} />
+          ) : mastery ? (
+            <DashboardPage session={session} courseId={Number(mastery[1])} />
+          ) : placement ? (
+            <PlacementPage session={session} courseId={Number(placement[1])} />
+          ) : problem ? (
+            <ProblemPage session={session} problemId={Number(problem[1])} />
+          ) : course ? (
+            <CoursePage
+              session={session}
+              courseId={Number(course[1])}
+              title={courses.find((c) => c.id === Number(course[1]))?.title}
+            />
+          ) : (
+            <CoursesPage session={session} />
+          )}
+        </main>
+      </div>
       {!mustAgree && !waitingForConsent && <ChatPanel session={session} problemId={problem ? Number(problem[1]) : null} />}
     </>
   );
