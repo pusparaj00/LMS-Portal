@@ -44,6 +44,8 @@ The seed then reported 1 problem updated (the new test) and 46 unchanged.
 
 **21 of 21 wrong solutions fail in the expected category.** TR-V-02 now passes.
 
+Full suite after the bank change (`docker compose --profile test run --rm test`): ruff clean, 666 passed.
+
 ## By hand
 
 The app database still has the old tests for "Most common letter" in its courses until the seed runs there
