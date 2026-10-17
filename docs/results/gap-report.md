@@ -3,6 +3,8 @@
 Audit date 2026-10-15, first written on branch `step-7-cache-stretch` (409 tests) and **updated after Step 8** on branch
 `step-8-gap-closure` (450 tests), then after Step 9 on `step-9-concepts-consent-claims` (493 tests), then after Step 10 on `step-10-deletion-retention`
 (505 tests); the statuses below are the updated ones, and sections 9 and 10 list what Steps 8 to 10 closed.
+**Updated again on 2026-10-17 after Steps 32 to 36** (`step-36-problem-drafts`): TR-S-10 built (Step 34), TR-V-02 now
+passes (Step 35), and model-drafted problems are offered to instructors only after sandbox checks (TR-L-10, Step 36).
 Sources compared: `docs/plan.md`, `docs/PRD.md` (34 features), `docs/TRD.md` (81 requirements), `docs/DRD.md`, the code and
 tests in the repository, and the measured results in `docs/results/`. Every status below was checked in the code, the
 tests or a measured result; where a status could not be checked it says so.
@@ -12,12 +14,12 @@ tests or a measured result; where a status could not be checked it says so.
 The system is a working, tested prototype of the whole demo flow in the plan (phases 0 to 5, gates G0 to G4 passed, the
 technical part of G5 passed). It is not the full product in the PRD, and four kinds of gap remain:
 
-1. **Features not built or only partly built:** none; all 34 PRD features are built (F-23 in Step 25, for problems a teacher adds; generated items are later work, TR-L-10).
-2. **Requirements not met:** of 69 implementation requirements, 55 done, 2 partly done, 3 not built or not run, 9 not
+1. **Features not built or only partly built:** none; all 34 PRD features are built (F-23 in Step 25, for problems a teacher adds; model-drafted problems reach the bank only through an instructor, TR-L-10, Step 36).
+2. **Requirements not met:** of 69 implementation requirements, 56 done, 2 partly done, 2 not built or not run, 9 not
    applicable by design (the sandbox is a custom runner, not Judge0). Compliance is built (TR-S-05 to S-08) but
    awaits the data protection contact's review.
-3. **Validation targets missed or unproven:** of 12 validation tests, 7 pass, 1 fails (adaptive selection, in simulation
-   only), 2 are partly met, 2 are not run (they need human raters or a local model).
+3. **Validation targets missed or unproven:** of 12 validation tests, 8 pass, 1 fails (adaptive selection, in simulation
+   only), 1 is partly met, 2 are not run (they need human raters or a local model).
 4. **Gate G5 items that only people can do:** the explanation ratings, the backup video, the report, two rehearsals and the
    IPR conversation.
 
@@ -55,9 +57,9 @@ PDF) in the browser.
 | X sandbox (9) | 2 | 0 | 0 | 7 |
 | L LLM (12) | 12 | 0 | 0 | 0 |
 | D data (8) | 7 | 0 | 1 | 0 |
-| S security and privacy (10) | 8 | 0 | 2 | 0 |
+| S security and privacy (10) | 9 | 0 | 1 | 0 |
 | P performance (9) | 9 | 0 | 0 | 0 |
-| **Total (69)** | **55** | **2** | **3** | **9** |
+| **Total (69)** | **56** | **2** | **2** | **9** |
 
 ### 3.1 Partly done (2)
 
