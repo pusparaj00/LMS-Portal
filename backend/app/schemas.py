@@ -190,6 +190,7 @@ class ErasureRequest(BaseModel):
 
 class ConsentAccept(BaseModel):
     version: Text = Field(max_length=40, description="the notice version the student was shown")
+    adult: bool = Field(False, description="the student confirms they are 18 or older (TR-S-10)")
 
 
 class AssignmentProblemIn(BaseModel):

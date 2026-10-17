@@ -24,7 +24,7 @@ def my_consent(user: Student, conn: Conn):
 
 @router.post("/accept", response_model=ConsentStatus)
 def accept(body: ConsentAccept, user: Student, conn: Conn):
-    return consent.accept(conn, user.id, body.version)
+    return consent.accept(conn, user.id, body.version, body.adult)
 
 
 @router.post("/withdraw", response_model=ConsentStatus)

@@ -95,7 +95,7 @@ def test_the_teacher_sees_the_same_why_did_it_change_ledger(client, make_user, c
 
 def test_the_privacy_notice_tells_students_what_their_teacher_sees(client, make_user):
     _, headers = make_user("student", consented=False)
-    who = " ".join(client.get(f"{API}/consent/notice", headers=headers).json()["sections"][2]["paragraphs"])
+    who = " ".join(client.get(f"{API}/consent/notice", headers=headers).json()["sections"][3]["paragraphs"])
     assert "code you submit" in who and "not shown to them" in who
 
 

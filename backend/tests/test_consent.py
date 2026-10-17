@@ -20,7 +20,7 @@ def status(client, headers):
 
 def agree(client, headers):
     version = client.get(f"{API}/consent/notice", headers=headers).json()["version"]
-    return client.post(f"{API}/consent/accept", headers=headers, json={"version": version})
+    return client.post(f"{API}/consent/accept", headers=headers, json={"version": version, "adult": True})
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def test_a_new_student_has_not_agreed_and_the_notice_says_what_is_collected_and_
     assert status(client, headers)["accepted"] is False
     notice = client.get(f"{API}/consent/notice", headers=headers).json()
     headings = [s["heading"] for s in notice["sections"]]
-    assert headings[:3] == ["What is collected", "Why", "Who receives it"] and "Withdrawing" in headings
+    assert headings[:4] == ["Who can use this", "What is collected", "Why", "Who receives it"] and "Withdrawing" in headings
     everything = " ".join(p for s in notice["sections"] for p in s["paragraphs"])
     for word in ("code", "answers", "messages", "mastery", "instructor", "draft"):
         assert word in everything
@@ -137,7 +137,7 @@ def test_with_no_provider_the_notice_says_nothing_is_sent_outside(client, newcom
     _, headers = newcomer
     monkeypatch.setattr(consent, "get_settings", lambda: settings())
     notice = client.get(f"{API}/consent/notice", headers=headers).json()
-    who = " ".join(notice["sections"][2]["paragraphs"])
+    who = " ".join(notice["sections"][3]["paragraphs"])
     assert notice["providers"] == [] and "No model provider is configured" in who
 
 
@@ -157,3 +157,21 @@ def test_the_prompts_sent_to_the_model_hold_no_email_address_or_name(client, wor
     assert fake.calls and chat_fake.calls
     assert email not in prompts and email.split("@")[0] not in prompts
     assert "Zephyrine" not in prompts and "Lindqvist" not in prompts
+
+
+def test_agreeing_needs_the_student_to_confirm_they_are_an_adult(client, newcomer, owner):
+    """TR-S-10: without the confirmation nothing is recorded and the student stays blocked."""
+    user_id, headers = newcomer
+    version = client.get(f"{API}/consent/notice", headers=headers).json()["version"]
+    notice = client.get(f"{API}/consent/notice", headers=headers).json()
+    assert notice["sections"][0]["heading"] == "Who can use this" and "18" in notice["sections"][0]["paragraphs"][0]
+    for body in ({"version": version}, {"version": version, "adult": False}):
+        refused = client.post(f"{API}/consent/accept", headers=headers, json=body)
+        assert refused.status_code == 422 and "18" in refused.json()["error"]["message"]
+    assert status(client, headers)["accepted"] is False
+    assert client.post(f"{API}/chat", headers=headers, json={"message": "hello"}).status_code == 403
+    assert agree(client, headers).json()["accepted"] is True
+    with owner.connect() as conn:
+        assert conn.execute(
+            text("SELECT adult_confirmed FROM consents WHERE user_id = :u"), {"u": user_id}
+        ).scalar_one() is True

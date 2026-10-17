@@ -514,6 +514,12 @@
       },
       "ConsentAccept": {
         "properties": {
+          "adult": {
+            "default": false,
+            "description": "the student confirms they are 18 or older (TR-S-10)",
+            "title": "Adult",
+            "type": "boolean"
+          },
           "version": {
             "description": "the notice version the student was shown",
             "maxLength": 40,

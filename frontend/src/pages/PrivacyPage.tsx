@@ -34,6 +34,7 @@ export function PrivacyPage({
 }) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [adult, setAdult] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const student = session.role === "student";
@@ -51,7 +52,7 @@ export function PrivacyPage({
     try {
       const next = await api<ConsentState>(path, session, {
         method: "POST",
-        body: path === "/consent/accept" ? { version: notice.version } : {},
+        body: path === "/consent/accept" ? { version: notice.version, adult } : {},
       });
       setConfirming(false);
       onChange(next);
@@ -115,9 +116,15 @@ export function PrivacyPage({
             </p>
           )}
           {(!state?.accepted || gate) && (
-            <button className="primary" disabled={busy} onClick={() => act("/consent/accept")}>
-              I agree
-            </button>
+            <>
+              <label className="inline">
+                <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
+                I confirm that I am 18 or older
+              </label>
+              <button className="primary" disabled={busy || !adult} onClick={() => act("/consent/accept")}>
+                I agree
+              </button>
+            </>
           )}
           {!gate && state?.accepted && !confirming && (
             <button disabled={busy} onClick={() => setConfirming(true)}>

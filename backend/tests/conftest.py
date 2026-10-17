@@ -67,7 +67,7 @@ def make_user(owner):
             ).scalar_one()
             if role == "student" and consented:
                 conn.execute(
-                    text("INSERT INTO consents (user_id, version) VALUES (:u, :v)"),
+                    text("INSERT INTO consents (user_id, version, adult_confirmed) VALUES (:u, :v, true)"),
                     {"u": user_id, "v": CONSENT_VERSION},
                 )
         created.append(user_id)

@@ -15,10 +15,13 @@ from app.config import Settings, get_settings
 from app.llm.adapter import GEMINI_KEYS, LOCAL, OPENAI_COMPATIBLE
 from app.schemas import ConsentNotice, ConsentProvider, ConsentSection, ConsentStatus
 
-CONSENT_VERSION = "2026-10-v3"  # change it whenever the notice changes; everyone is then asked again
+CONSENT_VERSION = "2026-10-v4"  # change it whenever the notice changes; everyone is then asked again
 REQUIRED_MESSAGE = (
     "You have not agreed to the privacy notice, or you withdrew your agreement. "
     "Open Privacy in the top bar to read it."
+)
+ADULT_ONLY_MESSAGE = (
+    "This system is only for people aged 18 or over. If you are younger, please speak to your instructor."
 )
 PROVIDER_NAME = {
     "gemini": "Google (Gemini)",
@@ -58,6 +61,10 @@ def notice(settings: Settings) -> ConsentNotice:
         version=CONSENT_VERSION,
         title="How this system uses your data",
         sections=[
+            ConsentSection(heading="Who can use this", paragraphs=[
+                "This system is for adults. By agreeing you confirm that you are 18 or older. There is no "
+                "parental-consent route yet, so learners under 18 cannot use it; please speak to your instructor.",
+            ]),
             ConsentSection(heading="What is collected", paragraphs=[
                 "The code you run or submit, and the results of running it.",
                 "Your answers in the placement test and in practice questions.",
@@ -105,24 +112,35 @@ def notice(settings: Settings) -> ConsentNotice:
 
 def status(conn: Connection, user_id: int) -> ConsentStatus:
     row = conn.execute(
-        text("SELECT version, accepted_at, withdrawn_at FROM consents WHERE user_id = :u ORDER BY id DESC LIMIT 1"),
+        text(
+            "SELECT version, accepted_at, withdrawn_at, adult_confirmed FROM consents WHERE user_id = :u"
+            " ORDER BY id DESC LIMIT 1"
+        ),
         {"u": user_id},
     ).first()
-    accepted = row is not None and row.version == CONSENT_VERSION and row.withdrawn_at is None
+    accepted = (
+        row is not None and row.version == CONSENT_VERSION and row.withdrawn_at is None and row.adult_confirmed
+    )
     return ConsentStatus(
         version=CONSENT_VERSION, accepted=accepted, accepted_at=row.accepted_at if accepted else None,
         withdrawn_at=row.withdrawn_at if row is not None and row.withdrawn_at is not None else None,
     )
 
 
-def accept(conn: Connection, user_id: int, version: str) -> ConsentStatus:
+def accept(conn: Connection, user_id: int, version: str, adult: bool) -> ConsentStatus:
+    """Agreement counts only with the student's confirmation that they are 18 or older (TR-S-10)."""
     if version != CONSENT_VERSION:
         raise HTTPException(409, "the privacy notice has changed; please read it again")
+    if not adult:
+        raise HTTPException(422, ADULT_ONLY_MESSAGE)
     if not status(conn, user_id).accepted:
         conn.execute(
-            text("INSERT INTO consents (user_id, version) VALUES (:u, :v)"), {"u": user_id, "v": CONSENT_VERSION}
+            text("INSERT INTO consents (user_id, version, adult_confirmed) VALUES (:u, :v, true)"),
+            {"u": user_id, "v": CONSENT_VERSION},
         )
-        audit.record("consent.accepted", user_id=user_id, detail={"version": CONSENT_VERSION}, conn=conn)
+        audit.record(
+            "consent.accepted", user_id=user_id, detail={"version": CONSENT_VERSION, "adult": True}, conn=conn
+        )
     return status(conn, user_id)
 
 
