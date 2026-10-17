@@ -2418,6 +2418,79 @@
         "title": "ProblemDetail",
         "type": "object"
       },
+      "ProblemDraftOut": {
+        "description": "A checked draft for the instructor to review and save through POST /problems (TR-L-10). Not saved yet.",
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "checks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "integer"
+          },
+          "reference_solution": {
+            "title": "Reference Solution",
+            "type": "string"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "test_cases": {
+            "items": {
+              "$ref": "#/components/schemas/TestCaseIn"
+            },
+            "title": "Test Cases",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "wrong_category": {
+            "title": "Wrong Category",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "statement",
+          "reference_solution",
+          "test_cases",
+          "concept_id",
+          "wrong_category",
+          "checks",
+          "attempts"
+        ],
+        "title": "ProblemDraftOut",
+        "type": "object"
+      },
+      "ProblemDraftRequest": {
+        "properties": {
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "course_id",
+          "concept_id"
+        ],
+        "title": "ProblemDraftRequest",
+        "type": "object"
+      },
       "ProblemList": {
         "properties": {
           "problems": {
@@ -6442,6 +6515,53 @@
           }
         ],
         "summary": "Create Problem",
+        "tags": [
+          "problems"
+        ]
+      }
+    },
+    "/api/v1/problems/draft": {
+      "post": {
+        "description": "A model-written practice problem for one concept, offered only after both of its solutions were checked in the\nsandbox (TR-L-10). The instructor reviews it and saves it with POST /problems; nothing is stored here.",
+        "operationId": "draft_problem_api_v1_problems_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDraftOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Draft Problem",
         "tags": [
           "problems"
         ]

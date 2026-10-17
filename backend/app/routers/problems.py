@@ -3,11 +3,21 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
-from app import difficulty
+from app import audit, difficulty, problem_draft, ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.errors import sandbox_error
+from app.llm.adapter import LLMAdapter, LLMError
+from app.routers.feedback import llm_adapter
 from app.sandbox import SandboxUnavailable
-from app.schemas import Problem, ProblemCreate, ProblemDetail, ProblemList, ProblemSource
+from app.schemas import (
+    Problem,
+    ProblemCreate,
+    ProblemDetail,
+    ProblemDraftOut,
+    ProblemDraftRequest,
+    ProblemList,
+    ProblemSource,
+)
 from app.services import problems as repo
 from app.services.validation import validate_code_problem
 
@@ -26,6 +36,40 @@ def list_problems(course_id: int, user: Annotated[CurrentUser, Depends(current_u
         for problem in problems:
             problem.my_status = mine.get(problem.id, "new")
     return ProblemList(problems=problems)
+
+
+@router.post("/draft", response_model=ProblemDraftOut)
+def draft_problem(
+    body: ProblemDraftRequest, user: Instructor, conn: Conn, adapter: Annotated[LLMAdapter, Depends(llm_adapter)]
+):
+    """A model-written practice problem for one concept, offered only after both of its solutions were checked in the
+    sandbox (TR-L-10). The instructor reviews it and saves it with POST /problems; nothing is stored here."""
+    if not can_access_course(conn, user, body.course_id):
+        raise HTTPException(403, "not your course")
+    concept = conn.execute(
+        text("SELECT name FROM concepts WHERE id = :k AND course_id = :c"), {"k": body.concept_id, "c": body.course_id}
+    ).scalar()
+    if concept is None:
+        raise HTTPException(404, "concept not found in this course")
+    ratelimit.check("draft", user.id)
+    try:
+        made = problem_draft.draft(conn, adapter, body.course_id, concept)
+    except problem_draft.DraftRejected as exc:
+        # written on its own: the 422 below rolls back this request's transaction
+        audit.record("problem.draft_rejected", user_id=user.id, detail={"course_id": body.course_id,
+                     "concept_id": body.concept_id})
+        raise HTTPException(422, "the model's draft did not pass the checks: " + "; ".join(exc.reasons)) from None
+    except LLMError:
+        raise HTTPException(503, "no model is available to write a draft; try again later") from None
+    except SandboxUnavailable as exc:
+        raise sandbox_error(exc) from None
+    audit.record("problem.drafted", user_id=user.id, detail={"course_id": body.course_id,
+                 "concept_id": body.concept_id, "attempts": made.attempts}, conn=conn)
+    return ProblemDraftOut(
+        title=made.title, statement=made.statement, reference_solution=made.reference_solution,
+        test_cases=made.tests, concept_id=body.concept_id, wrong_category=made.wrong_category, checks=made.checks,
+        attempts=made.attempts,
+    )
 
 
 @router.get("/{problem_id}", response_model=ProblemDetail)

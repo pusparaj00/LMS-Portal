@@ -386,6 +386,24 @@ class ProblemCreate(BaseModel):
     test_cases: list[TestCaseIn]
 
 
+class ProblemDraftRequest(BaseModel):
+    course_id: int
+    concept_id: int
+
+
+class ProblemDraftOut(BaseModel):
+    """A checked draft for the instructor to review and save through POST /problems (TR-L-10). Not saved yet."""
+
+    title: str
+    statement: str
+    reference_solution: str
+    test_cases: list[TestCaseIn]
+    concept_id: int
+    wrong_category: str
+    checks: list[str]
+    attempts: int
+
+
 class ProblemSource(ProblemCreate):
     """Everything an instructor needs to edit a coding problem, hidden tests and reference solution included."""
 

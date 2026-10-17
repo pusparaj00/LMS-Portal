@@ -85,6 +85,7 @@ POLICY = {
     ("GET", "/problems"): ANY,
     ("GET", "/problems/{problem_id}"): ANY,
     ("POST", "/problems"): INSTRUCTOR,
+    ("POST", "/problems/draft"): INSTRUCTOR,
     ("PUT", "/problems/{problem_id}/policy"): INSTRUCTOR,
     ("GET", "/problems/{problem_id}/policy"): INSTRUCTOR,
     ("POST", "/submissions"): STUDENT,
