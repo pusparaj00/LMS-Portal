@@ -159,6 +159,13 @@ export function App() {
           <span className="who-name">{me.display_name ?? me.email}</span>
           <span className={`role role-${session.role}`}>{session.role}</span>
         </span>
+        {/* the privacy notice and several messages tell people to find these two in the top bar */}
+        <a href="#/account" aria-current={hash === "#/account" ? "page" : undefined}>
+          Account
+        </a>
+        <a href="#/privacy" aria-current={hash === "#/privacy" ? "page" : undefined}>
+          Privacy
+        </a>
         <button className="ghost" onClick={() => update(null)}>
           Log out
         </button>

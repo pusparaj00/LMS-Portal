@@ -1,11 +1,31 @@
 import Editor from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 
-import { ApiError, BUSY_RETRIES, ProblemDetail, Session, SubmissionResult, api } from "../api";
+import { ApiError, BUSY_RETRIES, DRAFT_PREFIX, ProblemDetail, Session, SubmissionResult, api } from "../api";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { HelpPolicy } from "./HelpPolicy";
 
 const STARTER = "# Read from input(), print the answer.\n";
+
+// An unsent draft survives moving to another page and back for the rest of the browser session (F-10).
+// Logging out clears every draft (see saveSession).
+const draftKey = (problemId: number) => `${DRAFT_PREFIX}${problemId}`;
+
+function loadDraft(problemId: number): string {
+  try {
+    return sessionStorage.getItem(draftKey(problemId)) ?? STARTER;
+  } catch {
+    return STARTER;
+  }
+}
+
+function saveDraft(problemId: number, code: string): void {
+  try {
+    sessionStorage.setItem(draftKey(problemId), code);
+  } catch {
+    // storage can be blocked; the draft then lasts only while the page is open
+  }
+}
 
 const ERROR_TEXT: Record<string, string> = {
   syntax_error: "Your code has a syntax error.",
@@ -55,7 +75,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
     setProblem(null);
     setResult(null);
     setError(null);
-    setCode(STARTER);
+    setCode(loadDraft(problemId));
     api<ProblemDetail>(`/problems/${problemId}`, session)
       .then(setProblem)
       .catch((e: Error) => setError(e.message));
@@ -98,7 +118,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
           <span className="tags">
             {problem.concepts.map((c) => (
               <span key={c.concept_id} className="tag">
-                {c.name}
+                {c.name.replace(/_/g, " ")}
               </span>
             ))}
           </span>
@@ -123,7 +143,10 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
               height="100%"
               defaultLanguage="python"
               value={code}
-              onChange={(v) => setCode(v ?? "")}
+              onChange={(v) => {
+                setCode(v ?? "");
+                saveDraft(problemId, v ?? "");
+              }}
               options={{ minimap: { enabled: false }, fontSize: 14, scrollBeyondLastLine: false }}
             />
           </div>

@@ -35,7 +35,6 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
   return [
     { items: top },
     ...(courseId ? [{ title: "This course", items: course(courseId) }] : []),
-    { title: "You", items: [{ href: "#/account", label: "Account" }, { href: "#/privacy", label: "Privacy" }] },
   ];
 }
 

@@ -99,6 +99,33 @@ a {
   margin-right: auto;
 }
 
+.bar a:not(.brand) {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.bar a:not(.brand):hover,
+.bar a[aria-current="page"] {
+  color: var(--signal);
+  text-decoration: underline;
+}
+
+.bar > * {
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .bar {
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.92rem;
+  }
+
+  .bar button.ghost {
+    padding: 0.3rem 0.2rem;
+  }
+}
+
 .who {
   color: var(--slate);
   overflow-wrap: anywhere;

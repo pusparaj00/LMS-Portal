@@ -40,6 +40,7 @@ export type SubmissionResult = {
 };
 
 const KEY = "lms.session";
+export const DRAFT_PREFIX = "lms.draft.";
 
 export function loadSession(): Session | null {
   try {
@@ -53,7 +54,13 @@ export function loadSession(): Session | null {
 export function saveSession(session: Session | null): void {
   try {
     if (session) sessionStorage.setItem(KEY, JSON.stringify(session));
-    else sessionStorage.removeItem(KEY);
+    else {
+      sessionStorage.removeItem(KEY);
+      // the next person on this browser must not see this student's unsent code
+      Object.keys(sessionStorage)
+        .filter((k) => k.startsWith(DRAFT_PREFIX))
+        .forEach((k) => sessionStorage.removeItem(k));
+    }
   } catch {
     // Storage can be blocked; the session then lasts until the page is reloaded.
   }
