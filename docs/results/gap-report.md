@@ -75,7 +75,7 @@ PDF) in the browser.
 | TR-S-07 (P1) | Configurable retention; deletion on request; 48-hour erasure notice | Done, with one gap: the notice is in the app only, so a student who never signs in is not told ([step-10](step-10.md)). |
 | TR-S-08 (P1) | Breach detection logs and a written breach procedure | Done: audit trail, breach report command and a draft procedure awaiting review ([step-12](step-12.md)). |
 | TR-S-09 (P1) | Full demo on a local model | Not run (same as TR-V-12). The `local` provider now exists (TR-A-04); what is missing is a model installed on this machine. |
-| TR-S-10 (P2) | Adult confirmation or parental consent | Not built. |
+| TR-S-10 (P2) | Adult confirmation or parental consent | Adult confirmation built ([step-34](step-34-adult-confirmation.md)); a verified parental-consent route is not, so under-18s are turned away. |
 
 ### 3.3 Not applicable by design
 
