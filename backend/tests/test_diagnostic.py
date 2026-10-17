@@ -145,3 +145,16 @@ def test_the_correct_answer_is_not_always_the_first_option(client, make_user, pl
         started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
         positions.add([o["text"] for o in started["item"]["options"]].index("right"))
     assert len(positions) > 1
+
+
+def test_a_problem_whose_worked_solution_was_shown_is_not_a_placement_item(client, make_user, placement_course, owner):
+    course_id = placement_course["course_id"]
+    user_id, headers = enrolled_student(client, make_user, course_id)
+    first = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()["item"]
+    with owner.begin() as conn:
+        conn.execute(
+            text("INSERT INTO worked_examples_seen (user_id, problem_id) VALUES (:u, :p)"),
+            {"u": user_id, "p": first["problem_id"]},
+        )
+    again = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()["item"]
+    assert again["problem_id"] != first["problem_id"]

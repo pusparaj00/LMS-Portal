@@ -120,7 +120,13 @@ def _next_item(conn: Connection, state: dict, user_id: int) -> selection.Item | 
     if selection.uncertain_enough_to_stop(vector, len(state["asked"])):
         return None
     theta = selection.eap_theta([(r["a"], r["b"], r["correct"], r["kind"]) for r in state["responses"]])
-    return selection.select_next(_items(conn, state["course_id"]), set(state["asked"]), vector, theta)
+    # a problem whose worked solution the student has seen measures nothing, so it is treated as already asked
+    seen = set(
+        conn.execute(
+            text("SELECT problem_id FROM worked_examples_seen WHERE user_id = :u"), {"u": user_id}
+        ).scalars()
+    )
+    return selection.select_next(_items(conn, state["course_id"]), set(state["asked"]) | seen, vector, theta)
 
 
 @router.post("/start", response_model=DiagnosticStartResponse)

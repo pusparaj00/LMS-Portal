@@ -69,10 +69,11 @@ def location_hint(ctx: ExplainContext) -> Hint:
 
 def worked_example(conn: Connection, ctx: ExplainContext) -> Hint:
     """The reference solution of a *different* problem on the same concept, never a close copy of this one, and never
-    one that is set in an assignment: that would hand over the answer to graded work (F-04)."""
+    one that is set in an assignment: that would hand over the answer to graded work (F-04). The problem shown is
+    recorded, so it is never used afterwards to measure this student as a probe or a placement item."""
     rows = conn.execute(
         text(
-            "SELECT p.title, p.statement, p.reference_solution FROM problems p"
+            "SELECT p.id, p.title, p.statement, p.reference_solution FROM problems p"
             " JOIN problem_concepts pc ON pc.problem_id = p.id AND pc.concept_id = :c"
             " WHERE p.course_id = :course AND p.id <> :p AND p.kind = 'code' AND p.reference_solution IS NOT NULL"
             " AND NOT EXISTS (SELECT 1 FROM assignment_problems ap WHERE ap.problem_id = p.id)"
@@ -83,6 +84,13 @@ def worked_example(conn: Connection, ctx: ExplainContext) -> Hint:
     ).all()
     for row in rows:
         if leak.containment(row.reference_solution, ctx.reference_solution) < ctx.leak_threshold:
+            conn.execute(
+                text(
+                    "INSERT INTO worked_examples_seen (user_id, problem_id) VALUES (:u, :p)"
+                    " ON CONFLICT DO NOTHING"
+                ),
+                {"u": ctx.user_id, "p": row.id},
+            )
             return Hint(3, 3, "example", f"Here is a worked example on a different problem: {row.title}.",
                         example_title=row.title, example_solution=row.reference_solution)
     return Hint(3, 3, "example", "There is no worked example for this concept yet. Ask your instructor.")

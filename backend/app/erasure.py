@@ -23,6 +23,7 @@ _DELETIONS = [
     "DELETE FROM run_results WHERE submission_id IN (SELECT id FROM submissions WHERE user_id = :u)",
     "DELETE FROM submissions WHERE user_id = :u",
     "DELETE FROM chat_messages WHERE user_id = :u",
+    "DELETE FROM worked_examples_seen WHERE user_id = :u",
     "DELETE FROM diagnostic_sessions WHERE user_id = :u",
     "DELETE FROM consents WHERE user_id = :u",
     "DELETE FROM enrollments WHERE user_id = :u",

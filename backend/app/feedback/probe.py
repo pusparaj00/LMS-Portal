@@ -46,6 +46,7 @@ def select_probe(conn: Connection, ctx: ExplainContext) -> Probe | None:
             "   SELECT 1 FROM mastery_events e WHERE e.user_id = :u AND e.evidence_ref LIKE 'probe:%:' || p.id)"
             " AND NOT EXISTS (SELECT 1 FROM submissions s JOIN run_results r ON r.submission_id = s.id"
             "   WHERE s.user_id = :u AND s.problem_id = p.id AND r.status = 'passed')"
+            " AND NOT EXISTS (SELECT 1 FROM worked_examples_seen w WHERE w.user_id = :u AND w.problem_id = p.id)"
         ),
         {"c": ctx.primary_concept_id, "w": MIN_CONCEPT_WEIGHT, "course": ctx.course_id, "cur": ctx.problem_id,
          "u": ctx.user_id},

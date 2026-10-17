@@ -59,6 +59,10 @@ def fill(owner, user_id: int, course, lms: bool = False) -> int:
             {"g": uuid.uuid4().hex, "p": course["problem_id"], "s": submission},
         )
         conn.execute(text("INSERT INTO chat_messages (user_id, role, content) VALUES (:u, 'user', 'hi')"), {"u": user_id})
+        conn.execute(
+            text("INSERT INTO worked_examples_seen (user_id, problem_id) VALUES (:u, :p)"),
+            {"u": user_id, "p": course["problem_id"]},
+        )
         conn.execute(text("INSERT INTO diagnostic_sessions (user_id) VALUES (:u)"), {"u": user_id})
         conn.execute(text("INSERT INTO enrollments (user_id, course_id) VALUES (:u, :c)"), {"u": user_id, "c": course["id"]})
         conn.execute(

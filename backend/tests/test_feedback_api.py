@@ -302,6 +302,22 @@ def test_hints_are_only_for_the_owner(client, make_user, world):
     assert client.post(f"{API}/submissions/{sid}/hint", headers=other).status_code == 404
 
 
+def test_a_problem_whose_worked_solution_was_shown_is_never_used_as_a_probe(client, make_user, world, owner, llm):
+    """Otherwise a student could read the worked example and then answer that same problem as a probe for extra
+    mastery weight."""
+    user_id, headers = new_student(client, make_user, world)
+    sid = failed_submission(client, world, headers)
+    shown = [client.post(f"{API}/submissions/{sid}/hint", headers=headers).json() for _ in range(3)][-1]
+    assert shown["example_title"] == "Sum a list"
+    with owner.connect() as conn:
+        seen = conn.execute(
+            text("SELECT problem_id FROM worked_examples_seen WHERE user_id = :u"), {"u": user_id}
+        ).scalars().all()
+    assert seen == [world["q"]]
+    llm(FakeLLM(good_reply(owner, sid, world)))
+    assert explain(client, headers, sid).json()["probe"]["problem_id"] == world["m"]
+
+
 def test_a_probe_from_the_bank_moves_the_mastery_bar(client, make_user, world, owner, llm):
     user_id, headers = new_student(client, make_user, world)
     sid = failed_submission(client, world, headers)
