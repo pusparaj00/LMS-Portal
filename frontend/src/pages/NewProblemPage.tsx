@@ -16,6 +16,16 @@ const DIFFICULTY = [
 const pretty = (name: string) => name.replace(/_/g, " ");
 const blankTest = (): TestRow => ({ input: "", expected: "", hidden: false, category: "basic" });
 
+type Draft = {
+  title: string;
+  statement: string;
+  reference_solution: string;
+  test_cases: TestRow[];
+  concept_id: number;
+  wrong_category: string;
+  checks: string[];
+};
+
 type Source = {
   title: string;
   statement: string;
@@ -43,6 +53,9 @@ export function NewProblemPage({ session, courseId, problemId }: { session: Sess
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [draftConcept, setDraftConcept] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const [draftChecks, setDraftChecks] = useState<string[] | null>(null);
 
   useEffect(() => {
     api<Concept[]>(`/courses/${courseId}/concepts`, session)
@@ -69,6 +82,32 @@ export function NewProblemPage({ session, courseId, problemId }: { session: Sess
 
   const update = (index: number, change: Partial<TestRow>) =>
     setTests((rows) => rows.map((row, i) => (i === index ? { ...row, ...change } : row)));
+
+  /** TR-L-10: fill the form with a model-written problem that already passed both sandbox checks; the instructor
+   * reviews and edits it, and nothing is stored until they press Save. */
+  async function draft() {
+    setDrafting(true);
+    setError(null);
+    setDraftChecks(null);
+    try {
+      const d = await api<Draft>("/problems/draft", session, {
+        body: { course_id: courseId, concept_id: Number(draftConcept) },
+        onBusy: (attempt) => setNotice(`The sandbox is busy, trying again (${attempt} of ${BUSY_RETRIES})…`),
+      });
+      setTitle(d.title);
+      setStatement(d.statement);
+      setSolution(d.reference_solution);
+      setTests(d.test_cases);
+      setWeights({ [d.concept_id]: 1 });
+      setDifficulty("");
+      setDraftChecks(d.checks);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "The server could not be reached.");
+    } finally {
+      setDrafting(false);
+      setNotice(null);
+    }
+  }
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -115,6 +154,45 @@ export function NewProblemPage({ session, courseId, problemId }: { session: Sess
         Students' programs read from standard input and print their answer. Before the problem is saved, your reference
         solution is run in the sandbox against every test and must pass them all.
       </p>
+      {!problemId && concepts.length > 0 && (
+        <section className="panel draft-panel" aria-label="Draft with AI">
+          <h2>Start from an AI draft</h2>
+          <p>
+            A model writes a problem for one concept. It is offered only if its reference solution passes all its tests
+            and a version with a typical mistake fails them, both run in the sandbox. Read it and change anything before
+            you save.
+          </p>
+          <div className="inline-form">
+            <label>
+              Concept
+              <select value={draftConcept} onChange={(e) => setDraftConcept(e.target.value)}>
+                <option value="">Choose a concept</option>
+                {concepts.map((c) => (
+                  <option key={c.concept_id} value={c.concept_id}>
+                    {pretty(c.name)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" onClick={draft} disabled={drafting || !draftConcept}>
+              {drafting ? "Writing and checking…" : "Draft a problem"}
+            </button>
+          </div>
+          {drafting && <p role="status">This takes up to half a minute: the model writes it, then the sandbox runs both solutions.</p>}
+          {draftChecks && (
+            <div role="status" className="notice">
+              <p>
+                <strong>Draft placed in the form below. It is not saved yet.</strong>
+              </p>
+              <ul>
+                {draftChecks.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
       {problemId && (
         <p className="notice">
           Saving an edit marks the problem as needing review again. Submissions already made keep the results they had;

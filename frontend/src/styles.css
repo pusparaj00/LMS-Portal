@@ -452,6 +452,14 @@ main:focus {
   color: var(--slate);
 }
 
+.draft-panel {
+  margin: 1rem 0 1.5rem;
+}
+
+.draft-panel h2 {
+  margin-top: 0;
+}
+
 .quiet-actions {
   margin-top: 2rem;
   font-size: 0.9rem;
