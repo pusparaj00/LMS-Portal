@@ -90,6 +90,12 @@
         "expected": "i\n",
         "hidden": true,
         "category": "tie"
+      },
+      {
+        "input": "ccbbaa\n",
+        "expected": "a\n",
+        "hidden": true,
+        "category": "tie"
       }
     ]
   },
