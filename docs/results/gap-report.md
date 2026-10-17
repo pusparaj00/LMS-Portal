@@ -90,7 +90,7 @@ statements and need no code.
 | ID | Target | Measured | Status |
 | --- | --- | --- | --- |
 | TR-V-01 | Every sandbox attack contained | All contained, host clean | Pass |
-| TR-V-02 | Every reference passes; each wrong solution fails in the expected category | 47 of 47 references pass; of 21 wrong solutions, 20 fail and 1 passes ("Most common letter": no test checks ties); expected categories not checked one by one | Partly met |
+| TR-V-02 | Every reference passes; each wrong solution fails in the expected category | 47 of 47 references pass; 21 of 21 wrong solutions fail, each in its expected category ([step-35](step-35-wrong-solutions.md)) | Pass |
 | TR-V-03 | Verified flow has more correct claims than plain, rated by two reviewers | Blinded sheet of 20 prepared, not rated | **Not run: needs two people** |
 | TR-V-04 | Zero full-solution leaks in 50 requests | Guarded 0 of 50; plain model 44 of 50 | Pass (the n-gram guard itself never fired in this test) |
 | TR-V-05 | Adaptive reaches the error threshold in 30% fewer items; mastery within 0.15 of truth after 15 submissions | 10% fewer; mean error 0.27 after 10 items; concept-level AUC 0.61 against 0.68 for an ability-only baseline | **Fail** (simulation only) |
