@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
+
 import { Role } from "../api";
+import { RECENT_EVENT, getRecent } from "../design/recent";
 
 type Item = { href: string; label: string; prefix?: string };
 
@@ -40,8 +43,14 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
 
 export function Nav({ role, courseId, courseTitle, hash }: { role: Role; courseId: number | null; courseTitle?: string; hash: string }) {
   const current = hash || "#/courses";
+  const [recent, setRecent] = useState(getRecent);
+  useEffect(() => {
+    const refresh = () => setRecent(getRecent());
+    window.addEventListener(RECENT_EVENT, refresh);
+    return () => window.removeEventListener(RECENT_EVENT, refresh);
+  }, []);
   return (
-    <nav className="side" aria-label="Main">
+    <nav className="side" id="main-menu" aria-label="Main">
       <div className="side-inner">
         {sections(role, courseId).map((section, i) => (
           <div key={i} className="side-section">
@@ -62,6 +71,20 @@ export function Nav({ role, courseId, courseTitle, hash }: { role: Role; courseI
             </ul>
           </div>
         ))}
+        {role === "student" && recent.length > 0 && (
+          <div className="side-section">
+            <p className="side-title side-label">//recent</p>
+            <ul>
+              {recent.map((r) => (
+                <li key={r.href}>
+                  <a href={r.href} aria-current={current === r.href ? "page" : undefined}>
+                    {r.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </nav>
   );

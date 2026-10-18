@@ -2,6 +2,7 @@ import Editor from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 
 import { ApiError, BUSY_RETRIES, DRAFT_PREFIX, ProblemDetail, Session, SubmissionResult, api } from "../api";
+import { recordRecent } from "../design/recent";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { HelpPolicy } from "./HelpPolicy";
 
@@ -77,7 +78,10 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
     setError(null);
     setCode(loadDraft(problemId));
     api<ProblemDetail>(`/problems/${problemId}`, session)
-      .then(setProblem)
+      .then((p) => {
+        setProblem(p);
+        recordRecent({ href: `#/problem/${problemId}`, title: p.title });
+      })
       .catch((e: Error) => setError(e.message));
   }, [problemId]);
 

@@ -1,11 +1,12 @@
 import { FormEvent, useState } from "react";
 
 import { ApiError, Role, Session, api } from "../api";
+import { PublicBar } from "./HomePage";
 
 type Token = { access_token: string; role: Role };
 
-export function LoginPage({ onSession }: { onSession: (s: Session) => void }) {
-  const [mode, setMode] = useState<"login" | "register">("login");
+export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s: Session) => void; initialMode?: "login" | "register" }) {
+  const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,8 @@ export function LoginPage({ onSession }: { onSession: (s: Session) => void }) {
   }
 
   return (
+    <div className="pub">
+    <PublicBar />
     <main className="narrow">
       <h1>{mode === "login" ? "Log in" : "Create a student account"}</h1>
       <form onSubmit={submit} className="stack">
@@ -55,6 +58,10 @@ export function LoginPage({ onSession }: { onSession: (s: Session) => void }) {
           {mode === "login" ? "Create a student account" : "Log in"}
         </button>
       </p>
+      <p>
+        <a href="#/">Back to the home page</a>
+      </p>
     </main>
+    </div>
   );
 }

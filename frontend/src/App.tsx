@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ApiError, Course, Session, api, loadSession, saveSession } from "./api";
 import { AccountPage, Me } from "./pages/AccountPage";
@@ -9,6 +9,7 @@ import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { DashboardPage, WhyPage } from "./pages/DashboardPage";
 import { GradebookPage } from "./pages/GradebookPage";
+import { HomePage } from "./pages/HomePage";
 import { NewProblemPage } from "./pages/NewProblemPage";
 import { Nav } from "./pages/Nav";
 import { NotesPage } from "./pages/NotesPage";
@@ -20,6 +21,11 @@ import { StudentWorkPage, SubmissionView } from "./pages/StudentWorkPage";
 import { ErasureBanner, ErasureState } from "./pages/ErasureSection";
 import { ConsentState, PrivacyPage } from "./pages/PrivacyPage";
 import { ProblemPage } from "./pages/ProblemPage";
+import { ThemeToggle } from "./design/ThemeToggle";
+import { clearRecent } from "./design/recent";
+
+// Addresses a signed-out visitor can see; anything else is a deep link that waits behind the login page.
+const PUBLIC_HASHES = new Set(["", "#/", "#/login", "#/register", "#/features", "#/walkthroughs", "#/roles", "#/status", "#/faq"]);
 
 function useHash(): string {
   const [hash, setHash] = useState(window.location.hash);
@@ -44,6 +50,10 @@ export function App() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [lastCourse, setLastCourse] = useState<number | null>(null);
   const hash = useHash();
+  const returnTo = useRef<string | null>(null);
+  // null = automatic: the menu gives the editor room on a problem page and is open elsewhere (ux-plan 3)
+  const [menuPref, setMenuPref] = useState<boolean | null>(null);
+  const menuOpen = menuPref ?? !hash.startsWith("#/problem/");
   // The course menu stays on screen while a problem of that course is open, since a problem's address has no course id.
   const hashCourse = hash.match(/^#\/(?:course|class|mastery|placement)\/(\d+)/);
   useEffect(() => {
@@ -52,12 +62,15 @@ export function App() {
   }, [hash]);
 
   const update = (next: Session | null) => {
+    if (!next) clearRecent();
     saveSession(next);
     setSession(next);
     setConsent(null);
     setErasure(null);
     setMe(null);
-    window.location.hash = !next ? "#/login" : next.role === "admin" ? "#/admin" : "#/courses";
+    const target = returnTo.current;
+    returnTo.current = null;
+    window.location.hash = !next ? "#/login" : target ?? (next.role === "admin" ? "#/admin" : "#/courses");
   };
 
   // Who is signed in, and whether they must choose a new password before anything else (F-01).
@@ -107,7 +120,13 @@ export function App() {
         }}
       />
     );
-  if (!session) return <LoginPage onSession={update} />;
+  if (!session) {
+    if (!PUBLIC_HASHES.has(hash)) returnTo.current = hash;
+    else if (hash !== "#/login" && hash !== "#/register") returnTo.current = null;
+    if (returnTo.current || hash === "#/login" || hash === "#/register")
+      return <LoginPage key={hash} onSession={update} initialMode={hash === "#/register" ? "register" : "login"} />;
+    return <HomePage />;
+  }
   if (!me) return <p>Loading…</p>;
   if (me.must_change_password)
     return (
@@ -120,6 +139,7 @@ export function App() {
         </p>
       </main>
     );
+  if (hash === "#/home") return <HomePage dashboardHref={session.role === "admin" ? "#/admin" : "#/courses"} />;
   const waitingForConsent = session.role === "student" && consent === null;
   const mustAgree = session.role === "student" && consent !== null && !consent.accepted;
 
@@ -152,6 +172,9 @@ export function App() {
         Skip to content
       </a>
       <header className="bar">
+        <button className="ghost" aria-expanded={menuOpen} aria-controls="main-menu" onClick={() => setMenuPref(!menuOpen)}>
+          Menu
+        </button>
         <a className="brand" href={session.role === "admin" ? "#/admin" : "#/courses"}>
           Adaptive LMS
         </a>
@@ -166,13 +189,14 @@ export function App() {
         <a href="#/privacy" aria-current={hash === "#/privacy" ? "page" : undefined}>
           Privacy
         </a>
+        <ThemeToggle />
         <button className="ghost" onClick={() => update(null)}>
           Log out
         </button>
       </header>
       {erasure && <ErasureBanner state={erasure} />}
-      <div className="shell">
-        {!mustAgree && !waitingForConsent && (
+      <div className={menuOpen ? "shell" : "shell menu-closed"}>
+        {menuOpen && !mustAgree && !waitingForConsent && (
           <Nav
             role={session.role}
             courseId={lastCourse}
