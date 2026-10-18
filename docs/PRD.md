@@ -68,6 +68,7 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-11 | Submissions run in an isolated sandbox against hidden test cases | P0 |
 | F-12 | Each run returns structured evidence: passed and failed tests, error type, runtime, timeout | P0 |
 | F-13 | Every problem is tagged with one or more concepts and test cases | P0 |
+| F-14 | A Run button runs the code once on input the user types and shows the output and any error; nothing is stored or graded and no test case is revealed | P1 |
 | **Cold-start diagnostic** |  |  |
 | F-20 | A new student gets an adaptive placement test of 8 to 10 items | P0 |
 | F-21 | Item selection maximizes information about the mastery vector, starting from a population prior | P0 |
