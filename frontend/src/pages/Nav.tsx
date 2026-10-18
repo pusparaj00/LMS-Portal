@@ -17,11 +17,12 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
     const staff: Item[] = [
       { href: `#/course/${id}`, label: "Problems", prefix: `#/course/${id}/problem/` },
       { href: `#/class/${id}`, label: "Class overview", prefix: `#/class/${id}/` },
+      { href: `#/course/${id}/analytics`, label: "Analytics" },
       { href: `#/course/${id}/gradebook`, label: "Gradebook" },
     ];
     if (role === "instructor")
       staff.splice(
-        2,
+        3,
         0,
         { href: `#/course/${id}/assignments`, label: "Assignments" },
         { href: `#/course/${id}/notes`, label: "Course notes" },
@@ -34,7 +35,11 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
           { href: "#/admin", label: "Users" },
           { href: "#/courses", label: "All courses" },
         ]
-      : [{ href: "#/courses", label: "My courses" }];
+      : [
+          { href: "#/dashboard", label: "Dashboard" },
+          { href: "#/courses", label: "My courses" },
+          ...(role === "student" ? [{ href: "#/grades", label: "Grades" }] : []),
+        ];
   return [
     { items: top },
     ...(courseId ? [{ title: "This course", items: course(courseId) }] : []),

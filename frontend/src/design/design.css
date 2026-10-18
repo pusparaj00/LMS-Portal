@@ -771,3 +771,166 @@ a.evidence {
     row-gap: 0.1rem;
   }
 }
+
+/* ---- role dashboards (F-63, F-64) ---- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+
+.stat-value {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-note {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--slate);
+}
+
+.dash-wide {
+  max-width: 64rem;
+}
+
+.dash-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.course-cards {
+  list-style: none;
+  margin: 0.5rem 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.75rem;
+}
+
+.course-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+
+.course-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.course-card .meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--slate);
+}
+
+.course-card .links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.course-card .strip {
+  grid-template-columns: minmax(4.5rem, 7rem) minmax(2rem, 1fr) 2.4rem auto;
+  font-size: 0.85rem;
+}
+
+.due-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.due-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.15rem 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.due-list li:first-child {
+  border-top: 0;
+}
+
+.due-list .sub {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--slate);
+}
+
+.chart-box {
+  margin: 0;
+  height: 16rem;
+}
+
+.chart-caption {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.grades-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.grades-table th,
+.grades-table td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.grades-table td.num,
+.grades-table th.num {
+  text-align: right;
+}
+
+.rating-form {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 30rem;
+}
+
+.rating-form label {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.9rem;
+}
+
+.review {
+  margin: 0;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.review:first-child {
+  border-top: 0;
+}
+
+.review p {
+  margin: 0.15rem 0 0;
+  white-space: pre-wrap;
+}

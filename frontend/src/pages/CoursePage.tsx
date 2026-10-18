@@ -5,6 +5,7 @@ import { Dashboard } from "../types";
 import { Announcements } from "./Announcements";
 import { StudentAssignments } from "./AssignmentsPage";
 import { CourseSettings } from "./CourseSettings";
+import { RatingsSection } from "./RatingsSection";
 
 const pretty = (name: string) => name.replace(/_/g, " ");
 const sentence = (name: string) => pretty(name).charAt(0).toUpperCase() + pretty(name).slice(1);
@@ -143,6 +144,7 @@ export function CoursePage({ session, courseId, title }: { session: Session; cou
       {session.role === "instructor" && <CourseSettings session={session} courseId={courseId} />}
       <Announcements session={session} courseId={courseId} />
       {student && <StudentAssignments session={session} courseId={courseId} />}
+      {student && <RatingsSection session={session} courseId={courseId} />}
       {problems === null && !error && <p className="empty">Loading problems…</p>}
       {problems && coding.length === 0 && <p className="empty">This course has no coding problems yet.</p>}
 
