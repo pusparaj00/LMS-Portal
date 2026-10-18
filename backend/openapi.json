@@ -1004,6 +1004,59 @@
         "title": "CourseRename",
         "type": "object"
       },
+      "CustomRun": {
+        "properties": {
+          "code": {
+            "maxLength": 50000,
+            "title": "Code",
+            "type": "string"
+          },
+          "problem_id": {
+            "title": "Problem Id",
+            "type": "integer"
+          },
+          "stdin": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Stdin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "problem_id",
+          "code"
+        ],
+        "title": "CustomRun",
+        "type": "object"
+      },
+      "CustomRunResult": {
+        "properties": {
+          "runtime_ms": {
+            "title": "Runtime Ms",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stderr": {
+            "title": "Stderr",
+            "type": "string"
+          },
+          "stdout": {
+            "title": "Stdout",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "stdout",
+          "stderr",
+          "runtime_ms"
+        ],
+        "title": "CustomRunResult",
+        "type": "object"
+      },
       "Dashboard": {
         "properties": {
           "concepts": {
@@ -8129,6 +8182,53 @@
           }
         ],
         "summary": "Run Code",
+        "tags": [
+          "submissions"
+        ]
+      }
+    },
+    "/api/v1/submissions/run-custom": {
+      "post": {
+        "description": "F-14: run the code once on the caller's own input. Nothing is stored or graded, and no test case is involved.",
+        "operationId": "run_custom_api_v1_submissions_run_custom_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomRun"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomRunResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Run Custom",
         "tags": [
           "submissions"
         ]

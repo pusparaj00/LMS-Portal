@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,19 +7,30 @@ from sqlalchemy import text
 
 from app import ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, current_user
-from app.consent import consented_student
+from app.consent import REQUIRED_MESSAGE, consented_student
+from app.consent import status as consent_status
 from app.errors import sandbox_error
 from app.grading import Grade, TestSpec, grade
 from app.mastery import client as mastery
-from app.sandbox import SandboxUnavailable
-from app.schemas import SubmissionCreate, SubmissionResult, VisibleTest
+from app.sandbox import SandboxUnavailable, run_batch
+from app.schemas import CustomRun, CustomRunResult, SubmissionCreate, SubmissionResult, VisibleTest
 
 log = logging.getLogger("app.submissions")
+OUTPUT_SHOWN = 10_000
+ERROR_SHOWN = 2_000
+RUNNER_PATH = re.compile(r"/work/[0-9a-f]+/")  # the runner's scratch directory, not the student's business
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 Student = Annotated[CurrentUser, Depends(consented_student)]
 
 
-def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) -> list[TestSpec]:
+def _runner(user: Annotated[CurrentUser, Depends(current_user)], conn: Conn) -> CurrentUser:
+    """Anyone who may open the problem may try code on it; a student first has to have agreed to the notice."""
+    if user.role == "student" and not consent_status(conn, user.id).accepted:
+        raise HTTPException(403, REQUIRED_MESSAGE)
+    return user
+
+
+def _check_problem(conn, problem_id: int, user: CurrentUser) -> None:
     problem = conn.execute(
         text("SELECT course_id, kind, archived_at FROM problems WHERE id = :id"), {"id": problem_id}
     ).first()
@@ -26,6 +38,10 @@ def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) ->
         raise HTTPException(404, "problem not found")
     if problem.kind != "code":
         raise HTTPException(422, "this item is not a coding problem")
+
+
+def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) -> list[TestSpec]:
+    _check_problem(conn, problem_id, user)
     where = "AND NOT hidden" if visible_only else ""
     rows = conn.execute(
         text(
@@ -77,6 +93,23 @@ def run_code(body: SubmissionCreate, user: Student, conn: Conn):
     ratelimit.check("run", user.id)
     tests = _load_tests(conn, body.problem_id, user, visible_only=True)
     return _result(None, body.problem_id, _grade(body.code, tests))
+
+
+@router.post("/run-custom", response_model=CustomRunResult)
+def run_custom(body: CustomRun, user: Annotated[CurrentUser, Depends(_runner)], conn: Conn):
+    """F-14: run the code once on the caller's own input. Nothing is stored or graded, and no test case is involved."""
+    ratelimit.check("run_custom", user.id)
+    _check_problem(conn, body.problem_id, user)
+    try:
+        run = run_batch(body.code, [body.stdin])[0]
+    except SandboxUnavailable as exc:
+        raise sandbox_error(exc) from None
+    return CustomRunResult(
+        status=run.status,
+        stdout=run.stdout[:OUTPUT_SHOWN],
+        stderr=RUNNER_PATH.sub("", run.stderr)[:ERROR_SHOWN],
+        runtime_ms=run.runtime_ms,
+    )
 
 
 @router.post("", response_model=SubmissionResult)

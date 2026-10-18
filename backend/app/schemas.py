@@ -421,6 +421,19 @@ class SubmissionCreate(BaseModel):
     code: Text = Field(max_length=50_000, examples=["print(sum(map(int, input().split())))"])
 
 
+class CustomRun(BaseModel):
+    problem_id: int
+    code: Text = Field(max_length=50_000)
+    stdin: Text = Field(default="", max_length=10_000)
+
+
+class CustomRunResult(BaseModel):
+    status: str
+    stdout: str
+    stderr: str
+    runtime_ms: int
+
+
 class MasteryChange(BaseModel):
     concept: str
     before: float
