@@ -69,6 +69,14 @@ def fill(owner, user_id: int, course, lms: bool = False) -> int:
             text("INSERT INTO ratings (course_id, user_id, course_rating, instructor_rating) VALUES (:c, :u, 4, 5)"),
             {"u": user_id, "c": course["id"]},
         )
+        module = conn.execute(
+            text("INSERT INTO modules (course_id, title, position) VALUES (:c, 'm', 0) RETURNING id"), {"c": course["id"]}
+        ).scalar_one()
+        item = conn.execute(
+            text("INSERT INTO content_items (module_id, kind, title, body, position) VALUES (:m, 'text', 't', 'b', 0)"
+                 " RETURNING id"), {"m": module},
+        ).scalar_one()
+        conn.execute(text("INSERT INTO item_completions (user_id, item_id) VALUES (:u, :i)"), {"u": user_id, "i": item})
         conn.execute(
             text("INSERT INTO mastery (user_id, concept_id, p_known) VALUES (:u, :c, 0.4)"), {"u": user_id, "c": concept}
         )

@@ -91,10 +91,20 @@ def my_stats(user: Student, conn: Conn):
     upcoming = []
     for c in courses:
         future = [a for a in c.assignments if a.due_at > now]
+        content = conn.execute(
+            text(
+                "SELECT count(*) AS total, count(c.user_id) AS done FROM content_items i"
+                " JOIN modules m ON m.id = i.module_id"
+                " LEFT JOIN item_completions c ON c.item_id = i.id AND c.user_id = :u"
+                " WHERE m.course_id = :c AND m.published AND i.published"
+            ),
+            {"u": user.id, "c": c.course_id},
+        ).one()
         progress.append(CourseProgress(
             course_id=c.course_id, title=c.title, assignments=len(c.assignments),
             completed=sum(a.status == "complete" for a in c.assignments), score=c.score, possible=c.possible,
             percent=c.percent, next_due_at=min((a.due_at for a in future), default=None),
+            content_done=content.done, content_total=content.total,
         ))
         upcoming += [
             UpcomingAssignment(

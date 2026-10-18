@@ -5,6 +5,8 @@ import re
 MAX_BODY_BYTES = 600_000  # a 50,000 character submission is well under this even in UTF-8
 NOTES_PATH = re.compile(r"^/api/v1/courses/\d+/documents/?$")
 MAX_NOTES_BODY_BYTES = 6_000_000  # a PDF of up to 4 MB, sent as base64 inside JSON (F-03)
+LESSON_FILE_PATH = re.compile(r"^/api/v1/courses/\d+/modules/\d+/items/?$")
+MAX_LESSON_BODY_BYTES = 6_200_000  # a lesson PDF of up to 4.5 MB as base64 in JSON (F-67); the proxy allows 6 MiB
 
 
 class PayloadTooLarge(Exception):
@@ -20,9 +22,14 @@ class BodySizeLimit:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        # Only the notes upload may be large (a PDF); everything else keeps the tight limit.
-        notes = scope["method"] == "POST" and NOTES_PATH.match(scope["path"])
-        limit = max(self.max_bytes, MAX_NOTES_BODY_BYTES) if notes else self.max_bytes
+        # Only the notes and lesson-file uploads may be large (a PDF); everything else keeps the tight limit.
+        upload = scope["method"] == "POST"
+        if upload and NOTES_PATH.match(scope["path"]):
+            limit = max(self.max_bytes, MAX_NOTES_BODY_BYTES)
+        elif upload and LESSON_FILE_PATH.match(scope["path"]):
+            limit = max(self.max_bytes, MAX_LESSON_BODY_BYTES)
+        else:
+            limit = self.max_bytes
         declared = dict(scope["headers"]).get(b"content-length")
         if declared is not None and declared.isdigit() and int(declared) > limit:
             await self._reject(send, limit)

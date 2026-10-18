@@ -92,6 +92,11 @@ def make_user(owner):
             f"DELETE FROM assignments WHERE course_id IN ({courses})",
             f"DELETE FROM announcements WHERE course_id IN ({courses})",
             f"DELETE FROM ratings WHERE course_id IN ({courses})",
+            "DELETE FROM item_completions WHERE user_id = ANY(:ids)",
+            f"DELETE FROM item_completions WHERE item_id IN (SELECT i.id FROM content_items i"
+            f" JOIN modules m ON m.id = i.module_id WHERE m.course_id IN ({courses}))",
+            f"DELETE FROM content_items WHERE module_id IN (SELECT id FROM modules WHERE course_id IN ({courses}))",
+            f"DELETE FROM modules WHERE course_id IN ({courses})",
             f"DELETE FROM test_cases WHERE problem_id IN ({problems})",
             f"DELETE FROM problem_concepts WHERE problem_id IN ({problems})",
             f"DELETE FROM item_options WHERE problem_id IN ({problems})",

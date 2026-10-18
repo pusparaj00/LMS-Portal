@@ -765,6 +765,8 @@ class CourseProgress(BaseModel):
     possible: float
     percent: float | None
     next_due_at: datetime | None
+    content_done: int
+    content_total: int
 
 
 class UpcomingAssignment(BaseModel):
@@ -879,3 +881,115 @@ class CourseRatings(BaseModel):
     summary: RatingSummary
     mine: RatingOut | None
     reviews: list[RatingOut]
+
+
+ItemKind = Literal["text", "link", "video", "file"]
+LINK_PATTERN = re.compile(r"^https?://[^\s]+$")
+MAX_PDF_BASE64 = 6_000_000  # about 4.5 MB of file; the proxy's own limit is 6 MiB for the whole request
+
+
+def _link(value: str | None) -> str | None:
+    if value is not None and not LINK_PATTERN.match(value.strip()):
+        raise ValueError("a link must start with http:// or https:// and contain no spaces")
+    return value.strip() if value else value
+
+
+class ModuleIn(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
+
+    @model_validator(mode="after")
+    def _not_blank(self):
+        if not self.title.strip():
+            raise ValueError("a module needs a title")
+        return self
+
+
+class ModuleUpdate(BaseModel):
+    title: Text | None = Field(default=None, min_length=1, max_length=200)
+    published: bool | None = None
+
+    @model_validator(mode="after")
+    def _something_to_change(self):
+        if self.title is None and self.published is None:
+            raise ValueError("send a title or published")
+        if self.title is not None and not self.title.strip():
+            raise ValueError("a module needs a title")
+        return self
+
+
+class ItemIn(BaseModel):
+    """A text item has `body`; a link or video item has `url`; a file item has `pdf_base64` and `file_name`."""
+
+    kind: ItemKind
+    title: Text = Field(min_length=1, max_length=200)
+    body: Text | None = Field(default=None, min_length=1, max_length=20_000, description="plain text, shown as typed")
+    url: Text | None = Field(default=None, max_length=2000)
+    pdf_base64: str | None = Field(default=None, min_length=1, max_length=MAX_PDF_BASE64)
+    file_name: Text | None = Field(default=None, min_length=1, max_length=200)
+    published: bool = True
+
+    @model_validator(mode="after")
+    def _fields_match_the_kind(self):
+        if not self.title.strip():
+            raise ValueError("an item needs a title")
+        given = {
+            "body": self.body is not None, "url": self.url is not None,
+            "pdf_base64": self.pdf_base64 is not None, "file_name": self.file_name is not None,
+        }
+        wanted = {
+            "text": {"body"}, "link": {"url"}, "video": {"url"}, "file": {"pdf_base64", "file_name"},
+        }[self.kind]
+        if {name for name, present in given.items() if present} != wanted:
+            raise ValueError(f"a {self.kind} item takes exactly: {', '.join(sorted(wanted))}")
+        if self.body is not None and not self.body.strip():
+            raise ValueError("the text must not be blank")
+        self.url = _link(self.url)
+        return self
+
+
+class ItemUpdate(BaseModel):
+    title: Text | None = Field(default=None, min_length=1, max_length=200)
+    body: Text | None = Field(default=None, min_length=1, max_length=20_000)
+    url: Text | None = Field(default=None, max_length=2000)
+    published: bool | None = None
+
+    @model_validator(mode="after")
+    def _something_to_change(self):
+        if all(v is None for v in (self.title, self.body, self.url, self.published)):
+            raise ValueError("send something to change")
+        if (self.title is not None and not self.title.strip()) or (self.body is not None and not self.body.strip()):
+            raise ValueError("the title and text must not be blank")
+        self.url = _link(self.url)
+        return self
+
+
+class Move(BaseModel):
+    direction: Literal["up", "down"]
+
+
+class ItemOut(BaseModel):
+    id: int
+    kind: ItemKind
+    title: str
+    body: str | None
+    url: str | None
+    file_name: str | None
+    file_size: int | None
+    published: bool
+    completed: bool | None = None  # only for a student: whether they have marked it done
+
+
+class ModuleOut(BaseModel):
+    id: int
+    title: str
+    published: bool
+    items: list[ItemOut]
+    total: int
+    completed: int | None = None  # a student's own count
+    completion_rate: float | None = None  # staff: share of the class's possible completions
+
+
+class ContentOut(BaseModel):
+    modules: list[ModuleOut]
+    total: int
+    completed: int | None = None
