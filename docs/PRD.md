@@ -97,6 +97,9 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-60 | Student dashboard: mastery per concept, recent submissions, recommended next problem | P0 |
 | F-61 | Instructor dashboard: class mastery heatmap and common failure patterns | P1 |
 | F-62 | Instructors review, edit and approve stored explanations and set the hint and leak policy per problem | P1 |
+| F-63 | Student dashboard stats and grades page: enrolled courses, average assignment score, upcoming assignments, progress per course and every assignment score, from the student's own data only | P1 |
+| F-64 | Instructor dashboard stats and course analytics: courses, students, upcoming assignments, submissions in the last 7 days, completion rate and score distribution, for the instructor's own courses only | P1 |
+| F-65 | A student enrolled in a course rates the course and its instructor from 1 to 5 with an optional text review; instructors see averages and anonymous reviews for their own courses | P1 |
 | F-70 | Launch from Moodle or Canvas through LTI 1.3 so the system fits an existing LMS | P2 |
 
 ## 5. Non-functional requirements

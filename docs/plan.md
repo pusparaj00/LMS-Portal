@@ -136,6 +136,8 @@ The final-year timeline after 21 Oct is not fixed yet, so these phases use weeks
 | 7. Hardening and compliance | Weeks 3 to 5 | Make the system safe to run beyond a demo | Consent notice, minimised prompts, retention and deletion, breach procedure (TR-S-05 to TR-S-08); rate limits and secret scanning; backups; move to a production host; start LTI 1.3 (TR-A-09) | Security tests pass, and the institution's data-protection contact has reviewed the consent and retention design before the May 2027 duties apply |
 | 8. Extensions | Weeks 5 onwards | Widen coverage and strengthen the claim | C and Java runtimes and question banks; LLM-generated probes that pass a reference-solution check (TR-L-10); code-aware tracing in the style of Code-DKT and student-question tracing (TR-M-08, TR-M-12); the recommender and LMS-query routes; a provisional patent filing and then a paper | Each extension has its own test from the TRD before it is claimed |
 
+**Step 41, dashboards (F-63, F-64, F-65).** Student and instructor dashboards with stats, analytics, a grades page and course ratings, modelled on the Edu-Hub portal's features, using this system's own data and access rules. Gate: each figure comes from a database query, role and ownership tests pass, and both roles are checked in the browser.
+
 **Order matters.** Phase 6 comes before Phase 8, because the extensions are only worth building if the core claims hold on real data.
 
 ## 9. Cut lines and working agreements
