@@ -4,6 +4,7 @@ import { ApiError, Problem, Session, api } from "../api";
 import { Dashboard } from "../types";
 import { Announcements } from "./Announcements";
 import { StudentAssignments } from "./AssignmentsPage";
+import { CourseContent } from "./CourseContent";
 import { CourseSettings } from "./CourseSettings";
 import { RatingsSection } from "./RatingsSection";
 
@@ -143,6 +144,7 @@ export function CoursePage({ session, courseId, title }: { session: Session; cou
       {student && problems && <StudentHome session={session} courseId={courseId} problems={coding} />}
       {session.role === "instructor" && <CourseSettings session={session} courseId={courseId} />}
       <Announcements session={session} courseId={courseId} />
+      <CourseContent session={session} courseId={courseId} />
       {student && <StudentAssignments session={session} courseId={courseId} />}
       {student && <RatingsSection session={session} courseId={courseId} />}
       {problems === null && !error && <p className="empty">Loading problems…</p>}

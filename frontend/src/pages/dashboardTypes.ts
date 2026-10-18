@@ -25,6 +25,8 @@ export type StudentStats = {
     possible: number;
     percent: number | null;
     next_due_at: string | null;
+    content_done: number;
+    content_total: number;
   }[];
   upcoming: Upcoming[];
 };

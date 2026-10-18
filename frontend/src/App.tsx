@@ -9,6 +9,7 @@ import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { DashboardPage, WhyPage } from "./pages/DashboardPage";
 import { RoleDashboard } from "./pages/RoleDashboard";
+import { ContentEditorPage } from "./pages/ContentEditorPage";
 import { CourseAnalyticsPage } from "./pages/CourseAnalyticsPage";
 import { GradebookPage } from "./pages/GradebookPage";
 import { GradesPage } from "./pages/GradesPage";
@@ -152,6 +153,7 @@ export function App() {
   const notes = hash.match(/^#\/course\/(\d+)\/notes$/);
   const assignments = hash.match(/^#\/course\/(\d+)\/assignments$/);
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
+  const contentEditor = hash.match(/^#\/course\/(\d+)\/content$/);
   const analytics = hash.match(/^#\/course\/(\d+)\/analytics$/);
   const problem = hash.match(/^#\/problem\/(\d+)$/);
   const classView = hash.match(/^#\/class\/(\d+)$/);
@@ -243,6 +245,8 @@ export function App() {
             <AssignmentsPage session={session} courseId={Number(assignments[1])} />
           ) : gradebook && session.role !== "student" ? (
             <GradebookPage session={session} courseId={Number(gradebook[1])} />
+          ) : contentEditor && session.role === "instructor" ? (
+            <ContentEditorPage session={session} courseId={Number(contentEditor[1])} />
           ) : analytics && session.role !== "student" ? (
             <CourseAnalyticsPage session={session} courseId={Number(analytics[1])} />
           ) : hash === "#/grades" && session.role === "student" ? (

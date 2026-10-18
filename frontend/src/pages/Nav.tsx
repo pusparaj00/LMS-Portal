@@ -24,6 +24,7 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
       staff.splice(
         3,
         0,
+        { href: `#/course/${id}/content`, label: "Content" },
         { href: `#/course/${id}/assignments`, label: "Assignments" },
         { href: `#/course/${id}/notes`, label: "Course notes" },
       );

@@ -966,3 +966,71 @@ a.evidence {
 .custom-output pre.stderr {
   color: var(--fail);
 }
+
+/* ---- course content (F-66, F-67, F-68) ---- */
+.content .module,
+.module-card {
+  margin: 0.75rem 0;
+}
+
+.module summary {
+  cursor: pointer;
+  padding: 0.4rem 0;
+}
+
+.lessons {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+}
+
+.lesson {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.lesson-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.lesson-text {
+  margin: 0.35rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.module-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.module-head input[type="text"],
+.module-head input:not([type]) {
+  flex: 1 1 14rem;
+}
+
+.row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.item-form {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 36rem;
+  margin: 0.75rem 0;
+}
+
+.module-head label,
+.item-form label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}

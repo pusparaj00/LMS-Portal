@@ -113,6 +113,11 @@ export function StudentDashboard({
                     >
                       <span style={{ width: `${c.assignments ? (c.completed / c.assignments) * 100 : 0}%` }} />
                     </div>
+                    {c.content_total > 0 && (
+                      <p className="meta">
+                        Lessons: {c.content_done} of {c.content_total} items done
+                      </p>
+                    )}
                     {weakest.length > 0 && (
                       <>
                         <p className="eyebrow">Weakest concepts</p>
