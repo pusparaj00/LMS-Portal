@@ -1,39 +1,59 @@
+/* Tokens from docs/ux-plan.md section 1.1. The names are the ones the pages already use:
+   chalk = bg, panel = surface, slate = ink-2, line = rule. Dark is the default; light is a user toggle. */
 :root {
-  --chalk: #f4f6f8;
-  --panel: #ffffff;
-  --ink: #142230;
-  --slate: #566676;
-  --line: #d9e0e7;
-  --signal: #1d5bb8;
-  --signal-soft: #e7eefa;
-  --warn: #8a5a00;
-  --warn-bg: #fdf3dc;
-  --shadow: 0 1px 2px rgba(20, 34, 48, 0.06), 0 4px 14px rgba(20, 34, 48, 0.05);
-  --radius: 10px;
-  --pass: #1e7f4f;
-  --pass-bg: #e6f4ec;
-  --fail: #b3261e;
-  --fail-bg: #fbeae9;
-  --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+  --chalk: #050506;
+  --panel: #0c0c0e;
+  --surface-2: #141417;
+  --line: #26262b;
+  --ink: #ededef;
+  --slate: #a0a0a8;
+  --ink-3: #84848e;
+  --signal: #7c92ff;
+  --signal-soft: #151a38;
+  --warn: #e0a05a;
+  --warn-bg: #2a1d0e;
+  --pass: #4fc3bf;
+  --pass-bg: #0e2928;
+  --fail: #f08a8a;
+  --fail-bg: #2f1517;
+  --shadow: 0 0 0 0 transparent;
+  --overlay-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --radius: 8px;
+  --r0: #e0944a;
+  --r1: #c58a3e;
+  --r2: #7a8794;
+  --r3: #3f9189;
+  --r4: #4fc3bf;
+  --primary-ink: #050506;
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --chalk: #0f1620;
-    --panel: #172230;
-    --ink: #e6edf3;
-    --slate: #9aa9b8;
-    --line: #2b3a4a;
-    --signal: #6ea3f2;
-    --signal-soft: #1b2c44;
-    --warn: #f0c46a;
-    --warn-bg: #3a2c10;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --pass: #5fd08f;
-    --pass-bg: #12301f;
-    --fail: #ff8b83;
-    --fail-bg: #3a1917;
-  }
+:root[data-theme="light"] {
+  --chalk: #f5f7f6;
+  --panel: #ffffff;
+  --surface-2: #edf0ee;
+  --line: #dce2e0;
+  --ink: #15202b;
+  --slate: #4a5866;
+  --ink-3: #5f6b78;
+  --signal: #2b47d6;
+  --signal-soft: #e8ebfb;
+  --warn: #8a5a00;
+  --warn-bg: #fdf3dc;
+  --pass: #0b6e6d;
+  --pass-bg: #e0f1f0;
+  --fail: #c23b3b;
+  --fail-bg: #fbeae9;
+  --overlay-shadow: 0 8px 28px rgba(21, 32, 43, 0.18);
+  --r0: #b8620f;
+  --r1: #a8731a;
+  --r2: #78858f;
+  --r3: #3a8a81;
+  --r4: #0e7c7b;
+  --primary-ink: #ffffff;
+  color-scheme: light;
 }
 
 * {
@@ -44,7 +64,7 @@ body {
   margin: 0;
   background: var(--chalk);
   color: var(--ink);
-  font: 16px/1.5 "Segoe UI Variable Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 16px/1.5 var(--sans);
   font-variant-numeric: tabular-nums;
 }
 
@@ -167,7 +187,7 @@ button.primary,
 a.button.primary {
   background: var(--signal);
   border-color: var(--signal);
-  color: #fff;
+  color: var(--primary-ink);
   font-weight: 600;
 }
 
@@ -175,13 +195,6 @@ button.primary:not(:disabled):hover,
 a.button.primary:hover {
   border-color: var(--signal);
   filter: brightness(1.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  button.primary,
-  a.button.primary {
-    color: #0f1620;
-  }
 }
 
 button.ghost {
@@ -318,8 +331,6 @@ main:focus {
   margin: 0 0 0.25rem;
   font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--slate);
 }
 
@@ -797,12 +808,6 @@ pre {
   background: var(--line);
   border-radius: 999px;
   overflow: hidden;
-}
-
-.fill {
-  display: block;
-  height: 100%;
-  background: var(--signal);
 }
 
 .value {
