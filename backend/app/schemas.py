@@ -51,6 +51,8 @@ class HealthResponse(BaseModel):
 class RegisterRequest(BaseModel):
     email: Email = Field(examples=["student@example.com"])
     password: Password = Field(examples=["a-long-password"])
+    academic_history: Text | None = Field(default=None, max_length=1000, description="past academic history")
+    interests: Text | None = Field(default=None, max_length=500, description="areas of interest")
 
 
 class LoginRequest(BaseModel):
@@ -85,12 +87,16 @@ class Me(BaseModel):
     email: str
     role: Role
     display_name: str | None
+    academic_history: str | None
+    interests: str | None
     must_change_password: bool
     opened_from_lms: bool
 
 
 class ProfileUpdate(BaseModel):
     display_name: DisplayName | None = Field(description="shown to your teachers; never sent to the AI model")
+    academic_history: Text | None = Field(default=None, max_length=1000, description="past academic history")
+    interests: Text | None = Field(default=None, max_length=500, description="areas of interest")
 
 
 class PasswordChange(BaseModel):

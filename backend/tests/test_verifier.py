@@ -118,6 +118,29 @@ def test_visible_test_data_may_be_mentioned():
     assert failed_checks(reply(claim="For the input 5 you print 10 where 15 is expected.")) == set()
 
 
+def test_a_claim_that_repeats_a_passed_hidden_input_is_rejected():
+    evidence = Evidence(
+        code=CODE, reference_solution=REFERENCE, failed_tests=EVIDENCE.failed_tests,
+        error_concept_ids=EVIDENCE.error_concept_ids, retrieved_chunk_ids=EVIDENCE.retrieved_chunk_ids,
+        hidden_inputs=frozenset({"77777\n"}),
+    )
+    _, checks = verify(reply(claim="It fails when the input is 77777."), evidence)
+    assert "no_hidden_test_leak" in {c.name for c in checks if not c.passed}
+
+
+def test_a_syntax_error_allows_only_the_syntax_concept():
+    evidence = Evidence(
+        code=CODE, reference_solution=REFERENCE,
+        failed_tests=[FailedTest(101, "basic", False, "5\n", "15\n", frozenset({LOOPS}))],
+        error_concept_ids=frozenset({STRINGS}), retrieved_chunk_ids=frozenset(),
+        error_type="syntax_error",
+    )
+    _, checks = verify(reply(concept_id=LOOPS, source_chunk_ids=[]), evidence)
+    assert "concept_matches" in {c.name for c in checks if not c.passed}
+    _, checks = verify(reply(concept_id=STRINGS, source_chunk_ids=[]), evidence)
+    assert all_passed(checks)
+
+
 def test_the_error_types_concept_is_also_acceptable():
     evidence = Evidence(
         code=CODE, reference_solution=REFERENCE, failed_tests=EVIDENCE.failed_tests,

@@ -9,6 +9,8 @@ export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s:
   const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [history, setHistory] = useState("");
+  const [interests, setInterests] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -17,7 +19,16 @@ export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s:
     setBusy(true);
     setError(null);
     try {
-      const token = await api<Token>(`/auth/${mode}`, null, { body: { email, password } });
+      const body =
+        mode === "register"
+          ? {
+              email,
+              password,
+              academic_history: history.trim() || null,
+              interests: interests.trim() || null,
+            }
+          : { email, password };
+      const token = await api<Token>(`/auth/${mode}`, null, { body });
       onSession({ token: token.access_token, role: token.role });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "The server could not be reached.");
@@ -47,6 +58,23 @@ export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s:
           />
           {mode === "register" && <small>At least 8 characters.</small>}
         </label>
+
+        {mode === "register" && (
+          <>
+            <h2>Build your profile</h2>
+            <label>
+              Academic history
+              <textarea value={history} maxLength={1000} rows={3} onChange={(e) => setHistory(e.target.value)} />
+              <small>Optional, for example: class 12, finished an introductory programming course.</small>
+            </label>
+            <label>
+              Areas of interest
+              <textarea value={interests} maxLength={500} rows={2} onChange={(e) => setInterests(e.target.value)} />
+              <small>Optional, for example: web development, data science, games.</small>
+            </label>
+          </>
+        )}
+
         {error && <p role="alert" className="error">{error}</p>}
         <button className="primary" disabled={busy}>
           {mode === "login" ? "Log in" : "Create account"}

@@ -1889,6 +1889,17 @@
       },
       "Me": {
         "properties": {
+          "academic_history": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Academic History"
+          },
           "display_name": {
             "anyOf": [
               {
@@ -1907,6 +1918,17 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "interests": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interests"
           },
           "must_change_password": {
             "title": "Must Change Password",
@@ -1931,6 +1953,8 @@
           "email",
           "role",
           "display_name",
+          "academic_history",
+          "interests",
           "must_change_password",
           "opened_from_lms"
         ],
@@ -2646,6 +2670,19 @@
       },
       "ProfileUpdate": {
         "properties": {
+          "academic_history": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "past academic history",
+            "title": "Academic History"
+          },
           "display_name": {
             "anyOf": [
               {
@@ -2659,6 +2696,19 @@
             ],
             "description": "shown to your teachers; never sent to the AI model",
             "title": "Display Name"
+          },
+          "interests": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "areas of interest",
+            "title": "Interests"
           }
         },
         "required": [
@@ -2735,12 +2785,38 @@
       },
       "RegisterRequest": {
         "properties": {
+          "academic_history": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "past academic history",
+            "title": "Academic History"
+          },
           "email": {
             "examples": [
               "student@example.com"
             ],
             "title": "Email",
             "type": "string"
+          },
+          "interests": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "areas of interest",
+            "title": "Interests"
           },
           "password": {
             "examples": [

@@ -32,7 +32,7 @@ There are two common ways to fix this:
 2. **A faster mathematical way (Bonus!):**
    Did you know there is a formula for this? The sum from 1 to $n$ is always equal to $\frac{n \times (n + 1)}{2}$. You don't even need a `loop` for this, which makes it super fast for large inputs!
 
-Try updating your `range` function and run your code again. You've got this! Let me know if you want to see how the formula works.",,,,,
+Try updating your `range` function and run your code again. You've got this! Let me know if you want to see how the formula works.",0,1,0,1,E1: false claim that range(n) 'misses 0 in the addition' (0 adds nothing); no fix direction; leaks internal test id.
 2,Factorial,Read an integer n from 0 to 12. Print n! (0! is 1).,"n = int(input())
 result = 0
 for i in range(2, n + 1):
@@ -67,7 +67,7 @@ print(result)
 **Why does this work for `0` as well?**
 If `n = 0`, the loop is skipped because the range is empty, and it immediately prints `result`, which is `1`. This correctly handles the $0! = 1$ rule! 
 
-Keep up the great work! Let me know if you have any questions about how ranges or loops work.","On line 2, `result` is initialized to 0 instead of 1, causing multiplication in the loop to always result in 0. (line 2)",,,,,
+Keep up the great work! Let me know if you have any questions about how ranges or loops work.","On line 2, `result` is initialized to 0 instead of 1, causing multiplication in the loop to always result in 0. (line 2)",1,1,0,1,E1: says 'two main issues' but it is one bug (r2 strict).
 3,Countdown,"Read an integer n. Print n, n-1, ..., 1 each on its own line, then `Liftoff!`.","n = int(input())
 for i in range(n, 0):
     print(i)
@@ -92,7 +92,7 @@ for i in range(n, 0, -1):
 
 This tells Python: *""Start at `n`, stop before `0`, and count down by `1` each time.""* 
 
-Try making that change and run your code again! Let me know if you need any more help.","On line 2, your `range` function is missing a negative step argument, so it does not count down when given a positive start and stop. (line 2)",,,,,
+Try making that change and run your code again! Let me know if you need any more help.","On line 2, your `range` function is missing a negative step argument, so it does not count down when given a positive start and stop. (line 2)",1,1,1,1,
 4,Reverse a string,Read a line of text. Print it reversed.,"s = input()
 s.reverse()
 print(s)
@@ -129,7 +129,7 @@ s_list.reverse()     # Now .reverse() works because it's a list!
 print("""".join(s_list)) # Join the list back into a string
 ```
 
-Method 1 is shorter and very common among Python programmers. Give it a try!","On line 2, calling `s.reverse()` raises an AttributeError because strings in Python do not have a reverse method. (line 2)",,,,,
+Method 1 is shorter and very common among Python programmers. Give it a try!","On line 2, calling `s.reverse()` raises an AttributeError because strings in Python do not have a reverse method. (line 2)",1,1,1,1,
 5,Count vowels,"Read a line of text. Print how many vowels (a, e, i, o, u, in either case) it contains.","text = input()
 print(sum(1 for ch in text if ch in ""aeiou""))
 ",uppercase,,"On line 2, your code only checks for lowercase vowels in ""aeiou"", so uppercase vowels are not counted in test 3231. (line 2)","Great effort! Your code is very clever and uses a neat Python trick (`sum(1 for ...)`), but it failed the **uppercase** test category. 
@@ -150,7 +150,7 @@ You have two main options:
    print(sum(1 for ch in text if ch.lower() in ""aeiou""))
    ```
 
-Both ways will make sure your program counts vowels regardless of whether the user types them in uppercase or lowercase! Give one of them a try.",,,,,
+Both ways will make sure your program counts vowels regardless of whether the user types them in uppercase or lowercase! Give one of them a try.",1,1,1,1,
 6,Second largest,Line 1 has n. Line 2 has n integers with at least two distinct values. Print the second largest distinct value.,"n = int(input())
 values = sorted(map(int, input().split()))
 print(values[-2])
@@ -189,7 +189,7 @@ values = sorted(list(set(map(int, input().split()))))
 * `set(...)` removes all duplicate numbers.
 * `list(...)` turns it back into a list.
 * `sorted(...)` puts the unique numbers in order from smallest to largest.
-* `values[-2]` will now reliably grab the second largest unique number!",,,,,
+* `values[-2]` will now reliably grab the second largest unique number!",1,1,0,1,"E1: vague, no dedupe direction (r2 strict)."
 7,Word frequency,"Read a line of words. For each distinct word, in alphabetical order, print the word and how many times it appears, separated by a space, one word per line. Print nothing for an empty line.","counts = {}
 for w in input().split():
     counts[w] += 1
@@ -237,7 +237,7 @@ for w in sorted(counts):
 
 *(Note: Your code already correctly handles the requirement to print nothing for an empty line because `input().split()` returns an empty list `[]`, skipping the `for` loop entirely and printing nothing!)* 
 
-Give one of these fixes a try, and you should pass all the tests! Let me know if you have any questions.","On line 3, trying to increment `counts[w]` directly causes a KeyError when a word is not yet in the dictionary. (line 3)",,,,,
+Give one of these fixes a try, and you should pass all the tests! Let me know if you have any questions.","On line 3, trying to increment `counts[w]` directly causes a KeyError when a word is not yet in the dictionary. (line 3)",1,1,1,1,
 8,Fibonacci,"Read n (0 to 20). Print the n-th Fibonacci number, where fib(0) = 0 and fib(1) = 1. Use recursion.","def fib(n):
     return fib(n - 1) + fib(n - 2)
 
@@ -260,7 +260,7 @@ According to the problem description:
 
 Try adding `if` statements at the beginning of your `fib` function to handle $0$ and $1$. 
 
-Let me know if you'd like to see an example of how to write the base cases!","On line 2, the function lacks a base case, causing infinite recursion and a RecursionError during test 3210. (line 2)",,,,,
+Let me know if you'd like to see an example of how to write the base cases!","On line 2, the function lacks a base case, causing infinite recursion and a RecursionError during test 3210. (line 2)",1,1,1,0,
 9,Safe division,"Read two integers a and b. Print a // b, or `division by zero` if b is 0.","a, b = map(int, input().split())
 print(a / b)
 ","basic, negative_numbers, zero, zero_divisor",runtime_error,"Hello! Let's take a look at why your code failed the tests.
@@ -283,7 +283,7 @@ You need to use an `if` statement to check if `b` is `0` before doing the divisi
 * If `b == 0`, print `""division by zero""`.
 * Otherwise, print `a // b`.
 
-Give it a try with these changes, and you'll pass all the tests! Let me know if you want to see an example.","On line 2, using standard division causes a ZeroDivisionError when the divisor is zero, instead of catching the exception and printing the required message. (line 2)",,,,,
+Give it a try with these changes, and you'll pass all the tests! Let me know if you want to see an example.","On line 2, using standard division causes a ZeroDivisionError when the divisor is zero, instead of catching the exception and printing the required message. (line 2)",1,0,1,1,E2: misses the / vs // bug; following it alone still fails basic tests.
 10,Rectangle,"Read a width and a height on one line. Using a class, print the area and the perimeter separated by a space.","class Rectangle:
     def __init__(self, w, h):
         self.w = w
@@ -314,7 +314,7 @@ Here is the corrected `area` method:
         return self.w * self.h
 ```
 
-If you make this change, your code will pass all the test cases (including basic rectangles, squares, and zero-dimension rectangles)!","On line 7, the area method calculates the sum of the width and height instead of their product. (line 7)",,,,,
+If you make this change, your code will pass all the test cases (including basic rectangles, squares, and zero-dimension rectangles)!","On line 7, the area method calculates the sum of the width and height instead of their product. (line 7)",1,1,1,1,
 11,Palindrome check,"Read a word. Print `yes` if it reads the same backwards, ignoring case, otherwise `no`.","word = input().strip()
 print(""yes"" if word == word[::-1] else ""no"")
 ",uppercase,,"Hello! You wrote a very concise and clever solution using slicing (`word[::-1]`). That's a great Python trick!
@@ -339,7 +339,7 @@ word = input().strip().lower()
 
 This ensures that no matter how the user types the word, all letters are converted to lowercase, making your comparison work correctly for words like `""Racecar""` or `""Madam""`. 
 
-Keep up the great work! Let me know if you want to try running it again.","On line 1, the input word is not converted to lowercase or uppercase, causing the palindrome check to fail for uppercase strings. (line 1)",,,,,
+Keep up the great work! Let me know if you want to try running it again.","On line 1, the input word is not converted to lowercase or uppercase, causing the palindrome check to fail for uppercase strings. (line 1)",1,1,1,1,
 12,Remove duplicates,"Line 1 has n. Line 2 has n integers. Print the values with duplicates removed, keeping the first occurrence of each and the original order, separated by spaces.","n = int(input())
 print("" "".join(sorted(set(input().split()))))
 ",order,,"Great effort! You are very close, but there are two main issues with the student's code based on the problem requirements:
@@ -368,7 +368,7 @@ n = int(input())
 # 3. "" "".join(...) prints them separated by spaces
 print("" *"".join(dict.fromkeys(input().split())))
 ```
-*(Note: If the problem requires the output to be printed as actual integers rather than strings, you might need to map them to integers first, but `dict.fromkeys()` on the string list usually passes most standard competitive programming tests for this problem type!)*","On line 2, using sorted() sorts the elements alphabetically rather than preserving their original relative order. (line 2)",,,,,
+*(Note: If the problem requires the output to be printed as actual integers rather than strings, you might need to map them to integers first, but `dict.fromkeys()` on the string list usually passes most standard competitive programming tests for this problem type!)*","On line 2, using sorted() sorts the elements alphabetically rather than preserving their original relative order. (line 2)",0,1,0,1,E2: misses the / vs // bug; following it alone still fails basic tests.
 13,Grade letter,"Read a score from 0 to 100. Print A for 90 and above, B for 80 and above, C for 70 and above, D for 60 and above, otherwise F.","score = int(input())
 if score > 90:
     print(""A"")
@@ -411,7 +411,7 @@ else:
     print(""F"")
 ```
 
-Keep up the good work! Let me know if you have any questions about this.","On line 2, using strict inequality `>` instead of `>=` means an exact boundary score fails to receive the correct grade. (line 2)",,,,,
+Keep up the good work! Let me know if you have any questions about this.","On line 2, using strict inequality `>` instead of `>=` means an exact boundary score fails to receive the correct grade. (line 2)",1,1,1,1,
 14,Leap year,"Read a year. Print `leap` if it is a leap year (divisible by 4, except centuries unless divisible by 400), otherwise `common`.","y = int(input())
 print(""leap"" if y % 4 == 0 else ""common"")
 ",century,,"Great try! Your code works for most years, but it failed on the **century** test cases (like 1900, 2100, etc.). 
@@ -427,7 +427,7 @@ You need to add conditions to handle century years. A year is a leap year if:
 1. It is divisible by 4 **AND** not divisible by 100, **OR**
 2. It is divisible by 400.
 
-Try updating your `if` condition to check these rules! Let me know if you want a hint on how to write that in Python.","On line 2, your conditional checks only if the year is divisible by 4, which incorrectly classifies century years like 3125 as leap years without checking if they are divisible by 400. (line 2)",,,,,
+Try updating your `if` condition to check these rules! Let me know if you want a hint on how to write that in Python.","On line 2, your conditional checks only if the year is divisible by 4, which incorrectly classifies century years like 3125 as leap years without checking if they are divisible by 400. (line 2)",1,0,1,0,E2: example 3125 is not a century year (and code already prints common for it).
 15,Digit sum,Read a non-negative integer. Print the sum of its digits. Use recursion.,"def digit_sum(n):
     return n % 10 + digit_sum(n // 10)
 
@@ -461,7 +461,7 @@ def digit_sum(n):
     return n % 10 + digit_sum(n // 10)
 ```
 
-Give that a try and run it again!",,,,,
+Give that a try and run it again!",1,1,1,1,
 16,Phone book,"Line 1 has n. The next n lines each have a name and a number separated by a space. The last line has a name to look up. Print its number, or `not found`. If a name repeats, the last number wins.","n = int(input())
 book = {}
 for _ in range(n):
@@ -501,7 +501,7 @@ print(book.get(query, ""not found""))
 ```
 
 ### Why this works:
-`book.get(query, ""not found"")` looks for the `query` inside the `book` dictionary. If it finds it, it prints the corresponding number. If it *doesn't* find it, it returns the default value `""not found""` instead of throwing a `KeyError`.","On line 6, accessing the dictionary with bracket notation raises a KeyError because the name queried is not present in the dictionary. (line 6)",,,,,
+`book.get(query, ""not found"")` looks for the `query` inside the `book` dictionary. If it finds it, it prints the corresponding number. If it *doesn't* find it, it returns the default value `""not found""` instead of throwing a `KeyError`.","On line 6, accessing the dictionary with bracket notation raises a KeyError because the name queried is not present in the dictionary. (line 6)",1,1,0,1,E1: second 'empty_input / EOFError' issue is speculative and not fixed by the code (r2 strict).
 17,Rotate left,"Line 1 has n and k. Line 2 has n integers. Print the list rotated left by k positions (k may be larger than n), separated by spaces.","n, k = map(int, input().split())
 xs = input().split()
 print("" "".join(xs[k:] + xs[:k]))
@@ -531,7 +531,7 @@ k = k % n  # This ensures k is within the bounds of the list size
 print("" "".join(xs[k:] + xs[:k]))
 ```
 
-Keep up the great work! Let me know if you want to talk more about how modulo works with list rotations.",,,,,
+Keep up the great work! Let me know if you want to talk more about how modulo works with list rotations.",1,1,1,1,
 19,Word count,Read a line of text. Print the number of words in it (words are separated by whitespace).,"print(len(input().split("" "")))
 ","empty_input, whitespace",,"Hello! Let's take a look at why your code failed those specific test cases (`empty_input` and `whitespace`).
 
@@ -560,7 +560,7 @@ text = input().split()
 print(len(text))
 ```
 
-Give that a try and see how it handles those tricky edge cases! Let me know if you have any questions.","On line 1, using `split("" "")` instead of `split()` causes an incorrect count when the input contains multiple spaces or is empty. (line 1)",,,,,
+Give that a try and see how it handles those tricky edge cases! Let me know if you have any questions.","On line 1, using `split("" "")` instead of `split()` causes an incorrect count when the input contains multiple spaces or is empty. (line 1)",1,1,1,1,
 20,Even or odd,"Read an integer. Print `even` if it is even, otherwise `odd`.","n = int(input())
 if n % 2 == 1:
     print(""even"")
@@ -588,7 +588,7 @@ else:
     print(""odd"")
 ```
 
-Give that a try and run your code again! Let me know if you have any questions.",,,,,
+Give that a try and run your code again! Let me know if you have any questions.",0,1,0,1,"E1: generic canned message, no diagnosis of the n % 2 == 1 bug."
 21,Sum and maximum,"Line 1 has n. Line 2 has n integers. Print their sum and their maximum on one line, separated by a space.","n = int(input())
 xs = list(map(int, input().split()))
 total = 0
@@ -615,4 +615,4 @@ Alternatively, Python has a built-in function called `sum()` that can do this fo
 ### Hint:
 Try changing your loop to accumulate the sum, or use Python's built-in `sum()` function on your `xs` list. 
 
-Let me know if you want to see the corrected code or need another hint!","On line 5, the loop assigns total = x instead of accumulating the sum, causing test 3170 to fail. (line 5)",,,,,
+Let me know if you want to see the corrected code or need another hint!","On line 5, the loop assigns total = x instead of accumulating the sum, causing test 3170 to fail. (line 5)",1,1,1,1,

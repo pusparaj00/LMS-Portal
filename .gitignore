@@ -16,6 +16,7 @@ build/
 *.bin
 *.safetensors
 /data/datasets/
+graphify-out/
 
 # database dumps hold password hashes and student data
 backup/

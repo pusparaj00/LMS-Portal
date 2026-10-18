@@ -7,11 +7,14 @@ export type Me = {
   email: string;
   role: Role;
   display_name: string | null;
+  academic_history: string | null;
+  interests: string | null;
   must_change_password: boolean;
   opened_from_lms: boolean;
 };
 
-/** F-01: the user's own name and password. When a new password is required, this is the only page shown. */
+/** F-01: the user's own name, academic history, interests and password. When a new password is required,
+ * this is the only page shown. */
 export function AccountPage({
   session,
   me,
@@ -24,6 +27,8 @@ export function AccountPage({
   onSession: (session: Session) => void;
 }) {
   const [name, setName] = useState(me.display_name ?? "");
+  const [history, setHistory] = useState(me.academic_history ?? "");
+  const [interests, setInterests] = useState(me.interests ?? "");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -31,15 +36,24 @@ export function AccountPage({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function saveName(event: FormEvent) {
+  async function saveProfile(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setSaved(null);
     try {
-      onMe(await api<Me>("/me", session, { method: "PATCH", body: { display_name: name.trim() || null } }));
-      setSaved("Your name is saved.");
+      onMe(
+        await api<Me>("/me", session, {
+          method: "PATCH",
+          body: {
+            display_name: name.trim() || null,
+            academic_history: history.trim() || null,
+            interests: interests.trim() || null,
+          },
+        }),
+      );
+      setSaved("Your profile is saved.");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Your name could not be saved.");
+      setError(e instanceof ApiError ? e.message : "Your profile could not be saved.");
     }
   }
 
@@ -83,15 +97,25 @@ export function AccountPage({
       {saved && <p role="status">{saved}</p>}
 
       {!me.must_change_password && (
-        <form className="stack" onSubmit={saveName}>
-          <h2>Your name</h2>
+        <form className="stack" onSubmit={saveProfile}>
+          <h2>Your profile</h2>
           <label>
             Name shown to your teachers
             <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
-            <small>Optional. It is never sent to the AI model. Leave it empty to remove it.</small>
+            <small>Optional. It is never sent to the AI model.</small>
+          </label>
+          <label>
+            Academic history
+            <textarea value={history} maxLength={1000} rows={3} onChange={(e) => setHistory(e.target.value)} />
+            <small>Optional, for example: class 12, finished an introductory programming course.</small>
+          </label>
+          <label>
+            Areas of interest
+            <textarea value={interests} maxLength={500} rows={2} onChange={(e) => setInterests(e.target.value)} />
+            <small>Optional, for example: web development, data science, games.</small>
           </label>
           <p>
-            <button type="submit">Save name</button>
+            <button type="submit">Save profile</button>
           </p>
         </form>
       )}

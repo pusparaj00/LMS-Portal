@@ -15,7 +15,7 @@ Signed = Annotated[CurrentUser, Depends(current_user)]
 def me(conn: Connection, user_id: int) -> Me:
     row = conn.execute(
         text(
-            "SELECT u.id, u.email, u.role, u.display_name, u.must_change_password,"
+            "SELECT u.id, u.email, u.role, u.display_name, u.academic_history, u.interests, u.must_change_password,"
             " EXISTS (SELECT 1 FROM lti_users l WHERE l.user_id = u.id) AS opened_from_lms FROM users u WHERE u.id = :u"
         ),
         {"u": user_id},
@@ -32,7 +32,12 @@ def read_me(user: Signed, conn: Conn):
 def update_profile(body: ProfileUpdate, user: Signed, conn: Conn):
     """The name teachers see in the class view and gradebook. It is never sent to the AI model (TR-S-06)."""
     name = body.display_name.strip() if body.display_name else None
-    conn.execute(text("UPDATE users SET display_name = :n WHERE id = :u"), {"n": name or None, "u": user.id})
+    history = body.academic_history.strip() if body.academic_history else None
+    interests = body.interests.strip() if body.interests else None
+    conn.execute(
+        text("UPDATE users SET display_name = :n, academic_history = :ah, interests = :i WHERE id = :u"),
+        {"n": name or None, "ah": history, "i": interests, "u": user.id},
+    )
     return me(conn, user.id)
 
 

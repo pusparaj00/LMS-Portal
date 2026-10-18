@@ -81,7 +81,7 @@ def serve(conn: Connection, ctx: ExplainContext) -> ExplainResponse | None:
     evidence = Evidence(
         code=ctx.code, reference_solution=ctx.reference_solution, failed_tests=ctx.failed_tests,
         error_concept_ids=ctx.error_concept_ids, retrieved_chunk_ids=frozenset(s.chunk_id for s in sources),
-        hidden_inputs=ctx.hidden_inputs, leak_threshold=ctx.leak_threshold,
+        hidden_inputs=ctx.hidden_inputs, error_type=ctx.error_type, leak_threshold=ctx.leak_threshold,
     )
     explanation, checks = verify(raw, evidence)
     if explanation is None or not all_passed(checks):

@@ -23,12 +23,14 @@ def register(body: RegisterRequest, request: Request, conn: Conn):
     if body.email.lower().endswith(LTI_DOMAIN):
         raise HTTPException(422, "this email domain is reserved for accounts opened from an LMS")
     try:
+        history = body.academic_history.strip() if body.academic_history else None
+        interests = body.interests.strip() if body.interests else None
         user_id = conn.execute(
             text(
-                "INSERT INTO users (email, password_hash, role)"
-                " VALUES (lower(:e), :h, 'student') RETURNING id"
+                "INSERT INTO users (email, password_hash, role, academic_history, interests)"
+                " VALUES (lower(:e), :h, 'student', :ah, :i) RETURNING id"
             ),
-            {"e": body.email, "h": hash_password(body.password)},
+            {"e": body.email, "h": hash_password(body.password), "ah": history, "i": interests},
         ).scalar_one()
     except IntegrityError:
         raise HTTPException(409, "email already registered") from None

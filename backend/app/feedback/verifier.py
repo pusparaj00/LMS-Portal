@@ -56,6 +56,7 @@ class Evidence:
     error_concept_ids: frozenset[int]  # concepts linked to the run's error type, if it had one
     retrieved_chunk_ids: frozenset[int]
     hidden_inputs: frozenset[str] = frozenset()  # every hidden test input of the problem, passed or failed
+    error_type: str | None = None  # the run's error_type, used to keep syntax errors on the syntax concept
     leak_threshold: float = leak.SIMILARITY_THRESHOLD  # the problem's leak policy (F-62)
 
 
@@ -103,15 +104,20 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
     failed = {t.id: t for t in evidence.failed_tests}
     test = failed.get(explanation.failing_test_id)
     lines = max(1, len(evidence.code.splitlines()))
-    allowed_concepts = set(evidence.error_concept_ids) | (set(test.concept_ids) if test else set())
-    hidden_texts = [
-        s.strip() for t in evidence.failed_tests if t.hidden for s in (t.input, t.expected)
-        if len(s.strip()) >= MIN_HIDDEN_TEXT
-    ]
-    leaked = [s for s in hidden_texts if s in explanation.claim]
+    if evidence.error_type == "syntax_error":
+        # A syntax error stops the whole program, so only the syntax concept may be named (TR-M-02).
+        allowed_concepts = set(evidence.error_concept_ids)
+    else:
+        allowed_concepts = set(evidence.error_concept_ids) | (set(test.concept_ids) if test else set())
+    hidden_secrets = {h.strip() for h in evidence.hidden_inputs}
+    for t in evidence.failed_tests:
+        if t.hidden:
+            hidden_secrets.update(s.strip() for s in (t.input, t.expected))
+    hidden_secrets = {s for s in hidden_secrets if len(s) >= MIN_HIDDEN_TEXT}
+    leaked = [s for s in hidden_secrets if s in explanation.claim]
     example = explanation.example_input.strip()
-    if example and example in {h.strip() for h in evidence.hidden_inputs}:
-        leaked.append(example)  # the example would show a student a hidden test input
+    if example and example in hidden_secrets:
+        leaked.append(example)  # the example would show a student a hidden test input or output
     guard = leak.check(explanation.claim, evidence.reference_solution, evidence.leak_threshold)
     unknown_chunks = sorted(set(explanation.source_chunk_ids) - evidence.retrieved_chunk_ids)
     example_ok = len(explanation.example_input) <= MAX_EXAMPLE_CHARS and "\x00" not in explanation.example_input

@@ -8,6 +8,7 @@ import { ChatPanel } from "./pages/ChatPanel";
 import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { DashboardPage, WhyPage } from "./pages/DashboardPage";
+import { RoleDashboard } from "./pages/RoleDashboard";
 import { GradebookPage } from "./pages/GradebookPage";
 import { HomePage } from "./pages/HomePage";
 import { NewProblemPage } from "./pages/NewProblemPage";
@@ -70,7 +71,7 @@ export function App() {
     setMe(null);
     const target = returnTo.current;
     returnTo.current = null;
-    window.location.hash = !next ? "#/login" : target ?? (next.role === "admin" ? "#/admin" : "#/courses");
+    window.location.hash = !next ? "#/login" : target ?? (next.role === "admin" ? "#/admin" : "#/dashboard");
   };
 
   // Who is signed in, and whether they must choose a new password before anything else (F-01).
@@ -139,7 +140,7 @@ export function App() {
         </p>
       </main>
     );
-  if (hash === "#/home") return <HomePage dashboardHref={session.role === "admin" ? "#/admin" : "#/courses"} />;
+  if (hash === "#/home") return <HomePage dashboardHref={session.role === "admin" ? "#/admin" : "#/dashboard"} />;
   const waitingForConsent = session.role === "student" && consent === null;
   const mustAgree = session.role === "student" && consent !== null && !consent.accepted;
 
@@ -175,7 +176,7 @@ export function App() {
         <button className="ghost" aria-expanded={menuOpen} aria-controls="main-menu" onClick={() => setMenuPref(!menuOpen)}>
           Menu
         </button>
-        <a className="brand" href={session.role === "admin" ? "#/admin" : "#/courses"}>
+        <a className="brand" href={session.role === "admin" ? "#/admin" : "#/dashboard"}>
           Adaptive LMS
         </a>
         <span className="who">
@@ -272,6 +273,8 @@ export function App() {
               courseId={Number(course[1])}
               title={courses.find((c) => c.id === Number(course[1]))?.title}
             />
+          ) : hash === "#/dashboard" ? (
+            <RoleDashboard session={session} me={me} courses={courses} />
           ) : (
             <CoursesPage session={session} />
           )}
