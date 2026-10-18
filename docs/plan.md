@@ -138,6 +138,8 @@ The final-year timeline after 21 Oct is not fixed yet, so these phases use weeks
 
 **Step 41, dashboards (F-63, F-64, F-65).** Student and instructor dashboards with stats, analytics, a grades page and course ratings, modelled on the Edu-Hub portal's features, using this system's own data and access rules. Gate: each figure comes from a database query, role and ownership tests pass, and both roles are checked in the browser.
 
+**Step 43, course content structure (F-66, F-67, F-68).** Modules and lesson items (text, link, video link, PDF) with publishing, completion tracking and an authoring page. Gate: visibility, ownership and URL/PDF checks are tested, no content type can run script, and both roles are checked in the browser. Next LMS steps: quizzes and manual grading, discussion and notifications, admin tools.
+
 **Order matters.** Phase 6 comes before Phase 8, because the extensions are only worth building if the core claims hold on real data.
 
 ## 9. Cut lines and working agreements

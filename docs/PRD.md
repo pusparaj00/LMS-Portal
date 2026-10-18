@@ -18,7 +18,7 @@ The product is an LMS for programming courses (Python first, then C and Java) th
 4. An agentic AI chat that routes each request to the right capability.
 5. A credible full-stack LMS around it: roles, courses, assignments, gradebook, dashboard.
 
-**Non-goals for this release.** Replacing Moodle feature-for-feature, mobile apps, plagiarism detection, and live proctoring.
+**Non-goals for this release.** Replacing Moodle feature-for-feature (core course structure, content and completion tracking are in scope from step 43; forums, quizzes and bulk administration are separate steps), mobile apps, plagiarism detection, and live proctoring.
 
 ## 2. Users
 
@@ -101,6 +101,9 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-63 | Student dashboard stats and grades page: enrolled courses, average assignment score, upcoming assignments, progress per course and every assignment score, from the student's own data only | P1 |
 | F-64 | Instructor dashboard stats and course analytics: courses, students, upcoming assignments, submissions in the last 7 days, completion rate and score distribution, for the instructor's own courses only | P1 |
 | F-65 | A student enrolled in a course rates the course and its instructor from 1 to 5 with an optional text review; instructors see averages and anonymous reviews for their own courses | P1 |
+| F-66 | A course has ordered modules that hold ordered lesson items; only the course's instructor edits them, and each module and item can be published or kept hidden from students | P1 |
+| F-67 | Lesson items are text, a link, a video link or a PDF file; text is shown as text, links must start with http:// or https://, a PDF is checked for real PDF content and downloaded as an attachment | P1 |
+| F-68 | A student marks lesson items complete and sees progress per module and per course; the instructor sees a completion rate per module; erasure removes a student's completions | P1 |
 | F-70 | Launch from Moodle or Canvas through LTI 1.3 so the system fits an existing LMS | P2 |
 
 ## 5. Non-functional requirements
