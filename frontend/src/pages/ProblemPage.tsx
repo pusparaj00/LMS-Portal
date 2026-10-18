@@ -36,6 +36,22 @@ const ERROR_TEXT: Record<string, string> = {
   output_limit: "Your code printed too much output.",
 };
 
+type CustomRun = { status: string; stdout: string; stderr: string; runtime_ms: number };
+
+/** F-14: what the program printed for the input typed above. It is not graded and is not stored. */
+function CustomOutput({ run }: { run: CustomRun }) {
+  return (
+    <div className="custom-output" aria-live="polite">
+      <p className="eyebrow">
+        Output of your run · {run.runtime_ms} ms
+        {run.status !== "ok" && ` · ${ERROR_TEXT[run.status] ?? run.status}`}
+      </p>
+      {run.stdout !== "" || run.stderr === "" ? <pre>{run.stdout === "" ? "(no output)" : run.stdout}</pre> : null}
+      {run.stderr !== "" && <pre className="stderr">{run.stderr}</pre>}
+    </div>
+  );
+}
+
 function Summary({ result, submitted }: { result: SubmissionResult; submitted: boolean }) {
   const total = result.passed + result.failed;
   const headline =
@@ -65,6 +81,8 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
   const [code, setCode] = useState(STARTER);
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [stdin, setStdin] = useState("");
+  const [custom, setCustom] = useState<CustomRun | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +93,8 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
   useEffect(() => {
     setProblem(null);
     setResult(null);
+    setCustom(null);
+    setStdin("");
     setError(null);
     setCode(loadDraft(problemId));
     api<ProblemDetail>(`/problems/${problemId}`, session)
@@ -85,11 +105,19 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
       .catch((e: Error) => setError(e.message));
   }, [problemId]);
 
-  async function execute(kind: "run" | "submit") {
+  async function execute(kind: "run" | "submit" | "custom") {
     const asked = problemId;
     setBusy(true);
     setError(null);
     try {
+      if (kind === "custom") {
+        const r = await api<CustomRun>("/submissions/run-custom", session, {
+          body: { problem_id: problemId, code, stdin },
+          onBusy: (attempt) => setNotice(`The sandbox is busy, trying again (${attempt} of ${BUSY_RETRIES})…`),
+        });
+        if (current.current === asked) setCustom(r);
+        return;
+      }
       const path = kind === "run" ? "/submissions/run" : "/submissions";
       const r = await api<SubmissionResult>(path, session, {
         body: { problem_id: problemId, code },
@@ -154,17 +182,32 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
               options={{ minimap: { enabled: false }, fontSize: 14, scrollBeyondLastLine: false }}
             />
           </div>
+          <label className="stdin">
+            <span className="eyebrow">Input for your run (optional)</span>
+            <textarea
+              value={stdin}
+              maxLength={10000}
+              rows={3}
+              spellCheck={false}
+              placeholder="Type what the program should read with input(), one line per call"
+              onChange={(e) => setStdin(e.target.value)}
+            />
+          </label>
           <div className="actions">
+            <button className="primary" onClick={() => execute("custom")} disabled={busy}>
+              Run
+            </button>
             <button onClick={() => execute("run")} disabled={busy || !isStudent}>
               Run examples
             </button>
-            <button className="primary" onClick={() => execute("submit")} disabled={busy || !isStudent}>
+            <button onClick={() => execute("submit")} disabled={busy || !isStudent}>
               Submit
             </button>
             {busy && <span role="status">{notice ?? "Running in the sandbox…"}</span>}
-            {!isStudent && <span>Only students can run code.</span>}
+            {!isStudent && <span>Only students can run the examples and submit.</span>}
           </div>
           {error && <p role="alert" className="error">{error}</p>}
+          {custom && <CustomOutput run={custom} />}
           {session.role === "instructor" && <HelpPolicy session={session} problemId={problemId} />}
           {result && (
             <div className="results" aria-live="polite">

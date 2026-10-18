@@ -934,3 +934,35 @@ a.evidence {
   margin: 0.15rem 0 0;
   white-space: pre-wrap;
 }
+
+/* ---- run with your own input (F-14) ---- */
+.stdin {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.stdin textarea {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.custom-output {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.9rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.custom-output pre {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--mono);
+}
+
+.custom-output pre.stderr {
+  color: var(--fail);
+}
