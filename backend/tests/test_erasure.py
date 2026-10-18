@@ -66,6 +66,10 @@ def fill(owner, user_id: int, course, lms: bool = False) -> int:
         conn.execute(text("INSERT INTO diagnostic_sessions (user_id) VALUES (:u)"), {"u": user_id})
         conn.execute(text("INSERT INTO enrollments (user_id, course_id) VALUES (:u, :c)"), {"u": user_id, "c": course["id"]})
         conn.execute(
+            text("INSERT INTO ratings (course_id, user_id, course_rating, instructor_rating) VALUES (:c, :u, 4, 5)"),
+            {"u": user_id, "c": course["id"]},
+        )
+        conn.execute(
             text("INSERT INTO mastery (user_id, concept_id, p_known) VALUES (:u, :c, 0.4)"), {"u": user_id, "c": concept}
         )
         conn.execute(

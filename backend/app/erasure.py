@@ -26,6 +26,7 @@ _DELETIONS = [
     "DELETE FROM worked_examples_seen WHERE user_id = :u",
     "DELETE FROM diagnostic_sessions WHERE user_id = :u",
     "DELETE FROM consents WHERE user_id = :u",
+    "DELETE FROM ratings WHERE user_id = :u",
     "DELETE FROM enrollments WHERE user_id = :u",
     "DELETE FROM lti_users WHERE user_id = :u",
     "DELETE FROM users WHERE id = :u",

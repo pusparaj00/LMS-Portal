@@ -259,6 +259,55 @@
         "title": "AssignmentProblemOut",
         "type": "object"
       },
+      "AssignmentProgress": {
+        "properties": {
+          "assignment_id": {
+            "title": "Assignment Id",
+            "type": "integer"
+          },
+          "complete": {
+            "title": "Complete",
+            "type": "integer"
+          },
+          "due_at": {
+            "format": "date-time",
+            "title": "Due At",
+            "type": "string"
+          },
+          "in_progress": {
+            "title": "In Progress",
+            "type": "integer"
+          },
+          "late": {
+            "title": "Late",
+            "type": "integer"
+          },
+          "missing": {
+            "title": "Missing",
+            "type": "integer"
+          },
+          "not_started": {
+            "title": "Not Started",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignment_id",
+          "title",
+          "due_at",
+          "complete",
+          "in_progress",
+          "late",
+          "missing",
+          "not_started"
+        ],
+        "title": "AssignmentProgress",
+        "type": "object"
+      },
       "ChatRequest": {
         "properties": {
           "message": {
@@ -683,6 +732,88 @@
         "title": "Course",
         "type": "object"
       },
+      "CourseAnalytics": {
+        "properties": {
+          "assignments": {
+            "title": "Assignments",
+            "type": "integer"
+          },
+          "average_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Percent"
+          },
+          "completion_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Rate"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "distribution": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreBucket"
+            },
+            "title": "Distribution",
+            "type": "array"
+          },
+          "per_assignment": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentProgress"
+            },
+            "title": "Per Assignment",
+            "type": "array"
+          },
+          "ratings": {
+            "$ref": "#/components/schemas/RatingSummary"
+          },
+          "students": {
+            "title": "Students",
+            "type": "integer"
+          },
+          "submissions_7d": {
+            "title": "Submissions 7D",
+            "type": "integer"
+          },
+          "submissions_total": {
+            "title": "Submissions Total",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "title",
+          "students",
+          "assignments",
+          "submissions_total",
+          "submissions_7d",
+          "completion_rate",
+          "average_percent",
+          "distribution",
+          "per_assignment",
+          "ratings"
+        ],
+        "title": "CourseAnalytics",
+        "type": "object"
+      },
       "CourseConcept": {
         "properties": {
           "concept_id": {
@@ -714,6 +845,148 @@
           "title"
         ],
         "title": "CourseCreate",
+        "type": "object"
+      },
+      "CourseGrades": {
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/GradeLine"
+            },
+            "title": "Assignments",
+            "type": "array"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "title",
+          "score",
+          "possible",
+          "percent",
+          "assignments"
+        ],
+        "title": "CourseGrades",
+        "type": "object"
+      },
+      "CourseProgress": {
+        "properties": {
+          "assignments": {
+            "title": "Assignments",
+            "type": "integer"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "title",
+          "assignments",
+          "completed",
+          "score",
+          "possible",
+          "percent",
+          "next_due_at"
+        ],
+        "title": "CourseProgress",
+        "type": "object"
+      },
+      "CourseRatings": {
+        "properties": {
+          "mine": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviews": {
+            "items": {
+              "$ref": "#/components/schemas/RatingOut"
+            },
+            "title": "Reviews",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/RatingSummary"
+          }
+        },
+        "required": [
+          "summary",
+          "mine",
+          "reviews"
+        ],
+        "title": "CourseRatings",
         "type": "object"
       },
       "CourseRename": {
@@ -1418,6 +1691,50 @@
         "title": "ExplanationRecord",
         "type": "object"
       },
+      "GradeLine": {
+        "properties": {
+          "assignment_id": {
+            "title": "Assignment Id",
+            "type": "integer"
+          },
+          "due_at": {
+            "format": "date-time",
+            "title": "Due At",
+            "type": "string"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "with_late": {
+            "title": "With Late",
+            "type": "number"
+          }
+        },
+        "required": [
+          "assignment_id",
+          "title",
+          "due_at",
+          "score",
+          "with_late",
+          "possible",
+          "status"
+        ],
+        "title": "GradeLine",
+        "type": "object"
+      },
       "GradeSendFailure": {
         "properties": {
           "assignment_id": {
@@ -1736,6 +2053,112 @@
           "text"
         ],
         "title": "HintResponse",
+        "type": "object"
+      },
+      "InstructorCourseStats": {
+        "properties": {
+          "assignments": {
+            "title": "Assignments",
+            "type": "integer"
+          },
+          "average_course_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Course Rating"
+          },
+          "completion_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Rate"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "rating_count": {
+            "title": "Rating Count",
+            "type": "integer"
+          },
+          "students": {
+            "title": "Students",
+            "type": "integer"
+          },
+          "submissions_7d": {
+            "title": "Submissions 7D",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "title",
+          "students",
+          "assignments",
+          "submissions_7d",
+          "completion_rate",
+          "rating_count",
+          "average_course_rating"
+        ],
+        "title": "InstructorCourseStats",
+        "type": "object"
+      },
+      "InstructorStats": {
+        "properties": {
+          "course_stats": {
+            "items": {
+              "$ref": "#/components/schemas/InstructorCourseStats"
+            },
+            "title": "Course Stats",
+            "type": "array"
+          },
+          "courses": {
+            "title": "Courses",
+            "type": "integer"
+          },
+          "students": {
+            "title": "Students",
+            "type": "integer"
+          },
+          "submissions_7d": {
+            "title": "Submissions 7D",
+            "type": "integer"
+          },
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/UpcomingAssignment"
+            },
+            "title": "Upcoming",
+            "type": "array"
+          },
+          "upcoming_assignments": {
+            "title": "Upcoming Assignments",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "courses",
+          "students",
+          "upcoming_assignments",
+          "submissions_7d",
+          "course_stats",
+          "upcoming"
+        ],
+        "title": "InstructorStats",
         "type": "object"
       },
       "LedgerEntry": {
@@ -2717,6 +3140,113 @@
         "title": "ProfileUpdate",
         "type": "object"
       },
+      "RatingIn": {
+        "properties": {
+          "course_rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Course Rating",
+            "type": "integer"
+          },
+          "instructor_rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Instructor Rating",
+            "type": "integer"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review"
+          }
+        },
+        "required": [
+          "course_rating",
+          "instructor_rating"
+        ],
+        "title": "RatingIn",
+        "type": "object"
+      },
+      "RatingOut": {
+        "properties": {
+          "course_rating": {
+            "title": "Course Rating",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "instructor_rating": {
+            "title": "Instructor Rating",
+            "type": "integer"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review"
+          }
+        },
+        "required": [
+          "course_rating",
+          "instructor_rating",
+          "review",
+          "created_at"
+        ],
+        "title": "RatingOut",
+        "type": "object"
+      },
+      "RatingSummary": {
+        "properties": {
+          "average_course": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Course"
+          },
+          "average_instructor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Instructor"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count",
+          "average_course",
+          "average_instructor"
+        ],
+        "title": "RatingSummary",
+        "type": "object"
+      },
       "RecentSubmission": {
         "properties": {
           "created_at": {
@@ -2899,6 +3429,24 @@
         "title": "RouterInfo",
         "type": "object"
       },
+      "ScoreBucket": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "students": {
+            "title": "Students",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "students"
+        ],
+        "title": "ScoreBucket",
+        "type": "object"
+      },
       "SourceOut": {
         "properties": {
           "chunk_id": {
@@ -3050,6 +3598,57 @@
           "updated_at"
         ],
         "title": "StoredExplanation",
+        "type": "object"
+      },
+      "StudentStats": {
+        "properties": {
+          "assignments_complete": {
+            "title": "Assignments Complete",
+            "type": "integer"
+          },
+          "assignments_total": {
+            "title": "Assignments Total",
+            "type": "integer"
+          },
+          "average_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Percent"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/CourseProgress"
+            },
+            "title": "Courses",
+            "type": "array"
+          },
+          "enrolled_courses": {
+            "title": "Enrolled Courses",
+            "type": "integer"
+          },
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/UpcomingAssignment"
+            },
+            "title": "Upcoming",
+            "type": "array"
+          }
+        },
+        "required": [
+          "enrolled_courses",
+          "average_percent",
+          "assignments_complete",
+          "assignments_total",
+          "courses",
+          "upcoming"
+        ],
+        "title": "StudentStats",
         "type": "object"
       },
       "StudentSubmission": {
@@ -3454,6 +4053,73 @@
           "role"
         ],
         "title": "TokenResponse",
+        "type": "object"
+      },
+      "UpcomingAssignment": {
+        "properties": {
+          "assignment_id": {
+            "title": "Assignment Id",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "course_title": {
+            "title": "Course Title",
+            "type": "string"
+          },
+          "due_at": {
+            "format": "date-time",
+            "title": "Due At",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "students": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Students"
+          },
+          "students_complete": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Students Complete"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignment_id",
+          "course_id",
+          "course_title",
+          "title",
+          "due_at"
+        ],
+        "title": "UpcomingAssignment",
         "type": "object"
       },
       "ValidationError": {
@@ -4266,6 +4932,54 @@
         "summary": "Rename Course",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/analytics": {
+      "get": {
+        "description": "F-64: completion, score distribution and where each assignment stands, for one course.",
+        "operationId": "course_analytics_api_v1_courses__course_id__analytics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseAnalytics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Course Analytics",
+        "tags": [
+          "dashboards"
         ]
       }
     },
@@ -5649,6 +6363,109 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/ratings": {
+      "get": {
+        "operationId": "read_ratings_api_v1_courses__course_id__ratings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseRatings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Ratings",
+        "tags": [
+          "dashboards"
+        ]
+      },
+      "put": {
+        "description": "One rating per enrolled student; saving again replaces it.",
+        "operationId": "rate_course_api_v1_courses__course_id__ratings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseRatings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rate Course",
+        "tags": [
+          "dashboards"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/restore": {
       "post": {
         "operationId": "restore_course_api_v1_courses__course_id__restore_post",
@@ -6105,6 +6922,33 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/instructor/stats": {
+      "get": {
+        "description": "F-64: totals over the instructor's own live courses and their next assignments.",
+        "operationId": "instructor_stats_api_v1_instructor_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Instructor Stats",
+        "tags": [
+          "dashboards"
         ]
       }
     },
@@ -7040,6 +7884,37 @@
         ]
       }
     },
+    "/api/v1/students/me/grades": {
+      "get": {
+        "description": "F-63: the student's own score for every assignment of every course they are enrolled in.",
+        "operationId": "my_grades_api_v1_students_me_grades_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CourseGrades"
+                  },
+                  "title": "Response My Grades Api V1 Students Me Grades Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My Grades",
+        "tags": [
+          "dashboards"
+        ]
+      }
+    },
     "/api/v1/students/me/mastery": {
       "get": {
         "operationId": "dashboard_api_v1_students_me_mastery_get",
@@ -7136,6 +8011,33 @@
         "summary": "History",
         "tags": [
           "students"
+        ]
+      }
+    },
+    "/api/v1/students/me/stats": {
+      "get": {
+        "description": "F-63: enrolled courses, average score, progress per course and the next assignments still to finish.",
+        "operationId": "my_stats_api_v1_students_me_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My Stats",
+        "tags": [
+          "dashboards"
         ]
       }
     },

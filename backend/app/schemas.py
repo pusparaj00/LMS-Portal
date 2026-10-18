@@ -741,3 +741,128 @@ class ClassMisconception(BaseModel):
     concept: str
     students: int  # students whose probability of holding it is above the suspicion threshold
     mean_probability: float
+
+
+class CourseProgress(BaseModel):
+    course_id: int
+    title: str
+    assignments: int
+    completed: int
+    score: float
+    possible: float
+    percent: float | None
+    next_due_at: datetime | None
+
+
+class UpcomingAssignment(BaseModel):
+    assignment_id: int
+    course_id: int
+    course_title: str
+    title: str
+    due_at: datetime
+    status: str | None = None
+    students_complete: int | None = None
+    students: int | None = None
+
+
+class StudentStats(BaseModel):
+    enrolled_courses: int
+    average_percent: float | None
+    assignments_complete: int
+    assignments_total: int
+    courses: list[CourseProgress]
+    upcoming: list[UpcomingAssignment]
+
+
+class GradeLine(BaseModel):
+    assignment_id: int
+    title: str
+    due_at: datetime
+    score: float
+    with_late: float
+    possible: float
+    status: str
+
+
+class CourseGrades(BaseModel):
+    course_id: int
+    title: str
+    score: float
+    possible: float
+    percent: float | None
+    assignments: list[GradeLine]
+
+
+class InstructorCourseStats(BaseModel):
+    course_id: int
+    title: str
+    students: int
+    assignments: int
+    submissions_7d: int
+    completion_rate: float | None
+    rating_count: int
+    average_course_rating: float | None
+
+
+class InstructorStats(BaseModel):
+    courses: int
+    students: int
+    upcoming_assignments: int
+    submissions_7d: int
+    course_stats: list[InstructorCourseStats]
+    upcoming: list[UpcomingAssignment]
+
+
+class ScoreBucket(BaseModel):
+    label: str
+    students: int
+
+
+class AssignmentProgress(BaseModel):
+    assignment_id: int
+    title: str
+    due_at: datetime
+    complete: int
+    in_progress: int
+    late: int
+    missing: int
+    not_started: int
+
+
+class RatingSummary(BaseModel):
+    count: int
+    average_course: float | None
+    average_instructor: float | None
+
+
+class CourseAnalytics(BaseModel):
+    course_id: int
+    title: str
+    students: int
+    assignments: int
+    submissions_total: int
+    submissions_7d: int
+    completion_rate: float | None
+    average_percent: float | None
+    distribution: list[ScoreBucket]
+    per_assignment: list[AssignmentProgress]
+    ratings: RatingSummary
+
+
+class RatingIn(BaseModel):
+    course_rating: int = Field(ge=1, le=5)
+    instructor_rating: int = Field(ge=1, le=5)
+    review: Text | None = Field(default=None, max_length=1000)
+
+
+class RatingOut(BaseModel):
+    course_rating: int
+    instructor_rating: int
+    review: str | None
+    created_at: datetime
+
+
+class CourseRatings(BaseModel):
+    summary: RatingSummary
+    mine: RatingOut | None
+    reviews: list[RatingOut]
