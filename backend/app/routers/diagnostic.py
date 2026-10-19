@@ -35,6 +35,9 @@ SESSION_TTL_SECONDS = 2 * 60 * 60
 LOCK_TTL_SECONDS = 60
 TOP_MISCONCEPTIONS = 3
 SUSPECTED_ABOVE = 0.3  # a single tagged wrong pick takes a 0.1 prior to about 0.37
+RECHECK_QUESTIONS = 4  # F-29: a short check on the concepts that are old or thinly assessed
+RECHECK_AFTER_DAYS = 14
+RECHECK_AFTER_SUBMISSIONS = 10
 
 
 def _key(session_id: str) -> str:
@@ -46,6 +49,8 @@ def _load_state(session_id: str, user: CurrentUser) -> dict:
     state = json.loads(raw) if raw else None
     if state is None or state["user_id"] != user.id:
         raise HTTPException(404, "placement session not found or expired")
+    state.setdefault("mode", "placement")  # a session started before re-checks existed
+    state.setdefault("concepts", [])
     return state
 
 
@@ -147,7 +152,59 @@ def _usable_items(conn: Connection, state: dict, user_id: int) -> list[selection
             text("SELECT problem_id FROM worked_examples_seen WHERE user_id = :u"), {"u": user_id}
         ).scalars()
     )
-    return [i for i in _items(conn, state["course_id"]) if i.id not in seen or i.id in state["asked"]]
+    wanted = set(state["concepts"]) if state["mode"] == "recheck" else None
+    return [
+        i for i in _items(conn, state["course_id"])
+        if (i.id not in seen or i.id in state["asked"]) and (wanted is None or wanted & set(i.concepts))
+    ]
+
+
+def _recheck_concepts(conn: Connection, user_id: int, course_id: int) -> list[int]:
+    """The concepts a re-check asks about: never assessed first, then the oldest evidence, then the least of it."""
+    rows = conn.execute(
+        text(
+            "SELECT c.id FROM concepts c LEFT JOIN ("
+            "  SELECT concept_id, max(created_at) AS last, COALESCE(sum(weight), 0) AS n_eff"
+            "  FROM mastery_events WHERE user_id = :u AND rule_id = 'bayes_update' GROUP BY concept_id"
+            ") e ON e.concept_id = c.id WHERE c.course_id = :c"
+            " AND EXISTS (SELECT 1 FROM problem_concepts pc JOIN problems p ON p.id = pc.problem_id"
+            "   WHERE pc.concept_id = c.id AND p.archived_at IS NULL)"
+            " ORDER BY e.last ASC NULLS FIRST, COALESCE(e.n_eff, 0), c.id LIMIT :n"
+        ),
+        {"u": user_id, "c": course_id, "n": RECHECK_QUESTIONS},
+    )
+    return list(rows.scalars())
+
+
+def recheck_offer(conn: Connection, user_id: int, course_id: int) -> tuple[bool, list[str]]:
+    """Whether to offer the short re-check, and on which concepts: after two weeks, or ten submissions, since the last
+    placement or re-check answers (F-29)."""
+    last = conn.execute(
+        text(
+            "SELECT max(e.created_at) FROM mastery_events e JOIN concepts c ON c.id = e.concept_id"
+            " WHERE e.user_id = :u AND c.course_id = :c AND e.evidence_ref LIKE 'diagnostic:%'"
+            " AND e.rule_id = 'bayes_update'"
+        ),
+        {"u": user_id, "c": course_id},
+    ).scalar()
+    if last is None:
+        return False, []
+    since = conn.execute(
+        text(
+            "SELECT count(*) FROM submissions s JOIN problems p ON p.id = s.problem_id"
+            " WHERE s.user_id = :u AND p.course_id = :c AND s.created_at > :t"
+        ),
+        {"u": user_id, "c": course_id, "t": last},
+    ).scalar_one()
+    old = conn.execute(
+        text("SELECT :t < now() - make_interval(days => :d)"), {"t": last, "d": RECHECK_AFTER_DAYS}
+    ).scalar_one()
+    if not (old or since >= RECHECK_AFTER_SUBMISSIONS):
+        return False, []
+    names = conn.execute(
+        text("SELECT name FROM concepts WHERE id = ANY(:ids)"), {"ids": _recheck_concepts(conn, user_id, course_id)}
+    ).scalars()
+    return True, [n.replace("_", " ") for n in sorted(names)]
 
 
 def _prior_mean(state: dict) -> float:
@@ -157,7 +214,7 @@ def _prior_mean(state: dict) -> float:
 def _next_item(conn: Connection, state: dict, user_id: int) -> selection.Item | None:
     items = _usable_items(conn, state, user_id)
     given = [(r["problem_id"], r["correct"], r["evidence"]) for r in state["responses"]]
-    if selection.should_stop(items, given):
+    if selection.should_stop(items, given, RECHECK_QUESTIONS if state["mode"] == "recheck" else None):
         return None
     return selection.select_next(items, given, state["seed"], _prior_mean(state))
 
@@ -177,7 +234,8 @@ def start(body: DiagnosticStartRequest, user: Student, conn: Conn):
     ).scalar()
     state = {
         "user_id": user.id, "course_id": body.course_id, "asked": [], "responses": [], "current": None,
-        "background": background, "seed": secrets.token_hex(8),
+        "background": background, "seed": secrets.token_hex(8), "mode": body.mode,
+        "concepts": _recheck_concepts(conn, user.id, body.course_id) if body.mode == "recheck" else [],
     }
     session_pk = conn.execute(
         text(
@@ -192,9 +250,10 @@ def start(body: DiagnosticStartRequest, user: Student, conn: Conn):
         raise HTTPException(422, "this course has no placement items")
     state["current"] = first.id
     _save_state(session_id, state)
+    total = selection.max_questions(_usable_items(conn, state, user.id))
+    shown = min(total, RECHECK_QUESTIONS) if body.mode == "recheck" else total
     return DiagnosticStartResponse(
-        session_id=session_id, item_number=1, max_items=selection.max_questions(_usable_items(conn, state, user.id)),
-        item=_item_out(conn, first.id, session_id),
+        session_id=session_id, item_number=1, max_items=shown, item=_item_out(conn, first.id, session_id)
     )
 
 
@@ -273,13 +332,14 @@ def _answer(body: DiagnosticAnswerRequest, user: CurrentUser, conn: Connection) 
         )
 
     theta = _theta(state)
-    try:
-        mastery.record_pooled(
-            user_id=user.id, course_id=state["course_id"], prior_mean=_prior_mean(state),
-            evidence_ref=f"diagnostic:{body.session_id}",
-        )
-    except mastery.MasteryUnavailable:
-        raise HTTPException(503, "mastery service unavailable, try again shortly") from None
+    if state["mode"] == "placement":  # a re-check only adds its answers; it does not reset what other evidence built
+        try:
+            mastery.record_pooled(
+                user_id=user.id, course_id=state["course_id"], prior_mean=_prior_mean(state),
+                evidence_ref=f"diagnostic:{body.session_id}",
+            )
+        except mastery.MasteryUnavailable:
+            raise HTTPException(503, "mastery service unavailable, try again shortly") from None
     result = DiagnosticResult(
         mastery=_mastery_vector(conn, user.id, state["course_id"]),
         misconceptions=top_misconceptions(conn, user.id, state["course_id"]),

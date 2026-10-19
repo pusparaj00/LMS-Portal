@@ -264,3 +264,89 @@ def test_a_problem_whose_worked_solution_was_shown_is_not_a_placement_item(clien
         )
     again = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()["item"]
     assert again["problem_id"] != first["problem_id"]
+
+
+def mastery_page(client, headers, course_id):
+    return client.get(f"{API}/students/me/mastery", headers=headers, params={"course_id": course_id}).json()
+
+
+def test_a_recheck_is_offered_after_ten_submissions_or_two_weeks_and_not_before(
+    client, make_user, placement_course, owner
+):
+    course_id, wrong_for = placement_course["course_id"], placement_course["misconceptions"][0]
+    user_id, headers = enrolled_student(client, make_user, course_id)
+    assert mastery_page(client, headers, course_id)["recheck_due"] is False  # no placement yet
+    run_whole_test(client, headers, course_id, wrong_for)
+    page = mastery_page(client, headers, course_id)
+    assert page["recheck_due"] is False and page["recheck_concepts"] == []  # it was just done
+
+    with owner.begin() as conn:
+        problem = conn.execute(
+            text("SELECT id FROM problems WHERE course_id = :c AND kind = 'code' LIMIT 1"), {"c": course_id}
+        ).scalar_one()
+        for _ in range(10):
+            conn.execute(text("INSERT INTO submissions (user_id, problem_id, code) VALUES (:u, :p, 'x')"),
+                         {"u": user_id, "p": problem})
+    page = mastery_page(client, headers, course_id)
+    assert page["recheck_due"] is True
+    assert 1 <= len(page["recheck_concepts"]) <= 3 and set(page["recheck_concepts"]) <= {"alpha", "beta", "gamma"}
+
+    other_id, other = enrolled_student(client, make_user, course_id)
+    run_whole_test(client, other, course_id, wrong_for)
+    with owner.begin() as conn:
+        conn.execute(text("UPDATE mastery_events SET created_at = now() - interval '20 days' WHERE user_id = :u"),
+                     {"u": other_id})
+    assert mastery_page(client, other, course_id)["recheck_due"] is True
+
+
+def test_a_recheck_asks_four_questions_and_adds_to_the_ledger_without_redoing_the_placement(
+    client, make_user, placement_course, owner
+):
+    course_id, wrong_for = placement_course["course_id"], placement_course["misconceptions"][0]
+    user_id, headers = enrolled_student(client, make_user, course_id)
+    run_whole_test(client, headers, course_id, wrong_for)
+    with owner.begin() as conn:
+        conn.execute(text("UPDATE mastery_events SET created_at = now() - interval '20 days' WHERE user_id = :u"),
+                     {"u": user_id})
+    pooled_before = events_of(owner, user_id, "pooled_estimate")
+
+    started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id, "mode": "recheck"}).json()
+    assert started["max_items"] == 4
+    session_id, item, asked = started["session_id"], started["item"], 0
+    while True:
+        asked += 1
+        data = answer(client, headers, session_id, item, wrong_for=wrong_for).json()
+        if data["done"]:
+            break
+        item = data["next_item"]
+    assert asked == 4 and len(data["result"]["mastery"]) == 3
+
+    with owner.connect() as conn:
+        added = conn.execute(
+            text("SELECT count(DISTINCT evidence_ref) FROM mastery_events WHERE user_id = :u AND rule_id = 'bayes_update'"
+                 " AND evidence_ref LIKE :p"), {"u": user_id, "p": f"diagnostic:{session_id}:%"},
+        ).scalar_one()
+    assert added == 4  # its answers are ordinary evidence
+    assert events_of(owner, user_id, "pooled_estimate") == pooled_before  # no new placement estimate
+    page = mastery_page(client, headers, course_id)
+    assert page["placement_completed"] is True and page["recheck_due"] is False  # the re-check renewed the evidence
+
+
+def events_of(owner, user_id, rule):
+    with owner.connect() as conn:
+        return conn.execute(
+            text("SELECT count(*) FROM mastery_events WHERE user_id = :u AND rule_id = :r"), {"u": user_id, "r": rule}
+        ).scalar_one()
+
+
+def test_a_recheck_alone_does_not_count_as_taking_the_placement(client, make_user, placement_course):
+    course_id = placement_course["course_id"]
+    _, headers = enrolled_student(client, make_user, course_id)
+    started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id, "mode": "recheck"}).json()
+    item, session_id = started["item"], started["session_id"]
+    while True:
+        data = answer(client, headers, session_id, item, wrong_for=placement_course["misconceptions"][0]).json()
+        if data["done"]:
+            break
+        item = data["next_item"]
+    assert mastery_page(client, headers, course_id)["placement_completed"] is False

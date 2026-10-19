@@ -161,9 +161,10 @@ def max_questions(items: list[Item]) -> int:
     return min(MAX_ITEMS, min(MAX_MCQ, mcq) + min(MAX_CODE, code))
 
 
-def should_stop(items: list[Item], responses: list[Response]) -> bool:
+def should_stop(items: list[Item], responses: list[Response], limit: int | None = None) -> bool:
     """The test runs to the longest the course allows. An earlier stop on "uncertainty is low" was measured and removed:
     after 16 questions the three least certain concepts still have a spread of 0.46 to 0.49 for every simulated student
     (docs/results/step-56-pooled-model.md), so no threshold separates students who could stop."""
     asked = [r[0] for r in responses]
-    return len(asked) >= max_questions(items) or not allowed(items, asked)
+    length = min(limit, max_questions(items)) if limit else max_questions(items)
+    return len(asked) >= length or not allowed(items, asked)
