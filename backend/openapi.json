@@ -93,6 +93,28 @@
             "title": "Id",
             "type": "integer"
           },
+          "publish_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish At"
+          },
+          "state": {
+            "default": "published",
+            "enum": [
+              "published",
+              "draft",
+              "scheduled"
+            ],
+            "title": "State",
+            "type": "string"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -110,6 +132,7 @@
         "type": "object"
       },
       "AnnouncementIn": {
+        "description": "`mode` is publish (now), draft (teachers only) or schedule (visible at `publish_at`, which must be ahead).",
         "properties": {
           "body": {
             "description": "plain text; line breaks are kept",
@@ -117,6 +140,28 @@
             "minLength": 1,
             "title": "Body",
             "type": "string"
+          },
+          "mode": {
+            "default": "publish",
+            "enum": [
+              "publish",
+              "draft",
+              "schedule"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "publish_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish At"
           },
           "title": {
             "maxLength": 200,
@@ -172,6 +217,18 @@
             "title": "Due At",
             "type": "string"
           },
+          "module_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the topic (course module) it is filed under",
+            "title": "Module Id"
+          },
           "problems": {
             "items": {
               "$ref": "#/components/schemas/AssignmentProblemIn"
@@ -187,6 +244,22 @@
             "maxItems": 50,
             "title": "Quizzes",
             "type": "array"
+          },
+          "students": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 2000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the students it is given to; null or empty means the whole class",
+            "title": "Students"
           },
           "title": {
             "maxLength": 200,
@@ -238,6 +311,17 @@
             ],
             "description": "the signed-in student's own score; absent for staff"
           },
+          "module_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module Id"
+          },
           "possible": {
             "title": "Possible",
             "type": "number"
@@ -255,6 +339,21 @@
             },
             "title": "Quizzes",
             "type": "array"
+          },
+          "students": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "staff only: null means the whole class",
+            "title": "Students"
           },
           "title": {
             "title": "Title",
@@ -2469,6 +2568,12 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "possible": {
+            "default": 0,
+            "description": "the points of the assignments given to this student",
+            "title": "Possible",
+            "type": "number"
           },
           "student_id": {
             "title": "Student Id",
@@ -7266,7 +7371,7 @@
     },
     "/api/v1/courses/{course_id}/announcements": {
       "get": {
-        "description": "Newest first.",
+        "description": "Newest first. A student sees published posts only; a teacher also sees drafts and scheduled posts.",
         "operationId": "list_announcements_api_v1_courses__course_id__announcements_get",
         "parameters": [
           {
@@ -7420,6 +7525,7 @@
         ]
       },
       "put": {
+        "description": "Changes the text and how the post is published (for example a draft becomes a post now).",
         "operationId": "edit_announcement_api_v1_courses__course_id__announcements__announcement_id__put",
         "parameters": [
           {
