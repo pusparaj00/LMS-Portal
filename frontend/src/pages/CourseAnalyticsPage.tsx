@@ -61,7 +61,7 @@ export function CourseAnalyticsPage({ session, courseId }: { session: Session; c
           ) : (
             <>
               <DistributionChart data={data.distribution} />
-              <table className="sr-only">
+              <div className="sr-only"><table>
                 <caption>Students by total score</caption>
                 <tbody>
                   {data.distribution.map((b) => (
@@ -71,7 +71,7 @@ export function CourseAnalyticsPage({ session, courseId }: { session: Session; c
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </>
           )}
         </section>
@@ -82,7 +82,7 @@ export function CourseAnalyticsPage({ session, courseId }: { session: Session; c
           ) : (
             <>
               <StatusChart data={data.per_assignment} />
-              <table className="sr-only">
+              <div className="sr-only"><table>
                 <caption>Progress on each assignment</caption>
                 <tbody>
                   {data.per_assignment.map((a) => (
@@ -95,7 +95,7 @@ export function CourseAnalyticsPage({ session, courseId }: { session: Session; c
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </>
           )}
         </section>

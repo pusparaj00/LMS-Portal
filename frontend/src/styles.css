@@ -972,7 +972,8 @@ code {
   font: 0.9em var(--mono);
 }
 
-.visually-hidden {
+.visually-hidden,
+.sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1630,4 +1631,60 @@ td.not-given {
 
 .grades-table td.chosen {
   background: var(--signal-soft);
+}
+
+/* long words and links never push a page wider than the screen */
+.work-text,
+.review-work a,
+.review-work p,
+.comment-body,
+.instructions,
+.announcement-body,
+.rows li {
+  overflow-wrap: anywhere;
+}
+
+.review-layout > *,
+.rows li > * {
+  min-width: 0;
+}
+
+/* phone width (TR-P-09): wrap rows of controls, keep selects inside the screen, and make controls big enough to tap */
+@media (max-width: 720px) {
+  label.inline,
+  .concept-pick {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .concept-pick {
+    gap: 0.4rem 1rem;
+  }
+
+  select,
+  input:not([type="checkbox"]):not([type="radio"]) {
+    max-width: 100%;
+  }
+
+  main input[type="checkbox"],
+  main label.inline input[type="checkbox"],
+  main input[type="radio"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: none;
+  }
+
+  main button,
+  main a.button {
+    min-height: 2.5rem;
+  }
+
+  main button.link {
+    min-height: 2.25rem;
+    padding-inline: 0.4rem;
+  }
+
+  .rows li {
+    flex-wrap: wrap;
+  }
 }
