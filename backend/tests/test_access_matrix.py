@@ -15,6 +15,7 @@ ANY = "any signed-in user"
 STUDENT = "student"
 INSTRUCTOR = "instructor"
 STAFF = "instructor or admin"
+LEARNERS = "student or instructor"
 ADMIN = "admin only"
 
 POLICY = {
@@ -108,6 +109,11 @@ POLICY = {
     ("POST", "/courses/{course_id}/assignments/{assignment_id}/work/return-all"): INSTRUCTOR,
     ("POST", "/courses/{course_id}/assignments/{assignment_id}/work/students/{student_id}/comments"): INSTRUCTOR,
     ("GET", "/instructor/to-review"): INSTRUCTOR,
+    ("GET", "/students/me/todo"): STUDENT,
+    ("GET", "/calendar"): LEARNERS,
+    ("GET", "/notifications"): ANY,
+    ("POST", "/notifications/read-all"): ANY,
+    ("POST", "/notifications/{notification_id}/read"): ANY,
     ("GET", "/courses/{course_id}/quizzes"): ANY,
     ("POST", "/courses/{course_id}/quizzes"): INSTRUCTOR,
     ("GET", "/courses/{course_id}/quizzes/{quiz_id}"): ANY,
@@ -146,6 +152,7 @@ ALLOWED = {
     STUDENT: {"student"},
     INSTRUCTOR: {"instructor"},
     STAFF: {"instructor", "admin"},
+    LEARNERS: {"student", "instructor"},
     ADMIN: {"admin"},
 }
 

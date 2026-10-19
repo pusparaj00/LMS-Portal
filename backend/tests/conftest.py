@@ -100,6 +100,8 @@ def make_user(owner):
             f"DELETE FROM run_results WHERE submission_id IN ({subs})",
             f"DELETE FROM submissions WHERE id IN ({subs})",
             f"DELETE FROM assignment_problems WHERE problem_id IN ({problems})",
+            "DELETE FROM notifications WHERE user_id = ANY(:ids)",
+            f"DELETE FROM notifications WHERE course_id IN ({courses})",
             "DELETE FROM work_comments WHERE author_id = ANY(:ids)",
             "DELETE FROM work_comments WHERE submission_id IN (SELECT id FROM work_submissions WHERE user_id = ANY(:ids))",
             f"DELETE FROM work_comments WHERE submission_id IN (SELECT w.id FROM work_submissions w JOIN assignments a ON a.id = w.assignment_id WHERE a.course_id IN ({courses}))",

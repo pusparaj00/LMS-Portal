@@ -96,6 +96,10 @@ def fill(owner, user_id: int, course, lms: bool = False) -> int:
             {"a": assignment, "u": user_id},
         ).scalar_one()
         conn.execute(
+            text("INSERT INTO notifications (user_id, kind, title, link) VALUES (:u, 'announcement', 'x', '#/dashboard')"),
+            {"u": user_id},
+        )
+        conn.execute(
             text("INSERT INTO work_comments (submission_id, author_id, body) VALUES (:w, :u, 'hello')"),
             {"w": work, "u": user_id},
         )
