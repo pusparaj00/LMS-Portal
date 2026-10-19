@@ -11,8 +11,11 @@ export type Assignment = {
   possible: number;
   problems: { problem_id: number; title: string; points: number }[];
   quizzes: { quiz_id: number; title: string; points: number; published: boolean }[];
+  work: WorkConfig | null;
   mine: { score: number; with_late: number; possible: number; status: Status } | null;
 };
+
+export type WorkConfig = { instructions: string; points: number; allow_file: boolean; allow_link: boolean; allow_text: boolean };
 
 export const STATUS_TEXT: Record<Status, string> = {
   complete: "Complete",
@@ -54,7 +57,7 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
               <strong>{a.title}</strong>
               <br />
               <small>
-                Due {when(a.due_at)} · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`)].join(", ")}
+                Due {when(a.due_at)} · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`), ...(a.work ? ["Handed-in work"] : [])].join(", ")}
               </small>
               {a.quizzes.map((q) => (
                 <small key={q.quiz_id}>
@@ -62,6 +65,12 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
                   {q.published ? <a href={`#/course/${courseId}/quiz/${q.quiz_id}`}>Take {q.title}</a> : `${q.title} is not open yet`}
                 </small>
               ))}
+              {a.work && (
+                <small>
+                  {" "}
+                  <a href={`#/course/${courseId}/assignment/${a.id}`}>Hand in your work</a>
+                </small>
+              )}
             </span>
             {a.mine && (
               <span className={`status status-${a.mine.status}`}>
@@ -77,8 +86,10 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
   );
 }
 
-type Draft = { id: number | null; title: string; due: string; picked: Record<number, number>; quizzes: Record<number, number> };
-const EMPTY: Draft = { id: null, title: "", due: "", picked: {}, quizzes: {} };
+type WorkDraft = WorkConfig & { on: boolean };
+const NO_WORK: WorkDraft = { on: false, instructions: "", points: 10, allow_file: true, allow_link: true, allow_text: true };
+type Draft = { id: number | null; title: string; due: string; picked: Record<number, number>; quizzes: Record<number, number>; work: WorkDraft };
+const EMPTY: Draft = { id: null, title: "", due: "", picked: {}, quizzes: {}, work: NO_WORK };
 
 /** F-04: the instructor creates, edits and deletes the course's assignments. */
 export function AssignmentsPage({ session, courseId }: { session: Session; courseId: number }) {
@@ -111,6 +122,7 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       due: localInput(a.due_at),
       picked: Object.fromEntries(a.problems.map((p) => [p.problem_id, p.points])),
       quizzes: Object.fromEntries(a.quizzes.map((q) => [q.quiz_id, q.points])),
+      work: a.work ? { ...a.work, on: true } : NO_WORK,
     });
     window.scrollTo({ top: 0 });
   }
@@ -124,6 +136,7 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       due_at: new Date(draft.due).toISOString(),
       problems: Object.entries(draft.picked).map(([id, p]) => ({ problem_id: Number(id), points: p })),
       quizzes: Object.entries(draft.quizzes).map(([id, p]) => ({ quiz_id: Number(id), points: p })),
+      work: draft.work.on ? { instructions: draft.work.instructions, points: draft.work.points, allow_file: draft.work.allow_file, allow_link: draft.work.allow_link, allow_text: draft.work.allow_text } : null,
     };
     try {
       const path = `/courses/${courseId}/assignments${draft.id ? `/${draft.id}` : ""}`;
@@ -233,10 +246,33 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               )}
             </div>
           ))}
+          <p>Handed-in work</p>
+          <label className="inline">
+            <input type="checkbox" checked={draft.work.on} onChange={(e) => setDraft({ ...draft, work: { ...draft.work, on: e.target.checked } })} />
+            Ask students to hand in work (a file, a link or text) that you score yourself
+          </label>
+          {draft.work.on && (
+            <>
+              <label>
+                Instructions
+                <textarea value={draft.work.instructions} rows={4} maxLength={5000} required onChange={(e) => setDraft({ ...draft, work: { ...draft.work, instructions: e.target.value } })} />
+              </label>
+              <label className="inline">
+                Points
+                <input type="number" min={0.5} max={100} step={0.5} value={draft.work.points} onChange={(e) => setDraft({ ...draft, work: { ...draft.work, points: Number(e.target.value) } })} />
+              </label>
+              {(["allow_file", "allow_link", "allow_text"] as const).map((k) => (
+                <label key={k} className="inline">
+                  <input type="checkbox" checked={draft.work[k]} onChange={(e) => setDraft({ ...draft, work: { ...draft.work, [k]: e.target.checked } })} />
+                  Accept {k === "allow_file" ? "a file" : k === "allow_link" ? "a link" : "text"}
+                </label>
+              ))}
+            </>
+          )}
           {draft.id && <small>Changing the problems or the due date changes every student's score straight away.</small>}
         </fieldset>
         <p className="actions">
-          <button className="primary" type="submit" disabled={busy || Object.keys(draft.picked).length + Object.keys(draft.quizzes).length === 0}>
+          <button className="primary" type="submit" disabled={busy || Object.keys(draft.picked).length + Object.keys(draft.quizzes).length + (draft.work.on ? 1 : 0) === 0}>
             {draft.id ? "Save changes" : "Create assignment"}
           </button>
           {draft.id && (
@@ -256,9 +292,10 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               <strong>{a.title}</strong>
               <br />
               <small>
-                Due {when(a.due_at)} · {points(a.possible)} points · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`)].join(", ")}
+                Due {when(a.due_at)} · {points(a.possible)} points · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`), ...(a.work ? ["Handed-in work"] : [])].join(", ")}
               </small>
             </span>
+            {a.work && <a className="button" href={`#/course/${courseId}/assignment/${a.id}/review`}>Review work</a>}
             <button onClick={() => edit(a)}>Edit</button>
             <button className="link" onClick={() => remove(a)}>
               Delete

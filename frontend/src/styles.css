@@ -1456,3 +1456,45 @@ blockquote {
   width: 100%;
   margin-top: 0.25rem;
 }
+
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.review-students li.chosen {
+  background: var(--surface-2, rgba(127, 127, 127, 0.15));
+}
+
+.review-students li {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.work-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.15));
+}
+
+.comment-body,
+.instructions {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+@media (max-width: 720px) {
+  .review-layout {
+    grid-template-columns: 1fr;
+  }
+}

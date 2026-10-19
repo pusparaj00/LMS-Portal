@@ -5,6 +5,9 @@ import { AccountPage, Me } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { QuizPage } from "./pages/QuizPage";
+import { ToReviewPage } from "./pages/ToReviewPage";
+import { WorkPage } from "./pages/WorkPage";
+import { WorkReviewPage } from "./pages/WorkReviewPage";
 import { QuizzesPage } from "./pages/QuizzesPage";
 import { ChatPanel } from "./pages/ChatPanel";
 import { CoursePage } from "./pages/CoursePage";
@@ -156,6 +159,8 @@ export function App() {
   const assignments = hash.match(/^#\/course\/(\d+)\/assignments$/);
   const quizzes = hash.match(/^#\/course\/(\d+)\/quizzes$/);
   const takeQuiz = hash.match(/^#\/course\/(\d+)\/quiz\/(\d+)$/);
+  const handIn = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)$/);
+  const reviewWork = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)\/review$/);
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
   const contentEditor = hash.match(/^#\/course\/(\d+)\/content$/);
   const analytics = hash.match(/^#\/course\/(\d+)\/analytics$/);
@@ -247,6 +252,12 @@ export function App() {
             <NotesPage session={session} courseId={Number(notes[1])} />
           ) : assignments && session.role === "instructor" ? (
             <AssignmentsPage session={session} courseId={Number(assignments[1])} />
+          ) : handIn && session.role === "student" ? (
+            <WorkPage key={handIn[2]} session={session} courseId={Number(handIn[1])} assignmentId={Number(handIn[2])} />
+          ) : reviewWork && session.role === "instructor" ? (
+            <WorkReviewPage key={reviewWork[2]} session={session} courseId={Number(reviewWork[1])} assignmentId={Number(reviewWork[2])} />
+          ) : hash === "#/review" && session.role === "instructor" ? (
+            <ToReviewPage session={session} />
           ) : quizzes && session.role === "instructor" ? (
             <QuizzesPage session={session} courseId={Number(quizzes[1])} />
           ) : takeQuiz && session.role === "student" ? (
