@@ -51,13 +51,15 @@ def _assignments(conn: Connection, course_id: int, assignment_id: int | None = N
         out[r.id].possible += r.points
     for r in conn.execute(
         text(
-            "SELECT a.id, aq.quiz_id, q.title, aq.points FROM assignments a"
+            "SELECT a.id, aq.quiz_id, q.title, aq.points, q.published FROM assignments a"
             " JOIN assignment_quizzes aq ON aq.assignment_id = a.id JOIN quizzes q ON q.id = aq.quiz_id"
             f" WHERE {where} ORDER BY q.id"
         ),
         which,
     ):
-        out[r.id].quizzes.append(AssignmentQuizOut(quiz_id=r.quiz_id, title=r.title, points=r.points))
+        out[r.id].quizzes.append(
+            AssignmentQuizOut(quiz_id=r.quiz_id, title=r.title, points=r.points, published=r.published)
+        )
         out[r.id].possible += r.points
     return list(out.values())
 

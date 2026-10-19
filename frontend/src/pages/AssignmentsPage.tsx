@@ -10,7 +10,7 @@ export type Assignment = {
   due_at: string;
   possible: number;
   problems: { problem_id: number; title: string; points: number }[];
-  quizzes: { quiz_id: number; title: string; points: number }[];
+  quizzes: { quiz_id: number; title: string; points: number; published: boolean }[];
   mine: { score: number; with_late: number; possible: number; status: Status } | null;
 };
 
@@ -59,7 +59,7 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
               {a.quizzes.map((q) => (
                 <small key={q.quiz_id}>
                   {" "}
-                  <a href={`#/course/${courseId}/quiz/${q.quiz_id}`}>Take {q.title}</a>
+                  {q.published ? <a href={`#/course/${courseId}/quiz/${q.quiz_id}`}>Take {q.title}</a> : `${q.title} is not open yet`}
                 </small>
               ))}
             </span>

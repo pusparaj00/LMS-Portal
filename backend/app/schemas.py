@@ -252,6 +252,7 @@ class AssignmentQuizOut(BaseModel):
     quiz_id: int
     title: str
     points: float
+    published: bool = True
 
 
 class AssignmentOut(BaseModel):

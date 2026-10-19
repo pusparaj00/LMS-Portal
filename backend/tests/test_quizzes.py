@@ -252,3 +252,11 @@ def test_an_assignment_can_mix_problems_and_quizzes_and_must_hold_something(clie
     ok = client.post(path, headers=c["teacher"], json={"title": "Fine", "due_at": iso(1),
                                                        "quizzes": [{"quiz_id": quiz["id"], "points": 3}]})
     assert ok.status_code == 201 and ok.json()["problems"] == [] and ok.json()["possible"] == 3
+
+
+def test_an_assignment_tells_students_when_its_quiz_is_not_open_yet(client, course):
+    draft = make_quiz(client, course, published=False)
+    client.post(f"{API}/courses/{course['id']}/assignments", headers=course["teacher"], json={
+        "title": "Soon", "due_at": iso(3), "quizzes": [{"quiz_id": draft["id"], "points": 2}]})
+    listed = client.get(f"{API}/courses/{course['id']}/assignments", headers=course["student"]).json()
+    assert [q["published"] for q in listed[0]["quizzes"]] == [False]

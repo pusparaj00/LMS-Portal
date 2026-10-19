@@ -380,6 +380,11 @@
             "title": "Points",
             "type": "number"
           },
+          "published": {
+            "default": true,
+            "title": "Published",
+            "type": "boolean"
+          },
           "quiz_id": {
             "title": "Quiz Id",
             "type": "integer"
