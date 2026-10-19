@@ -65,7 +65,9 @@ def test_a_new_student_completes_the_whole_test_and_sees_a_vector_and_misconcept
 
     assert len(kinds) == 12 and kinds.count("code") == 3
     assert kinds[: selection.WARMUP_ITEMS] == ["mcq"] * selection.WARMUP_ITEMS
-    assert not any(a == b == "code" for a, b in zip(kinds, kinds[1:], strict=False))
+    for i, (a, b) in enumerate(zip(kinds, kinds[1:], strict=False)):
+        if a == b == "code":
+            assert kinds[: i + 2].count("mcq") == 9  # two coding tasks in a row only once the tracing questions ran out
     assert len(result["mastery"]) == 3
     names = {m["name"] for m in result["misconceptions"]}
     with owner.connect() as conn:
