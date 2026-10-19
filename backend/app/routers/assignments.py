@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import Connection, text
 
-from app import audit, grading_book, lti_grades
+from app import audit, grading_book, lti_grades, overall
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.schemas import (
     AssignmentIn,
@@ -36,11 +36,12 @@ def _assignments(conn: Connection, course_id: int, assignment_id: int | None = N
     where = "a.course_id = :c AND (CAST(:a AS integer) IS NULL OR a.id = :a)"
     out = {
         r.id: AssignmentOut(
-            id=r.id, course_id=course_id, title=r.title, due_at=r.due_at, possible=0, problems=[], module_id=r.module_id
+            id=r.id, course_id=course_id, title=r.title, due_at=r.due_at, possible=0, problems=[],
+            module_id=r.module_id, category_id=r.category_id,
         )
         for r in conn.execute(
             text(
-                "SELECT a.id, a.title, a.due_at, a.module_id FROM assignments a"
+                "SELECT a.id, a.title, a.due_at, a.module_id, a.category_id FROM assignments a"
                 f" WHERE {where} ORDER BY a.due_at, a.id"
             ),
             which,
@@ -70,14 +71,15 @@ def _assignments(conn: Connection, course_id: int, assignment_id: int | None = N
         out[r.id].possible += r.points
     for r in conn.execute(
         text(
-            "SELECT a.id, w.instructions, w.points, w.allow_file, w.allow_link, w.allow_text FROM assignments a"
+            "SELECT a.id, w.instructions, w.points, w.allow_file, w.allow_link, w.allow_text, w.rubric_id"
+            " FROM assignments a"
             f" JOIN assignment_work w ON w.assignment_id = a.id WHERE {where}"
         ),
         which,
     ):
         out[r.id].work = WorkIn(
             instructions=r.instructions, points=r.points, allow_file=r.allow_file, allow_link=r.allow_link,
-            allow_text=r.allow_text,
+            allow_text=r.allow_text, rubric_id=r.rubric_id,
         )
         out[r.id].possible += r.points
     for r in conn.execute(
@@ -108,7 +110,15 @@ def _save_placement(conn: Connection, course_id: int, assignment_id: int, body: 
         ).scalars())
         if found != set(wanted):
             raise HTTPException(422, "every chosen student must be in this course")
-    conn.execute(text("UPDATE assignments SET module_id = :m WHERE id = :a"), {"m": body.module_id, "a": assignment_id})
+    if body.category_id is not None and conn.execute(
+        text("SELECT 1 FROM grade_categories WHERE id = :g AND course_id = :c"),
+        {"g": body.category_id, "c": course_id},
+    ).first() is None:
+        raise HTTPException(422, "that grade category is not part of this course")
+    conn.execute(
+        text("UPDATE assignments SET module_id = :m, category_id = :g WHERE id = :a"),
+        {"m": body.module_id, "g": body.category_id, "a": assignment_id},
+    )
     conn.execute(text("DELETE FROM assignment_students WHERE assignment_id = :a"), {"a": assignment_id})
     for user_id in wanted:
         conn.execute(
@@ -153,7 +163,7 @@ def _save_quizzes(conn: Connection, course_id: int, assignment_id: int, body: As
         )
 
 
-def _save_work(conn: Connection, assignment_id: int, body: AssignmentIn) -> None:
+def _save_work(conn: Connection, course_id: int, assignment_id: int, body: AssignmentIn) -> None:
     """Sets, changes or removes the handed-in work. Work that students have already handed in cannot be removed, and
     its points cannot drop below a score already given."""
     handed_in, top_score = conn.execute(
@@ -168,14 +178,27 @@ def _save_work(conn: Connection, assignment_id: int, body: AssignmentIn) -> None
         return
     if top_score is not None and body.work.points < top_score:
         raise HTTPException(409, f"a score of {top_score:g} has been given, so the work cannot be worth fewer points")
+    if body.work.rubric_id is not None:
+        top = conn.execute(
+            text(
+                "SELECT sum(best) FROM (SELECT max(l.points) AS best FROM rubric_criteria c"
+                " JOIN rubric_levels l ON l.criterion_id = c.id JOIN rubrics r ON r.id = c.rubric_id"
+                " WHERE r.id = :r AND r.course_id = :c GROUP BY c.id) t"
+            ),
+            {"r": body.work.rubric_id, "c": course_id},
+        ).scalar()
+        if top is None:
+            raise HTTPException(422, "that rubric is not part of this course")
+        if abs(top - body.work.points) > 1e-9:
+            raise HTTPException(422, f"the rubric's top score is {top:g}, so the work must be worth {top:g} points")
     conn.execute(
         text(
-            "INSERT INTO assignment_work (assignment_id, instructions, points, allow_file, allow_link, allow_text)"
-            " VALUES (:a, :i, :p, :f, :l, :t) ON CONFLICT (assignment_id) DO UPDATE SET"
-            " instructions = :i, points = :p, allow_file = :f, allow_link = :l, allow_text = :t"
+            "INSERT INTO assignment_work (assignment_id, instructions, points, allow_file, allow_link, allow_text,"
+            " rubric_id) VALUES (:a, :i, :p, :f, :l, :t, :rb) ON CONFLICT (assignment_id) DO UPDATE SET"
+            " instructions = :i, points = :p, allow_file = :f, allow_link = :l, allow_text = :t, rubric_id = :rb"
         ),
         {"a": assignment_id, "i": body.work.instructions.strip(), "p": body.work.points, "f": body.work.allow_file,
-         "l": body.work.allow_link, "t": body.work.allow_text},
+         "l": body.work.allow_link, "t": body.work.allow_text, "rb": body.work.rubric_id},
     )
 
 
@@ -215,7 +238,7 @@ def create_assignment(course_id: int, body: AssignmentIn, user: Instructor, conn
     ).scalar_one()
     _save_problems(conn, course_id, assignment_id, body)
     _save_quizzes(conn, course_id, assignment_id, body)
-    _save_work(conn, assignment_id, body)
+    _save_work(conn, course_id, assignment_id, body)
     _save_placement(conn, course_id, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
@@ -231,7 +254,7 @@ def update_assignment(course_id: int, assignment_id: int, body: AssignmentIn, us
     )
     _save_problems(conn, course_id, assignment_id, body)
     _save_quizzes(conn, course_id, assignment_id, body)
-    _save_work(conn, assignment_id, body)
+    _save_work(conn, course_id, assignment_id, body)
     _save_placement(conn, course_id, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
@@ -252,12 +275,25 @@ def delete_assignment(course_id: int, assignment_id: int, user: Instructor, conn
 def gradebook(conn: Connection, course_id: int) -> Gradebook:
     items = _assignments(conn, course_id)
     rows: dict[int, GradebookRow] = {}
-    for s in grading_book.scores(conn, course_id):
+    overridden = {
+        (r.assignment_id, r.user_id): r.reason
+        for r in conn.execute(
+            text(
+                "SELECT o.assignment_id, o.user_id, o.reason FROM score_overrides o"
+                " JOIN assignments a ON a.id = o.assignment_id WHERE a.course_id = :c"
+            ),
+            {"c": course_id},
+        )
+    }
+    cats, category_of = overall.categories(conn, course_id), overall.assignment_categories(conn, course_id)
+    scored = grading_book.scores(conn, course_id)
+    for s in scored:
         row = rows.setdefault(s.student_id, GradebookRow(
             student_id=s.student_id, label=s.label, synthetic=s.synthetic, cells=[], total=0, total_with_late=0
         ))
         row.cells.append(GradebookCell(assignment_id=s.assignment_id, score=s.score, with_late=s.with_late,
-                                       status=s.status))
+                                       status=s.status,
+                                       override_reason=overridden.get((s.assignment_id, s.student_id))))
         row.total = round(row.total + s.score, 4)
         row.total_with_late = round(row.total_with_late + s.with_late, 4)
     order = {a.id: n for n, a in enumerate(items)}  # the columns' order (by due date), not the id order of the query
@@ -265,6 +301,9 @@ def gradebook(conn: Connection, course_id: int) -> Gradebook:
     for row in rows.values():
         row.cells.sort(key=lambda c: order[c.assignment_id])
         row.possible = sum(possible[c.assignment_id] for c in row.cells)
+        row.overall = overall.compute(
+            cats, category_of, [(c.assignment_id, c.score, possible[c.assignment_id]) for c in row.cells]
+        )
     return Gradebook(
         assignments=[GradebookAssignment(id=a.id, title=a.title, due_at=a.due_at, possible=a.possible) for a in items],
         students=list(rows.values()),

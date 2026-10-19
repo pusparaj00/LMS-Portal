@@ -16,6 +16,7 @@ from sqlalchemy import Connection, text
 from app import audit, notifications, ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.grading_book import label
+from app.routers.grading import rubric_out
 from app.routers.people import teacher_ids
 from app.schemas import (
     CommentIn,
@@ -50,7 +51,8 @@ def _work(conn: Connection, course_id: int, assignment_id: int):
     row = conn.execute(
         text(
             "SELECT a.id, a.title, a.due_at, w.instructions, w.points, w.allow_file, w.allow_link, w.allow_text,"
-            " a.due_at < now() AS past_due FROM assignments a JOIN assignment_work w ON w.assignment_id = a.id"
+            " w.rubric_id, a.due_at < now() AS past_due FROM assignments a"
+            " JOIN assignment_work w ON w.assignment_id = a.id"
             " WHERE a.id = :a AND a.course_id = :c"
         ),
         {"a": assignment_id, "c": course_id},
@@ -102,6 +104,14 @@ def _comments(conn: Connection, submission_id: int | None, viewer: int) -> list[
     ]
 
 
+def _chosen_levels(conn: Connection, submission_id: int | None) -> dict[int, int]:
+    if submission_id is None:
+        return {}
+    return dict(conn.execute(
+        text("SELECT criterion_id, level_id FROM work_rubric_scores WHERE submission_id = :s"), {"s": submission_id}
+    ).all())
+
+
 def _my_view(conn: Connection, work, user_id: int) -> MyWork:
     sub = _submission(conn, work.id, user_id)
     returned = sub is not None and sub.returned_at is not None
@@ -121,6 +131,9 @@ def _my_view(conn: Connection, work, user_id: int) -> MyWork:
         score=sub.score if returned else None, feedback=sub.feedback if returned else None,
         returned_at=sub.returned_at if sub else None,
         comments=_comments(conn, sub.id if sub else None, user_id),
+        # the rubric is shown from the start; the levels the instructor picked only once the work is returned
+        rubric=rubric_out(conn, work.rubric_id, _chosen_levels(conn, sub.id if sub and returned else None))
+        if work.rubric_id else None,
     )
 
 
@@ -304,6 +317,8 @@ def _their_view(conn: Connection, work, student, viewer: int) -> TheirWork:
         turned_in_at=sub.turned_in_at if sub else None, score=sub.score if sub else None,
         feedback=sub.feedback if sub else None, graded_at=sub.graded_at if sub else None,
         returned_at=sub.returned_at if sub else None, comments=_comments(conn, sub.id if sub else None, viewer),
+        rubric=rubric_out(conn, work.rubric_id, _chosen_levels(conn, sub.id if sub else None))
+        if work.rubric_id else None,
     )
 
 
@@ -364,6 +379,39 @@ def their_file(course_id: int, assignment_id: int, student_id: int, user: Teache
     return _download(row.file_name, row.file_data)
 
 
+def _levels_with_ids(conn: Connection, work, body: GradeIn) -> dict[int, tuple[int, float]]:
+    """criterion id to (chosen level id, its points), checked against the work's rubric."""
+    rows = conn.execute(
+        text(
+            "SELECT c.id AS criterion_id, l.id AS level_id, l.points FROM rubric_criteria c"
+            " JOIN rubric_levels l ON l.criterion_id = c.id WHERE c.rubric_id = :r"
+        ),
+        {"r": work.rubric_id},
+    ).all()
+    criteria = {r.criterion_id for r in rows}
+    chosen = body.levels or {}
+    if set(chosen) != criteria:
+        raise HTTPException(422, "choose one level for every criterion of the rubric")
+    by_level = {(r.criterion_id, r.level_id): r.points for r in rows}
+    out = {}
+    for criterion_id, level_id in chosen.items():
+        if (criterion_id, level_id) not in by_level:
+            raise HTTPException(422, "a chosen level does not belong to its criterion")
+        out[criterion_id] = (level_id, by_level[(criterion_id, level_id)])
+    return out
+
+
+def _checked_levels(conn: Connection, work, body: GradeIn) -> dict[int, float]:
+    """The points of each chosen level for rubric work; for other work, a plain score is required instead."""
+    if not work.rubric_id:
+        if body.levels:
+            raise HTTPException(422, "this work has no rubric; send a score")
+        return {}
+    if body.score is not None:
+        raise HTTPException(422, "this work is graded with a rubric; choose a level for each criterion")
+    return {criterion: points for criterion, (_level, points) in _levels_with_ids(conn, work, body).items()}
+
+
 @router.put("/students/{student_id}/grade", response_model=TheirWork)
 def grade(course_id: int, assignment_id: int, student_id: int, body: GradeIn, user: Teacher, conn: Conn):
     work = _teacher_work(conn, course_id, assignment_id, user)
@@ -371,7 +419,9 @@ def grade(course_id: int, assignment_id: int, student_id: int, body: GradeIn, us
     sub = _submission(conn, assignment_id, student_id)
     if sub is None or sub.status != "turned_in":
         raise HTTPException(409, "this student has not turned in work to grade")
-    if body.score > work.points:
+    levels = _checked_levels(conn, work, body)
+    score = sum(points for points in levels.values()) if work.rubric_id else body.score
+    if score > work.points + 1e-9:
         raise HTTPException(422, f"the score cannot be more than the {work.points:g} points the work is worth")
     feedback = body.feedback.strip() if body.feedback and body.feedback.strip() else None
     conn.execute(
@@ -379,10 +429,17 @@ def grade(course_id: int, assignment_id: int, student_id: int, body: GradeIn, us
             "UPDATE work_submissions SET score = :s, feedback = :f, graded_at = now(), graded_by = :g"
             " WHERE assignment_id = :a AND user_id = :u"
         ),
-        {"s": body.score, "f": feedback, "g": user.id, "a": assignment_id, "u": student_id},
+        {"s": score, "f": feedback, "g": user.id, "a": assignment_id, "u": student_id},
     )
+    if work.rubric_id:
+        conn.execute(text("DELETE FROM work_rubric_scores WHERE submission_id = :s"), {"s": sub.id})
+        for criterion_id, (level_id, _points) in _levels_with_ids(conn, work, body).items():
+            conn.execute(
+                text("INSERT INTO work_rubric_scores (submission_id, criterion_id, level_id) VALUES (:s, :c, :l)"),
+                {"s": sub.id, "c": criterion_id, "l": level_id},
+            )
     audit.record("work.graded", user_id=user.id, status=200, conn=conn, detail={
-        "course_id": course_id, "assignment_id": assignment_id, "student_id": student_id, "score": body.score,
+        "course_id": course_id, "assignment_id": assignment_id, "student_id": student_id, "score": score,
         "was_returned": sub.returned_at is not None})
     return _their_view(conn, work, student, user.id)
 

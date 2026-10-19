@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
-from app import grading_book
+from app import grading_book, overall
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.schemas import (
     AssignmentProgress,
@@ -60,10 +60,22 @@ def _student_courses(conn: Connection, user_id: int) -> list[CourseGrades]:
     out = []
     for course in courses:
         mine = {s.assignment_id: s for s in grading_book.scores(conn, course.id, only_student=user_id)}
+        reasons = {
+            r.assignment_id: r.reason
+            for r in conn.execute(
+                text(
+                    "SELECT o.assignment_id, o.reason FROM score_overrides o"
+                    " JOIN assignments a ON a.id = o.assignment_id"
+                    " WHERE a.course_id = :c AND o.user_id = :u"
+                ),
+                {"c": course.id, "u": user_id},
+            )
+        }
         lines = [
             GradeLine(
                 assignment_id=a.id, title=a.title, due_at=a.due_at, score=mine[a.id].score,
                 with_late=mine[a.id].with_late, possible=mine[a.id].possible, status=mine[a.id].status,
+                override_reason=reasons.get(a.id),
             )
             for a in _assignment_rows(conn, course.id)
             if a.id in mine  # an assignment with no problems has no score row
@@ -73,6 +85,10 @@ def _student_courses(conn: Connection, user_id: int) -> list[CourseGrades]:
         out.append(CourseGrades(
             course_id=course.id, title=course.title, score=score, possible=possible,
             percent=_percent(score, possible), assignments=lines,
+            overall=overall.compute(
+                overall.categories(conn, course.id), overall.assignment_categories(conn, course.id),
+                [(line.assignment_id, line.score, line.possible) for line in lines],
+            ),
         ))
     return out
 

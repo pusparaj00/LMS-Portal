@@ -295,6 +295,9 @@ class WorkIn(BaseModel):
     allow_file: bool = True
     allow_link: bool = True
     allow_text: bool = True
+    rubric_id: int | None = Field(
+        default=None, description="a rubric of this course; its top score must equal the points"
+    )
 
     @model_validator(mode="after")
     def _something_allowed(self):
@@ -312,6 +315,7 @@ class AssignmentIn(BaseModel):
     quizzes: list[AssignmentQuizIn] = Field(default_factory=list, max_length=50)
     work: WorkIn | None = None
     module_id: int | None = Field(default=None, description="the topic (course module) it is filed under")
+    category_id: int | None = Field(default=None, description="the grade category it counts in")
     students: list[int] | None = Field(
         default=None, max_length=2000, description="the students it is given to; null or empty means the whole class"
     )
@@ -360,6 +364,7 @@ class AssignmentOut(BaseModel):
     quizzes: list[AssignmentQuizOut] = Field(default_factory=list)
     work: WorkIn | None = None
     module_id: int | None = None
+    category_id: int | None = None
     students: list[int] | None = Field(default=None, description="staff only: null means the whole class")
     mine: MyScore | None = Field(default=None, description="the signed-in student's own score; absent for staff")
 
@@ -371,11 +376,31 @@ class GradebookAssignment(BaseModel):
     possible: float
 
 
+class OverallPart(BaseModel):
+    category_id: int
+    name: str
+    weight: float
+    score: float
+    possible: float
+    percent: float
+
+
+class Overall(BaseModel):
+    """The weighted grade. `percent` is null when nothing in a category was given yet. `uncategorised` counts the
+    assignments that have no category and so are not part of it."""
+
+    percent: float | None
+    parts: list[OverallPart]
+    uncategorised: int
+
+
+
 class GradebookCell(BaseModel):
     assignment_id: int
     score: float
     with_late: float
     status: Status
+    override_reason: str | None = Field(default=None, description="set when the instructor adjusted this score")
 
 
 class GradebookRow(BaseModel):
@@ -386,6 +411,7 @@ class GradebookRow(BaseModel):
     total: float
     total_with_late: float
     possible: float = Field(default=0, description="the points of the assignments given to this student")
+    overall: Overall | None = None
 
 
 class Gradebook(BaseModel):
@@ -925,6 +951,7 @@ class GradeLine(BaseModel):
     with_late: float
     possible: float
     status: str
+    override_reason: str | None = Field(default=None, description="set when the instructor adjusted this score")
 
 
 class CourseGrades(BaseModel):
@@ -934,6 +961,7 @@ class CourseGrades(BaseModel):
     possible: float
     percent: float | None
     assignments: list[GradeLine]
+    overall: Overall | None = None
 
 
 class InstructorCourseStats(BaseModel):
@@ -1267,6 +1295,29 @@ class WorkDraftIn(BaseModel):
         return self
 
 
+class RubricLevelOut(BaseModel):
+    id: int
+    label: str
+    points: float
+
+
+class RubricCriterionOut(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    levels: list[RubricLevelOut]
+    chosen_level_id: int | None = None
+
+
+class RubricOut(BaseModel):
+    id: int
+    title: str
+    max_points: float
+    criteria: list[RubricCriterionOut]
+    used_by: int = Field(default=0, description="assignments that use it")
+
+
+
 class CommentIn(BaseModel):
     body: Text = Field(min_length=1, max_length=2000)
 
@@ -1307,6 +1358,7 @@ class MyWork(BaseModel):
     feedback: str | None = None
     returned_at: datetime | None = None
     comments: list[CommentOut] = Field(default_factory=list)
+    rubric: RubricOut | None = None
 
 
 class WorkRow(BaseModel):
@@ -1349,11 +1401,53 @@ class TheirWork(BaseModel):
     graded_at: datetime | None = None
     returned_at: datetime | None = None
     comments: list[CommentOut] = Field(default_factory=list)
+    rubric: RubricOut | None = None
 
 
 class GradeIn(BaseModel):
-    score: float = Field(ge=0, le=100)
+    """A score, or, for work with a rubric, the level chosen for each criterion (the score is then their sum)."""
+
+    score: float | None = Field(default=None, ge=0, le=100)
+    levels: dict[int, int] | None = Field(default=None, description="criterion id to level id")
     feedback: Text | None = Field(default=None, max_length=5000)
+
+    @model_validator(mode="after")
+    def _one_way(self):
+        if (self.score is None) == (not self.levels):
+            raise ValueError("send a score, or the levels chosen for a rubric, but not both")
+        return self
+
+
+class RubricLevelIn(BaseModel):
+    label: Text = Field(min_length=1, max_length=100)
+    points: float = Field(ge=0, le=100)
+
+
+class RubricCriterionIn(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
+    description: Text | None = Field(default=None, max_length=1000)
+    levels: list[RubricLevelIn] = Field(min_length=2, max_length=8)
+
+
+class RubricIn(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
+    criteria: list[RubricCriterionIn] = Field(min_length=1, max_length=20)
+
+    @model_validator(mode="after")
+    def _checked(self):
+        if not self.title.strip():
+            raise ValueError("a rubric needs a title")
+        for criterion in self.criteria:
+            if not criterion.title.strip():
+                raise ValueError("every criterion needs a title")
+            if len({lvl.label for lvl in criterion.levels}) != len(criterion.levels):
+                raise ValueError("the levels of a criterion must have different names")
+            if max(lvl.points for lvl in criterion.levels) <= 0:
+                raise ValueError("a criterion's best level must be worth some points")
+        return self
+
+
+
 
 
 class ResultCount(BaseModel):
@@ -1408,3 +1502,35 @@ class NotificationOut(BaseModel):
 class NotificationList(BaseModel):
     unread: int
     items: list[NotificationOut]
+
+
+class CategoryIn(BaseModel):
+    name: Text = Field(min_length=1, max_length=100)
+    weight: float = Field(gt=0, le=100)
+
+    @model_validator(mode="after")
+    def _not_blank(self):
+        if not self.name.strip():
+            raise ValueError("a category needs a name")
+        return self
+
+
+class CategoryOut(BaseModel):
+    id: int
+    name: str
+    weight: float
+    share: float = Field(description="its share of the total weight, in percent")
+    assignments: int
+
+
+
+
+class OverrideIn(BaseModel):
+    score: float = Field(ge=0)
+    reason: Text = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _reason(self):
+        if not self.reason.strip():
+            raise ValueError("give a reason the student can read")
+        return self
