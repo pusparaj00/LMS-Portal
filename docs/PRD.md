@@ -72,7 +72,7 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | **Cold-start diagnostic** |  |  |
 | F-20 | A new student gets an adaptive placement test of 16 to 20 questions of three difficulty levels (easy, medium, hard) | P0 |
 | F-21 | Item selection maximizes information about the mastery vector, starting from a population prior | P0 |
-| F-22 | The test ends at 20 questions, or from 16 questions when every concept has evidence and the remaining uncertainty is low | P1 |
+| F-22 | The test ends after the longest length the course allows, at most 20 questions; an earlier stop on low uncertainty was measured and removed because the answers never make students differ enough to stop (step 56) | P1 |
 | F-23 | Newly added or generated items get initial difficulty estimates from text and concept tags | P2 |
 | F-24 | The placement test mixes code-tracing multiple-choice items, whose wrong options map to named misconceptions, with short coding tasks (at most 6, at most 2 of them hard) | P0 |
 | F-25 | Placement is built from the course's own tagged questions, the same questions for every student in a different order for each, so any course with tagged problems can run it | P0 |
