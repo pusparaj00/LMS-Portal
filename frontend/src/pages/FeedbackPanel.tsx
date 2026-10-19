@@ -2,6 +2,7 @@ import Editor from "@monaco-editor/react";
 import { useState } from "react";
 
 import { ApiError, BUSY_RETRIES, Session, api } from "../api";
+import { withoutFences } from "../statement";
 
 type Source = { chunk_id: number; title: string; section: string; text: string };
 type Probe = {
@@ -237,7 +238,7 @@ function ProbeCard({ session, submissionId, probe }: { session: Session; submiss
       <p>
         <strong>{probe.title}</strong>
       </p>
-      <pre className="statement-block">{probe.statement}</pre>
+      <pre className="statement-block">{withoutFences(probe.statement)}</pre>
       {!result && (
         <>
           {probe.kind === "mcq" ? (

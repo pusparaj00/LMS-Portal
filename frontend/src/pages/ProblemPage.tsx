@@ -5,6 +5,7 @@ import { ApiError, BUSY_RETRIES, DRAFT_PREFIX, ProblemDetail, Session, Submissio
 import { recordRecent } from "../design/recent";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { HelpPolicy } from "./HelpPolicy";
+import { withoutFences } from "../statement";
 
 const STARTER = "# Read from input(), print the answer.\n";
 
@@ -146,7 +147,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
       <div className="workspace">
         <section className="statement">
           <h1>{problem.title}</h1>
-          <p>{problem.statement}</p>
+          <p>{withoutFences(problem.statement)}</p>
           <span className="tags">
             {problem.concepts.map((c) => (
               <span key={c.concept_id} className="tag">

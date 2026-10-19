@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ApiError, BUSY_RETRIES, Session, api } from "../api";
 import { DiagnosticItem, DiagnosticResult, DiagnosticStart, DiagnosticStep } from "../types";
 import { MasteryBars, Misconceptions } from "./MasteryBars";
+import { withoutFences } from "../statement";
 
 const STARTER = "# Read from input(), print the answer.\n";
 
@@ -150,7 +151,7 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
       </h1>
       <progress value={number - 1} max={max} aria-label="Progress" />
       <h2>{item.title}</h2>
-      <pre className="statement-block">{item.statement}</pre>
+      <pre className="statement-block">{withoutFences(item.statement)}</pre>
       {item.kind === "mcq" ? (
         <fieldset className="options">
           <legend>Choose one answer</legend>
