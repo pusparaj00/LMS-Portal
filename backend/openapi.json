@@ -1702,6 +1702,14 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "prerequisite_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Prerequisite Ids",
+            "type": "array"
           }
         },
         "required": [
@@ -2027,6 +2035,17 @@
             "title": "Recent Submissions",
             "type": "array"
           },
+          "recheck_concepts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recheck Concepts",
+            "type": "array"
+          },
+          "recheck_due": {
+            "title": "Recheck Due",
+            "type": "boolean"
+          },
           "recommended": {
             "anyOf": [
               {
@@ -2044,7 +2063,9 @@
           "recent_submissions",
           "recommended",
           "placement_completed",
-          "placement_available"
+          "placement_available",
+          "recheck_due",
+          "recheck_concepts"
         ],
         "title": "Dashboard",
         "type": "object"
@@ -2246,6 +2267,15 @@
           "course_id": {
             "title": "Course Id",
             "type": "integer"
+          },
+          "mode": {
+            "default": "placement",
+            "enum": [
+              "placement",
+              "recheck"
+            ],
+            "title": "Mode",
+            "type": "string"
           }
         },
         "required": [
@@ -4402,6 +4432,29 @@
           "student_count"
         ],
         "title": "People",
+        "type": "object"
+      },
+      "PrerequisitesUpdate": {
+        "properties": {
+          "prerequisite_ids": {
+            "examples": [
+              [
+                1,
+                2
+              ]
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 30,
+            "title": "Prerequisite Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "prerequisite_ids"
+        ],
+        "title": "PrerequisitesUpdate",
         "type": "object"
       },
       "ProbeAnswerRequest": {
@@ -10252,6 +10305,73 @@
           }
         ],
         "summary": "Rename Concept",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/concepts/{concept_id}/prerequisites": {
+      "put": {
+        "description": "The concepts this one builds on (F-29). The first recommendation revises a weak one before this concept, and a\nsharp drop here is passed back to them. A concept cannot, even indirectly, be its own prerequisite.",
+        "operationId": "set_prerequisites_api_v1_courses__course_id__concepts__concept_id__prerequisites_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrerequisitesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseConcept"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Prerequisites",
         "tags": [
           "courses"
         ]

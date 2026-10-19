@@ -19,6 +19,7 @@ from app.feedback.context import NotExplainable
 from app.feedback.prompt import neutralise
 from app.grading_book import status as score_status
 from app.llm.adapter import LLMAdapter, LLMError
+from app.recommend import next_step
 from app.retrieval import store
 from app.retrieval.store import Source
 from app.schemas import SourceOut
@@ -333,51 +334,29 @@ def general(turn: Turn) -> Reply:
     return Reply(answer, ["retrieval", "grounded_answer"], out)
 
 
-def _pct(p: float) -> str:
-    return f"{round(p * 100)}%"
-
-
-def _concepts(turn: Turn, course_id: int) -> list:
-    """The student's mastery per concept in one course, weakest first (ties in concept order, as on the dashboard)."""
-    rows = turn.chat_conn.execute(
-        text(
-            "SELECT c.id, c.name, COALESCE(m.p_known, c.prior) AS p FROM concepts c"
-            " LEFT JOIN mastery m ON m.concept_id = c.id AND m.user_id = :u WHERE c.course_id = :c ORDER BY c.id"
-        ),
-        {"u": turn.user_id, "c": course_id},
-    ).all()
-    return sorted(rows, key=lambda r: r.p)
-
-
 def recommend(turn: Turn) -> Reply:
     """The next problem by the dashboard's own rule, with the reason, and a notes section on that concept (F-52)."""
     course = _course_id(turn)
     if course is None:
         return Reply(NOT_ENROLLED, ["mastery_read"])
-    for concept in _concepts(turn, course):
-        problem = turn.chat_conn.execute(
-            text("SELECT problem_id, title FROM next_problem(:u, :course, :k)"),
-            {"u": turn.user_id, "course": course, "k": concept.id},
-        ).first()
-        if problem is None:
-            continue
-        name = concept.name.replace("_", " ")
-        reply = f"Try \"{problem.title}\" next: {name} is your weakest area ({_pct(concept.p)} mastery)."
-        note = turn.chat_conn.execute(
-            text(
-                "SELECT c.id, d.title, c.section, c.text FROM chunks c JOIN documents d ON d.id = c.document_id"
-                " WHERE d.course_id = :course AND d.concept_id = :k AND d.status = 'ready'"
-                " ORDER BY d.id, c.chunk_index LIMIT 1"
-            ),
-            {"course": course, "k": concept.id},
-        ).first()
-        sources = []
-        if note is not None:
-            reply += f" It may help to read \"{note.title} > {note.section}\" in the course notes first."
-            sources = [SourceOut(chunk_id=note.id, title=note.title, section=note.section, text=note.text)]
-        return Reply(reply, ["mastery_read", "next_problem", f"problem:{problem.problem_id}"], sources)
-    return Reply("You have solved every coding problem in this course for now. Well done.",
-                 ["mastery_read", "next_problem"])
+    step = next_step(turn.chat_conn, turn.user_id, course)
+    if step is None:
+        return Reply("You have solved every coding problem in this course for now. Well done.",
+                     ["mastery_read", "next_problem"])
+    reply = f"Try \"{step.title}\" next: {step.reason}."
+    note = turn.chat_conn.execute(
+        text(
+            "SELECT c.id, d.title, c.section, c.text FROM chunks c JOIN documents d ON d.id = c.document_id"
+            " WHERE d.course_id = :course AND d.concept_id = :k AND d.status = 'ready'"
+            " ORDER BY d.id, c.chunk_index LIMIT 1"
+        ),
+        {"course": course, "k": step.concept_id},
+    ).first()
+    sources = []
+    if note is not None:
+        reply += f" It may help to read \"{note.title} > {note.section}\" in the course notes first."
+        sources = [SourceOut(chunk_id=note.id, title=note.title, section=note.section, text=note.text)]
+    return Reply(reply, ["mastery_read", "next_problem", f"problem:{step.problem_id}"], sources)
 
 
 GRADES = re.compile(r"\b(grades?|scores?|marks?|results?|points?)\b", re.I)

@@ -62,6 +62,7 @@ POLICY = {
     ("POST", "/courses/{course_id}/restore"): INSTRUCTOR,
     ("PATCH", "/courses/{course_id}/concepts/{concept_id}"): INSTRUCTOR,
     ("DELETE", "/courses/{course_id}/concepts/{concept_id}"): INSTRUCTOR,
+    ("PUT", "/courses/{course_id}/concepts/{concept_id}/prerequisites"): INSTRUCTOR,
     ("DELETE", "/courses/{course_id}/students/{student_id}"): INSTRUCTOR,
     ("GET", "/courses/{course_id}/students/{student_id}"): INSTRUCTOR,
     ("GET", "/courses/{course_id}/students/{student_id}/mastery/{concept_id}/history"): INSTRUCTOR,

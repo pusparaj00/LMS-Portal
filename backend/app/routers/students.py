@@ -4,8 +4,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
+from app import recommend
 from app.auth import Conn, CurrentUser, can_access_course, require_role
-from app.routers.diagnostic import _items, _mastery_vector, top_misconceptions
+from app.routers.diagnostic import _items, _mastery_vector, recheck_offer, top_misconceptions
 from app.schemas import Dashboard, LedgerEntry, RecentSubmission, RecommendedProblem
 
 router = APIRouter(prefix="/students/me", tags=["students"])
@@ -14,17 +15,11 @@ RECENT_SUBMISSIONS = 10
 HISTORY_LIMIT = 50
 
 
-def _recommend(conn: Connection, user_id: int, course_id: int, concepts) -> RecommendedProblem | None:
-    """The easiest unsolved coding problem on the weakest concept that still has one."""
-    for concept in sorted(concepts, key=lambda c: c.p_known):
-        row = conn.execute(  # the rule is the database function next_problem, shared with the assistant (F-52)
-            text("SELECT problem_id, title FROM next_problem(:u, :course, :c)"),
-            {"c": concept.concept_id, "course": course_id, "u": user_id},
-        ).first()
-        if row:
-            reason = f"{concept.name} is your weakest area ({round(concept.p_known * 100)}% mastery)"
-            return RecommendedProblem(problem_id=row.problem_id, title=row.title, reason=reason)
-    return None
+def _recommend(conn: Connection, user_id: int, course_id: int) -> RecommendedProblem | None:
+    """The easiest unsolved coding problem on the weakest concept, or on a weak prerequisite of it (TR-M-17). The
+    rule is the database function next_step, shared with the assistant (F-52)."""
+    step = recommend.next_step(conn, user_id, course_id)
+    return RecommendedProblem(problem_id=step.problem_id, title=step.title, reason=step.reason) if step else None
 
 
 @router.get("/mastery", response_model=Dashboard)
@@ -44,10 +39,11 @@ def dashboard(course_id: int, user: Student, conn: Conn):
     completed = conn.execute(
         text(
             "SELECT 1 FROM diagnostic_sessions WHERE user_id = :u AND status = 'completed'"
-            " AND state_json->>'course_id' = :c LIMIT 1"
+            " AND state_json->>'course_id' = :c AND COALESCE(state_json->>'mode', 'placement') = 'placement' LIMIT 1"
         ),
         {"u": user.id, "c": str(course_id)},
     ).first()
+    due, names = recheck_offer(conn, user.id, course_id)
     return Dashboard(
         concepts=concepts,
         misconceptions=top_misconceptions(conn, user.id, course_id),
@@ -58,9 +54,11 @@ def dashboard(course_id: int, user: Student, conn: Conn):
             )
             for r in recent
         ],
-        recommended=_recommend(conn, user.id, course_id, concepts),
+        recommended=_recommend(conn, user.id, course_id),
         placement_completed=completed is not None,
         placement_available=bool(_items(conn, course_id)),
+        recheck_due=due,
+        recheck_concepts=names,
     )
 
 

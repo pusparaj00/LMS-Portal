@@ -146,7 +146,7 @@ def test_a_concept_is_renamed_freely_but_deleted_only_when_unused(client, make_u
     c = setup(client, make_user)
     path = f"{API}/courses/{c['id']}/concepts"
     renamed = client.patch(f"{path}/{c['concept']}", headers=c["teacher"], json={"name": "For Loops"})
-    assert renamed.json() == {"concept_id": c["concept"], "name": "for_loops"}
+    assert renamed.json() == {"concept_id": c["concept"], "name": "for_loops", "prerequisite_ids": []}
     tags = client.get(f"{API}/problems/{c['first']}", headers=c["teacher"]).json()["concepts"]
     assert [t["name"] for t in tags] == ["for_loops"]  # the tag follows the concept
     spare = client.post(path, headers=c["teacher"], json={"name": "spare"}).json()

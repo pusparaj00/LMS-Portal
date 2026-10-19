@@ -225,6 +225,11 @@ class MuteIn(BaseModel):
 class CourseConcept(BaseModel):
     concept_id: int
     name: str
+    prerequisite_ids: list[int] = []
+
+
+class PrerequisitesUpdate(BaseModel):
+    prerequisite_ids: list[int] = Field(max_length=30, examples=[[1, 2]])
 
 
 class ConsentProvider(BaseModel):
@@ -630,6 +635,7 @@ class DiagnosticItem(BaseModel):
 
 class DiagnosticStartRequest(BaseModel):
     course_id: int
+    mode: Literal["placement", "recheck"] = "placement"
     background: Literal["new", "some", "comfortable"] | None = None
 
 
@@ -757,6 +763,8 @@ class Dashboard(BaseModel):
     recommended: RecommendedProblem | None
     placement_completed: bool
     placement_available: bool
+    recheck_due: bool
+    recheck_concepts: list[str]
 
 
 class SourceOut(BaseModel):

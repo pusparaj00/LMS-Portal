@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app import audit, ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
+from app.concept_graph import creates_cycle
 from app.schemas import (
     ConceptCreate,
     Course,
@@ -16,6 +17,7 @@ from app.schemas import (
     JoinCode,
     JoinCodeEnabled,
     JoinIn,
+    PrerequisitesUpdate,
 )
 
 router = APIRouter(prefix="/courses", tags=["courses"])
@@ -130,7 +132,11 @@ def list_concepts(course_id: int, user: Annotated[CurrentUser, Depends(current_u
     if not can_access_course(conn, user, course_id):
         raise HTTPException(403, "you have no access to this course")
     rows = conn.execute(
-        text("SELECT id AS concept_id, name FROM concepts WHERE course_id = :c ORDER BY id"), {"c": course_id}
+        text(
+            "SELECT id AS concept_id, name, parent_ids AS prerequisite_ids FROM concepts"
+            " WHERE course_id = :c ORDER BY id"
+        ),
+        {"c": course_id},
     ).mappings()
     return [dict(r) for r in rows]
 
@@ -233,8 +239,34 @@ def rename_concept(course_id: int, concept_id: int, body: ConceptCreate, user: I
     ).first()
     if clash:
         raise HTTPException(409, f"the concept '{name}' already exists in this course")
-    conn.execute(text("UPDATE concepts SET name = :n WHERE id = :k"), {"n": name, "k": concept_id})
-    return CourseConcept(concept_id=concept_id, name=name)
+    prerequisites = conn.execute(
+        text("UPDATE concepts SET name = :n WHERE id = :k RETURNING parent_ids"), {"n": name, "k": concept_id}
+    ).scalar_one()
+    return CourseConcept(concept_id=concept_id, name=name, prerequisite_ids=prerequisites)
+
+
+@router.put("/{course_id}/concepts/{concept_id}/prerequisites", response_model=CourseConcept)
+def set_prerequisites(course_id: int, concept_id: int, body: PrerequisitesUpdate, user: Instructor, conn: Conn):
+    """The concepts this one builds on (F-29). The first recommendation revises a weak one before this concept, and a
+    sharp drop here is passed back to them. A concept cannot, even indirectly, be its own prerequisite."""
+    _own(conn, user, course_id)
+    _concept(conn, course_id, concept_id)
+    wanted = list(dict.fromkeys(body.prerequisite_ids))
+    rows = conn.execute(
+        text("SELECT id, name, parent_ids FROM concepts WHERE course_id = :c"), {"c": course_id}
+    ).all()
+    known = {r.id: r for r in rows}
+    unknown = [k for k in wanted if k not in known]
+    if unknown:
+        raise HTTPException(422, "a prerequisite must be a concept of this course")
+    if concept_id in wanted:
+        raise HTTPException(422, "a concept cannot be its own prerequisite")
+    if creates_cycle({r.id: list(r.parent_ids) for r in rows}, concept_id, wanted):
+        raise HTTPException(409, "that would make the concepts depend on each other in a circle")
+    conn.execute(text("UPDATE concepts SET parent_ids = :p WHERE id = :k"), {"p": wanted, "k": concept_id})
+    audit.record("concept.prerequisites", user_id=user.id, status=200, conn=conn,
+                 detail={"course_id": course_id, "concept_id": concept_id, "prerequisite_ids": wanted})
+    return CourseConcept(concept_id=concept_id, name=known[concept_id].name, prerequisite_ids=wanted)
 
 
 # Every table with a foreign key to concepts; a row in any of them blocks deleting it.
