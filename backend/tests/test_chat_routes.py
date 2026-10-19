@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 
 from app.llm.adapter import LLMError
+from tests.helpers import enroll
 from tests.test_chat_api import say
 from tests.test_feedback_api import (  # noqa: F401  (fixtures)
     P_REFERENCE,
@@ -113,8 +114,8 @@ def test_recommend_skips_a_course_that_was_archived(client, make_user, world, ll
     old = client.post(f"{API}/courses", headers=teacher, json={"title": "Last term"}).json()["id"]
     client.post(f"{API}/courses/{old}/concepts", headers=teacher, json={"name": "recursion"})
     _, headers = make_user("student")
-    assert client.post(f"{API}/courses/{old}/enroll", headers=headers).status_code == 204
-    assert client.post(f"{API}/courses/{world['course']}/enroll", headers=headers).status_code == 204
+    assert enroll(client, old, headers).status_code == 200
+    assert enroll(client, world['course'], headers).status_code == 200
     assert client.post(f"{API}/courses/{old}/archive", headers=teacher).status_code == 200
     llm(FakeLLM())
     reply = say(client, headers, "what should I do next", route="recommend")["reply"]

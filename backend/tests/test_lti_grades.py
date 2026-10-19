@@ -16,6 +16,7 @@ from app import lti, lti_grades
 from app.config import get_settings
 from app.db import get_engine
 from app.main import app
+from tests.helpers import enroll
 from tests.test_lti import id_token, new_key, session
 
 API = "/api/v1"
@@ -124,6 +125,7 @@ def lms(owner):
             "DELETE FROM consents WHERE user_id IN (SELECT user_id FROM g_users)",
             "DELETE FROM lti_contexts WHERE platform_id = :p",
             "DELETE FROM lti_users WHERE platform_id = :p",
+            "DELETE FROM course_teachers WHERE course_id IN (SELECT course_id FROM g_courses)",
             "DELETE FROM courses WHERE id IN (SELECT course_id FROM g_courses)",
             "DELETE FROM users WHERE id IN (SELECT user_id FROM g_users)",
             "DELETE FROM lti_platforms WHERE id = :p",
@@ -229,7 +231,7 @@ def test_a_failed_score_is_listed_and_audited_not_hidden(client, lms, course, to
 
 def test_students_without_an_lms_account_are_counted_not_sent(client, course, make_user, tool_key):
     _, local = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=local)
+    enroll(client, course['id'], local)
     result = send(client, course).json()
     assert result["students_not_from_lms"] == 1 and result["scores_sent"] == 2
 

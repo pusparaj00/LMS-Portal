@@ -22,6 +22,7 @@ from app.config import get_settings  # noqa: E402
 from app.db import get_engine  # noqa: E402
 from app.main import app  # noqa: E402
 from evaluation.consent import agree
+from evaluation.join import join_course
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = next(p for p in (ROOT / "data" / "demo", ROOT.parent / "data" / "demo") if p.exists()) / "scenarios.json"
@@ -41,7 +42,7 @@ def main() -> None:
         problems = dict(
             conn.execute(text("SELECT title, id FROM problems WHERE course_id = :c AND kind = 'code'"), {"c": course_id}).all()
         )
-    client.post(f"{API}/courses/{course_id}/enroll", headers=headers)
+    join_course(client, API, course_id, headers)
     entries = []
     for scenario in json.loads(SCENARIOS.read_text(encoding="utf-8")):
         submitted = client.post(

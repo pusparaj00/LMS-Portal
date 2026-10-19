@@ -1,6 +1,8 @@
 """F-05: course announcements from the course's teacher, read by its members."""
 import pytest
 
+from tests.helpers import enroll
+
 API = "/api/v1"
 
 
@@ -19,7 +21,7 @@ def test_post_edit_delete_and_newest_first(client, make_user, course):
     assert first.json()["edited_at"] is None and first.json()["body"].endswith("\nBring a pen.")  # line breaks kept
 
     _, student = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=student)
+    enroll(client, course['id'], student)
     titles = [a["title"] for a in client.get(path(course), headers=student).json()]
     assert titles.index("Second") < titles.index("First")
 
@@ -52,7 +54,7 @@ def test_text_is_stored_exactly_as_typed(client, course):
 def test_only_the_courses_teacher_writes_and_only_members_read(client, make_user, course):
     made = post(client, course).json()
     _, student = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=student)
+    enroll(client, course['id'], student)
     _, outsider = make_user("student")
     _, other_teacher = make_user("instructor")
     item = f"{path(course)}/{made['id']}"

@@ -8,6 +8,7 @@ from app.feedback import hints, probe
 from app.feedback.context import ExplainContext
 from app.routers import courses as courses_router
 from app.routers.diagnostic import _items
+from tests.helpers import enroll
 
 API = "/api/v1"
 ADD_ONE = "n = int(input())\nprint(n + 1)\n"
@@ -35,7 +36,7 @@ def setup(client, make_user):
     first = problem("Add one", ADD_ONE, "4\n", "11\n")
     second = problem("Double", TIMES_TWO, "6\n", "20\n", difficulty=-1.0)
     student_id, student = make_user("student")
-    assert client.post(f"{API}/courses/{course['id']}/enroll", headers=student).status_code == 204
+    assert enroll(client, course['id'], student).status_code == 200
     return {"id": course["id"], "teacher": teacher, "concept": concept["concept_id"], "first": first,
             "second": second, "student_id": student_id, "student": student}
 
@@ -56,11 +57,11 @@ def test_a_course_can_be_renamed_archived_and_restored(client, make_user):
     assert client.patch(path, headers=c["teacher"], json={"title": "Renamed"}).json()["title"] == "Renamed"
     assert client.post(f"{path}/archive", headers=c["teacher"]).json()["archived"] is True
     assert c["id"] not in {x["id"] for x in client.get(f"{API}/courses", headers=newcomer).json()}
-    assert client.post(f"{path}/enroll", headers=newcomer).status_code == 404
+    assert enroll(client, c["id"], newcomer).status_code == 404  # an archived course is closed to new students
     mine = {x["id"]: x for x in client.get(f"{API}/courses", headers=c["teacher"]).json()}
     assert mine[c["id"]]["archived"] is True  # its teacher still sees it, to restore it
     assert client.post(f"{path}/restore", headers=c["teacher"]).json()["archived"] is False
-    assert client.post(f"{path}/enroll", headers=newcomer).status_code == 204
+    assert enroll(client, c["id"], newcomer).status_code == 200
     _, other = make_user("instructor")
     for call in (client.patch(path, headers=other, json={"title": "x"}), client.post(f"{path}/archive", headers=other),
                  client.post(f"{path}/archive", headers=c["student"])):
@@ -197,7 +198,7 @@ def test_leaving_or_being_removed_keeps_the_students_work(client, make_user, own
     assert c["student_id"] not in {r["student_id"] for r in book["students"]}
 
     _, again = make_user("student")
-    client.post(f"{API}/courses/{c['id']}/enroll", headers=again)
+    enroll(client, c['id'], again)
     assert client.delete(f"{API}/courses/{c['id']}/enroll", headers=again).status_code == 204
     assert c["id"] not in {x["id"] for x in client.get(f"{API}/courses", headers=again).json() if x["enrolled"]}
     with owner.connect() as conn:

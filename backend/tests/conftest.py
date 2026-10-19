@@ -142,6 +142,8 @@ def make_user(owner):
             f"DELETE FROM concepts WHERE course_id IN ({courses})",
             "DELETE FROM enrollments WHERE user_id = ANY(:ids)",
             f"DELETE FROM enrollments WHERE course_id IN ({courses})",
+            "DELETE FROM course_teachers WHERE user_id = ANY(:ids)",
+            f"DELETE FROM course_teachers WHERE course_id IN ({courses})",
             "DELETE FROM courses WHERE instructor_id = ANY(:ids)",
             "DELETE FROM users WHERE id = ANY(:ids)",
         ]:

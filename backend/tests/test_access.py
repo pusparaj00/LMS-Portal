@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import text
 
 from app.config import get_settings
+from tests.helpers import enroll
 
 API = "/api/v1"
 CODE = "print(int(input()) + 1)\n"
@@ -26,7 +27,7 @@ def students(client, make_user, course, owner):
 PROTECTED = [
     ("get", "/courses"),
     ("post", "/courses"),
-    ("post", "/courses/1/enroll"),
+    ("post", "/courses/join"),
     ("get", "/problems?course_id=1"),
     ("get", "/problems/1"),
     ("post", "/problems"),
@@ -59,7 +60,7 @@ def test_instructor_cannot_use_student_endpoints(client, course):
     body = {"problem_id": course["problem_id"], "code": CODE}
     assert client.post(f"{API}/submissions", headers=ins, json=body).status_code == 403
     assert client.post(f"{API}/submissions/run", headers=ins, json=body).status_code == 403
-    assert client.post(f"{API}/courses/{course['id']}/enroll", headers=ins).status_code == 403
+    assert enroll(client, course['id'], ins).status_code == 403
 
 
 def test_register_always_creates_a_student(client):
@@ -122,7 +123,7 @@ def test_enrolment_gates_problem_access(client, students, course):
     assert client.get(f"{API}/problems/{pid}", headers=outsider).status_code == 404
     body = {"problem_id": pid, "code": CODE}
     assert client.post(f"{API}/submissions", headers=outsider, json=body).status_code == 404
-    assert client.post(f"{API}/courses/{cid}/enroll", headers=outsider).status_code == 204
+    assert enroll(client, cid, outsider).status_code == 200
     assert client.post(f"{API}/submissions/run", headers=outsider, json=body).status_code == 200
 
 

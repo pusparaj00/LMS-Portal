@@ -21,6 +21,8 @@ import sys
 from collections import Counter
 from datetime import UTC, datetime
 
+from evaluation.join import join_course
+
 SHEET_FIELDS = [
     "id", "problem", "statement", "student_code", "failed_categories", "error_type",
     "explanation_1", "explanation_2", "r1_exp1", "r1_exp2", "r2_exp1", "r2_exp2", "notes",
@@ -85,7 +87,7 @@ def generate(sheet_path: str, key_path: str) -> None:
     with get_engine().connect() as conn:
         course = conn.execute(text("SELECT id FROM courses WHERE title = 'Python Fundamentals' ORDER BY id LIMIT 1")).scalar_one()
         problems = {r.title: r for r in conn.execute(text("SELECT id, title, statement FROM problems WHERE course_id = :c AND kind = 'code'"), {"c": course})}
-    client.post(f"{api}/courses/{course}/enroll", headers=headers)
+    join_course(client, api, course, headers)
     plain = build_adapter(get_settings())
     rng = random.Random(SEED)
 

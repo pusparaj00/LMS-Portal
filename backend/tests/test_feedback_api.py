@@ -12,6 +12,7 @@ from app.llm.adapter import LLMConfig, LLMError
 from app.main import app
 from app.retrieval import store
 from app.routers.feedback import llm_adapter
+from tests.helpers import enroll
 
 API = "/api/v1"
 P_REFERENCE = "n = int(input())\nprint(n + 1)\n"
@@ -108,7 +109,7 @@ def world(client, make_user, owner):
 
 def new_student(client, make_user, world):
     user_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{world['course']}/enroll", headers=headers).status_code == 204
+    assert enroll(client, world['course'], headers).status_code == 200
     return user_id, headers
 
 

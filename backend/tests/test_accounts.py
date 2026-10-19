@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import text
 
 from app.auth import create_token
+from tests.helpers import enroll
 
 API = "/api/v1"
 PASSWORD = "pw-12345678"  # make_user's password
@@ -62,7 +63,7 @@ def test_changing_the_password_ends_other_sessions_and_keeps_this_one(client, ma
 
 def test_a_display_name_is_set_and_shown_to_teachers(client, make_user, course):
     user_id, student = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=student)
+    enroll(client, course['id'], student)
     named = client.patch(f"{API}/me", headers=student, json={"display_name": "  Asha Verma "})
     assert named.json()["display_name"] == "Asha Verma"
     assert client.patch(f"{API}/me", headers=student, json={"display_name": "x" * 81}).status_code == 422

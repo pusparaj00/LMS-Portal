@@ -8,6 +8,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from app import audit, breach_report
 from app.db import get_engine
+from tests.helpers import enroll
 
 API = "/api/v1"
 PASSWORD = "pw-12345678"  # make_user's password
@@ -101,7 +102,7 @@ def test_the_report_finds_password_guessing_and_a_student_reading_others_submiss
 
 def test_exports_are_recorded_and_their_students_reported_as_affected(client, make_user, owner, course, since):
     student_id, student = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=student)
+    enroll(client, course['id'], student)
     response = client.get(f"{API}/courses/{course['id']}/export/mastery", headers=course["instructor"])
     assert response.status_code == 200
     (event,) = events(owner, since, "export.download")

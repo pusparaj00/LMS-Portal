@@ -3,6 +3,7 @@ import pytest
 from sqlalchemy import text
 
 from app import synthetic
+from tests.helpers import enroll
 
 API = "/api/v1"
 
@@ -99,7 +100,7 @@ def test_the_heatmap_has_one_row_per_student_and_one_cell_per_concept(client, se
 
 def test_students_without_evidence_sit_at_the_prior(client, seeded, make_user, owner):
     user_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{seeded['course']}/enroll", headers=headers).status_code == 204
+    assert enroll(client, seeded['course'], headers).status_code == 200
     body = client.get(f"{API}/courses/{seeded['course']}/class-mastery", headers=seeded["headers"]).json()
     newcomer = next(s for s in body["students"] if not s["synthetic"])
     assert [c["p_known"] for c in newcomer["mastery"]] == [0.5, 0.5, 0.5]

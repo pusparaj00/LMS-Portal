@@ -4,6 +4,7 @@ from sqlalchemy import text
 
 from app import ratelimit
 from app.ratelimit import Rule
+from tests.helpers import enroll
 
 API = "/api/v1"
 DOUBLE = "print(int(input()) * 2)\n"
@@ -12,7 +13,7 @@ DOUBLE = "print(int(input()) * 2)\n"
 @pytest.fixture(scope="module")
 def student(client, make_user, course):
     user_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{course['id']}/enroll", headers=headers).status_code == 204
+    assert enroll(client, course['id'], headers).status_code == 200
     return user_id, headers
 
 
@@ -70,7 +71,7 @@ def test_only_people_with_access_to_the_problem_can_run_on_it(client, make_user,
 
 def test_a_student_who_has_not_agreed_to_the_notice_cannot_run(client, make_user, course):
     _, headers = make_user("student", consented=False)
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=headers)
+    enroll(client, course['id'], headers)
     assert run(client, course, headers).status_code == 403
 
 

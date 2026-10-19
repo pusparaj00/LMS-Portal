@@ -4,6 +4,8 @@ import base64
 import pytest
 from sqlalchemy import text
 
+from tests.helpers import enroll
+
 API = "/api/v1"
 PDF = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n"
 
@@ -18,7 +20,7 @@ def world(client, make_user, owner, course):
     students = []
     for _ in range(2):
         user_id, headers = make_user("student")
-        assert client.post(f"{API}/courses/{course['id']}/enroll", headers=headers).status_code == 204
+        assert enroll(client, course['id'], headers).status_code == 200
         students.append((user_id, headers))
     other_id, other = make_user("instructor")
     with owner.begin() as conn:

@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from app import erasure
 from app.db import get_engine, get_redis
+from tests.helpers import enroll
 from tests.test_erasure import erase_mastery, make_due
 
 API = "/api/v1"
@@ -60,15 +61,12 @@ def school(client, make_user, owner):
         past = assignment(course_a, "Past", now - timedelta(days=1), [p1])
         future = assignment(course_a, "Future", now + timedelta(days=3), [p2])
 
-    def enroll(headers):
-        assert client.post(f"{API}/courses/{course_a}/enroll", headers=headers).status_code == 204
-
     full_id, full_h = make_user("student")
     half_id, half_h = make_user("student")
     none_id, none_h = make_user("student")
     outsider_id, outsider_h = make_user("student")
     for h in (full_h, half_h, none_h):
-        enroll(h)
+        assert enroll(client, course_a, h).status_code == 200
     attempt(owner, full_id, p1, now - timedelta(days=2), 4, 0)
     attempt(owner, half_id, p1, now - timedelta(days=2), 2, 2)
     attempt(owner, full_id, p2, now - timedelta(hours=1), 1, 2)  # started, a third of the tests pass
@@ -173,7 +171,7 @@ def test_review_text_is_stored_as_typed(client, school):
 
 def test_erasing_a_student_removes_their_rating(client, owner, school, make_user):
     user_id, headers = make_user("student")
-    client.post(f"{API}/courses/{school['course']}/enroll", headers=headers)
+    enroll(client, school['course'], headers)
     client.put(f"{API}/courses/{school['course']}/ratings", headers=headers,
                json={"course_rating": 1, "instructor_rating": 1, "review": "gone soon"})
     client.post(f"{API}/me/erasure", headers=headers, json={"password": PASSWORD})

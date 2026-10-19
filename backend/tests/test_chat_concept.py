@@ -2,6 +2,7 @@
 from sqlalchemy import text
 
 from app.chat.handlers import _forms
+from tests.helpers import enroll
 from tests.test_chat_api import say
 from tests.test_feedback_api import FakeLLM, llm, new_student, world  # noqa: F401  (fixtures)
 
@@ -38,7 +39,7 @@ def test_the_longest_name_wins_and_a_word_inside_another_does_not_count(client, 
     ids = {name: client.post(f"{API}/courses/{course}/concepts", headers=teacher, json={"name": name}).json()["concept_id"]
            for name in ("lists", "comprehensions", "tuples_sets")}
     user_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{course}/enroll", headers=headers).status_code == 204
+    assert enroll(client, course, headers).status_code == 200
     llm(FakeLLM())
     for message in ("my list comprehension is wrong", "how do I reset everything", "what is a set"):
         say(client, headers, message, route="recommend")
@@ -50,7 +51,7 @@ def test_a_concept_asked_about_in_chat_cannot_be_deleted(client, make_user, owne
     course = client.post(f"{API}/courses", headers=teacher, json={"title": "Asked about"}).json()["id"]
     concept = client.post(f"{API}/courses/{course}/concepts", headers=teacher, json={"name": "recursion"}).json()
     _, headers = make_user("student")
-    client.post(f"{API}/courses/{course}/enroll", headers=headers)
+    enroll(client, course, headers)
     llm(FakeLLM())
     say(client, headers, "what is recursion", route="recommend")
     refused = client.delete(f"{API}/courses/{course}/concepts/{concept['concept_id']}", headers=teacher)

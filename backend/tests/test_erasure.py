@@ -140,7 +140,7 @@ def rows_of(owner, user_id: int) -> dict[str, int]:
         tables = conn.execute(
             text(
                 "SELECT table_name FROM information_schema.columns WHERE table_schema = 'public'"
-                " AND column_name = 'user_id' AND table_name NOT IN ('erasure_requests', 'audit_events')"
+                " AND column_name = 'user_id' AND table_name NOT IN ('erasure_requests', 'audit_events', 'course_teachers')"
             )
         ).scalars().all()
         counts = {t: conn.execute(text(f"SELECT count(*) FROM {t} WHERE user_id = :u"), {"u": user_id}).scalar_one() for t in tables}

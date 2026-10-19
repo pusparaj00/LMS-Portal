@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app import erasure
 from app.db import get_engine, get_redis
+from tests.helpers import enroll
 from tests.test_erasure import erase_mastery, make_due
 
 API = "/api/v1"
@@ -42,7 +43,7 @@ def extra(owner, course):
 
 def student(client, make_user, course):
     user_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{course['id']}/enroll", headers=headers).status_code == 204
+    assert enroll(client, course['id'], headers).status_code == 200
     return user_id, headers
 
 
@@ -239,7 +240,7 @@ def test_a_hint_never_shows_the_solution_of_a_problem_set_in_an_assignment(clien
 
     def third_hint():
         _, headers = make_user("student")
-        client.post(f"{API}/courses/{course_id}/enroll", headers=headers)
+        enroll(client, course_id, headers)
         sid = client.post(f"{API}/submissions", headers=headers, json={"problem_id": practice, "code": "print(0)\n"}).json()
         for _ in range(3):
             hint = client.post(f"{API}/submissions/{sid['submission_id']}/hint", headers=headers).json()

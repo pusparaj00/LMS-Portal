@@ -1,6 +1,8 @@
 """F-02: an instructor can add concepts to a course, and a new concept works end to end with no other setup."""
 import pytest
 
+from tests.helpers import enroll
+
 API = "/api/v1"
 
 
@@ -74,7 +76,7 @@ def test_a_new_concept_can_be_used_for_a_problem_a_note_and_mastery_with_no_othe
     assert note.status_code == 202
 
     _, student = make_user("student")
-    assert client.post(f"{API}/courses/{teacher['course']}/enroll", headers=student).status_code == 204
+    assert enroll(client, teacher['course'], student).status_code == 200
     before = client.get(f"{API}/students/me/mastery", params={"course_id": teacher["course"]}, headers=student).json()
     assert [c["p_known"] for c in before["concepts"]] == [0.5]  # the population prior
     result = client.post(f"{API}/submissions", headers=student,

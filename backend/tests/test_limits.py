@@ -7,6 +7,7 @@ from sqlalchemy import text
 from app import ratelimit
 from app.bodylimit import MAX_BODY_BYTES
 from app.ratelimit import Rule
+from tests.helpers import enroll
 
 API = "/api/v1"
 
@@ -63,7 +64,7 @@ def test_submissions_and_runs_are_limited_per_student_before_any_work_is_done(
     monkeypatch.setitem(ratelimit.RULES, "submit", Rule(2, 60))
     monkeypatch.setitem(ratelimit.RULES, "run", Rule(2, 60))
     user_id, headers = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=headers)
+    enroll(client, course['id'], headers)
     body = {"problem_id": course["problem_id"], "code": "print(int(input()) + 1)\n"}
     assert [client.post(f"{API}/submissions", headers=headers, json=body).status_code for _ in range(2)] == [200, 200]
     assert client.post(f"{API}/submissions", headers=headers, json=body).status_code == 429
@@ -73,7 +74,7 @@ def test_submissions_and_runs_are_limited_per_student_before_any_work_is_done(
     assert [client.post(f"{API}/submissions/run", headers=headers, json=body).status_code for _ in range(2)] == [200, 200]
     assert client.post(f"{API}/submissions/run", headers=headers, json=body).status_code == 429
     _, other = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=other)
+    enroll(client, course['id'], other)
     assert client.post(f"{API}/submissions/run", headers=other, json=body).status_code == 200
 
 
@@ -86,7 +87,7 @@ def test_chat_is_limited_per_student(client, make_user, monkeypatch):
 
 def test_normal_use_is_not_blocked_by_the_default_limits(client, make_user, course):
     _, headers = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=headers)
+    enroll(client, course['id'], headers)
     body = {"problem_id": course["problem_id"], "code": "print(int(input()) + 1)\n"}
     codes = [client.post(f"{API}/submissions/run", headers=headers, json=body).status_code for _ in range(20)]
     assert codes == [200] * 20

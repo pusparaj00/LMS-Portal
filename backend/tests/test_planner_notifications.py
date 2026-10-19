@@ -4,6 +4,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from tests.helpers import enroll
+
 API = "/api/v1"
 
 
@@ -16,7 +18,7 @@ def course(client, make_user):
     teacher_id, teacher = make_user("instructor")
     made = client.post(f"{API}/courses", headers=teacher, json={"title": f"Plan {uuid.uuid4().hex[:6]}"}).json()
     student_id, student = make_user("student")
-    assert client.post(f"{API}/courses/{made['id']}/enroll", headers=student).status_code == 204
+    assert enroll(client, made['id'], student).status_code == 200
     return {"id": made["id"], "title": made["title"], "teacher": teacher, "teacher_id": teacher_id, "student": student,
             "student_id": student_id}
 
@@ -138,7 +140,7 @@ def test_handing_in_returning_and_commenting_notify_the_right_person_without_pri
 
 def test_return_all_notifies_every_returned_student(client, make_user, course):
     other_id, other = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=other)
+    enroll(client, course['id'], other)
     a = assignment(client, course, "Both", when(3))
     hand_in(client, course, a)
     client.post(work_path(course, a, "/draft"), headers=other, json={"text": "mine"})

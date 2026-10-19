@@ -5,13 +5,14 @@ from sqlalchemy import text
 from app.db import get_redis
 from app.diagnostic import selection
 from tests.conftest import PLACEMENT_RIGHT
+from tests.helpers import enroll
 
 API = "/api/v1"
 
 
 def enrolled_student(client, make_user, course_id):
     user_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{course_id}/enroll", headers=headers).status_code == 204
+    assert enroll(client, course_id, headers).status_code == 200
     return user_id, headers
 
 

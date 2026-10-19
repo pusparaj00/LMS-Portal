@@ -766,6 +766,50 @@
         "title": "ClassStudent",
         "type": "object"
       },
+      "Classmate": {
+        "properties": {
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "muted": {
+            "title": "Muted",
+            "type": "boolean"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "label",
+          "muted",
+          "joined_at"
+        ],
+        "title": "Classmate",
+        "type": "object"
+      },
+      "CoTeacherIn": {
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "CoTeacherIn",
+        "type": "object"
+      },
       "CommentIn": {
         "properties": {
           "body": {
@@ -1056,6 +1100,17 @@
             "title": "Archived",
             "type": "boolean"
           },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
           "enrolled": {
             "title": "Enrolled",
             "type": "boolean"
@@ -1067,6 +1122,28 @@
           "instructor_id": {
             "title": "Instructor Id",
             "type": "integer"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
           },
           "title": {
             "title": "Title",
@@ -1349,19 +1426,59 @@
         "title": "CourseRatings",
         "type": "object"
       },
-      "CourseRename": {
+      "CourseUpdate": {
+        "description": "Only the fields sent change; null clears a section, subject or colour.",
         "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
           "title": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Title",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
-        "required": [
-          "title"
-        ],
-        "title": "CourseRename",
+        "title": "CourseUpdate",
         "type": "object"
       },
       "CustomRun": {
@@ -2833,6 +2950,57 @@
         "title": "ItemUpdate",
         "type": "object"
       },
+      "JoinCode": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "link": {
+            "title": "Link",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "enabled",
+          "link"
+        ],
+        "title": "JoinCode",
+        "type": "object"
+      },
+      "JoinCodeEnabled": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "JoinCodeEnabled",
+        "type": "object"
+      },
+      "JoinIn": {
+        "properties": {
+          "code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "JoinIn",
+        "type": "object"
+      },
       "LedgerEntry": {
         "properties": {
           "concept": {
@@ -3176,6 +3344,19 @@
         "title": "Move",
         "type": "object"
       },
+      "MuteIn": {
+        "properties": {
+          "muted": {
+            "title": "Muted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "muted"
+        ],
+        "title": "MuteIn",
+        "type": "object"
+      },
       "MyAttempts": {
         "properties": {
           "attempts": {
@@ -3513,6 +3694,47 @@
           "new_password"
         ],
         "title": "PasswordChange",
+        "type": "object"
+      },
+      "People": {
+        "description": "Staff get every student; a student gets the teachers and only the number of classmates.",
+        "properties": {
+          "can_manage_teachers": {
+            "default": false,
+            "title": "Can Manage Teachers",
+            "type": "boolean"
+          },
+          "student_count": {
+            "title": "Student Count",
+            "type": "integer"
+          },
+          "students": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Classmate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Students"
+          },
+          "teachers": {
+            "items": {
+              "$ref": "#/components/schemas/Teacher"
+            },
+            "title": "Teachers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "teachers",
+          "student_count"
+        ],
+        "title": "People",
         "type": "object"
       },
       "ProbeAnswerRequest": {
@@ -5453,6 +5675,29 @@
         "title": "SuspectedMisconception",
         "type": "object"
       },
+      "Teacher": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "owner": {
+            "title": "Owner",
+            "type": "boolean"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "label",
+          "owner"
+        ],
+        "title": "Teacher",
+        "type": "object"
+      },
       "TemporaryPassword": {
         "properties": {
           "temporary_password": {
@@ -6793,7 +7038,7 @@
     },
     "/api/v1/courses": {
       "get": {
-        "description": "Archived courses are listed only for their own teacher, who can restore them.",
+        "description": "A student sees the courses they have joined, a teacher the courses they teach (archived ones too, so they can be\nrestored), an admin every live course. Nobody can browse courses they have no part in: joining takes a code.",
         "operationId": "list_courses_api_v1_courses_get",
         "responses": {
           "200": {
@@ -6866,25 +7111,15 @@
         ]
       }
     },
-    "/api/v1/courses/{course_id}": {
-      "patch": {
-        "operationId": "rename_course_api_v1_courses__course_id__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "course_id",
-            "required": true,
-            "schema": {
-              "title": "Course Id",
-              "type": "integer"
-            }
-          }
-        ],
+    "/api/v1/courses/join": {
+      "post": {
+        "description": "Joins the course that has this class code. An unknown, disabled or archived code all get the same answer, and\nthe number of tries is limited, so codes cannot be guessed.",
+        "operationId": "join_course_api_v1_courses_join_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CourseRename"
+                "$ref": "#/components/schemas/JoinIn"
               }
             }
           },
@@ -6917,7 +7152,65 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Rename Course",
+        "summary": "Join Course",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}": {
+      "patch": {
+        "description": "Rename the course or set its section, subject and colour (F-83).",
+        "operationId": "update_course_api_v1_courses__course_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Course",
         "tags": [
           "courses"
         ]
@@ -8784,44 +9077,6 @@
         "tags": [
           "courses"
         ]
-      },
-      "post": {
-        "operationId": "enroll_api_v1_courses__course_id__enroll_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "course_id",
-            "required": true,
-            "schema": {
-              "title": "Course Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Enroll",
-        "tags": [
-          "courses"
-        ]
       }
     },
     "/api/v1/courses/{course_id}/explanations": {
@@ -9482,6 +9737,157 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/join-code": {
+      "get": {
+        "operationId": "read_join_code_api_v1_courses__course_id__join_code_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCode"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Join Code",
+        "tags": [
+          "courses"
+        ]
+      },
+      "put": {
+        "description": "Closing a class to new students without losing the code.",
+        "operationId": "set_join_code_enabled_api_v1_courses__course_id__join_code_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinCodeEnabled"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCode"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Join Code Enabled",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/join-code/reset": {
+      "post": {
+        "description": "A new code at once; the old one and any link made from it stop working. Students already in stay in.",
+        "operationId": "reset_join_code_api_v1_courses__course_id__join_code_reset_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCode"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reset Join Code",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/misconceptions": {
       "get": {
         "operationId": "misconceptions_api_v1_courses__course_id__misconceptions_get",
@@ -9826,6 +10232,53 @@
         "summary": "Move Module",
         "tags": [
           "content"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/people": {
+      "get": {
+        "operationId": "read_people_api_v1_courses__course_id__people_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/People"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read People",
+        "tags": [
+          "people"
         ]
       }
     },
@@ -10551,6 +11004,73 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/students/{student_id}/mute": {
+      "put": {
+        "description": "A muted student can still read their comments but cannot send new private comments in this course.",
+        "operationId": "mute_student_api_v1_courses__course_id__students__student_id__mute_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "student_id",
+            "required": true,
+            "schema": {
+              "title": "Student Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MuteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/People"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mute Student",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/students/{student_id}/submissions/{submission_id}": {
       "get": {
         "description": "The code as submitted and its result. Opening it is audited: a student's code is their personal data.",
@@ -10614,6 +11134,113 @@
         "summary": "Submission",
         "tags": [
           "student work"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/teachers": {
+      "post": {
+        "description": "Adds an existing instructor account as a co-teacher. They can then teach the course like its owner, except for\narchiving it and changing who teaches it.",
+        "operationId": "add_co_teacher_api_v1_courses__course_id__teachers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoTeacherIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/People"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Co Teacher",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/teachers/{teacher_id}": {
+      "delete": {
+        "operationId": "remove_co_teacher_api_v1_courses__course_id__teachers__teacher_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "teacher_id",
+            "required": true,
+            "schema": {
+              "title": "Teacher Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Co Teacher",
+        "tags": [
+          "people"
         ]
       }
     },

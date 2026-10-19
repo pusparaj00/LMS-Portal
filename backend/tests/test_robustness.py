@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from tests.helpers import enroll
 from tests.test_diagnostic import PLACEMENT_RIGHT, enrolled_student, option
 
 API = "/api/v1"
@@ -34,7 +35,7 @@ def test_nul_characters_are_refused_everywhere_postgres_would_reject_them(client
         f"{API}/auth/login", json={"email": f"a{NUL}b@test.local", "password": "long-enough-1"}
     ).status_code == 422
     user_id, headers = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=headers)
+    enroll(client, course['id'], headers)
     body = {"problem_id": course["problem_id"], "code": f"print(1){NUL}"}
     assert client.post(f"{API}/submissions", headers=headers, json=body).status_code == 422
     assert client.post(f"{API}/submissions/run", headers=headers, json=body).status_code == 422

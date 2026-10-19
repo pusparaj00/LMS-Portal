@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy import text
 
 from tests.conftest import HIDDEN_INPUT
+from tests.helpers import enroll
 
 API = "/api/v1"
 
@@ -12,7 +13,7 @@ API = "/api/v1"
 @pytest.fixture(scope="module")
 def student(client, make_user, course):
     user_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{course['id']}/enroll", headers=headers).status_code == 204
+    assert enroll(client, course['id'], headers).status_code == 200
     return user_id, headers
 
 
@@ -141,7 +142,7 @@ def test_the_problem_list_shows_each_student_only_their_own_progress(client, cou
     _, mine = make_user("student")
     _, other = make_user("student")
     for headers in (mine, other):
-        assert client.post(f"{API}/courses/{course['id']}/enroll", headers=headers).status_code == 204
+        assert enroll(client, course['id'], headers).status_code == 200
     assert status(mine) == "new"
     submit(client, course, mine, "print('wrong')\n")
     assert status(mine) == "tried"

@@ -24,6 +24,7 @@ from sqlalchemy import text
 from app.db import get_engine
 from app.seed import ensure_user
 from evaluation.consent import agree
+from evaluation.join import join_course
 
 API = "http://localhost:8000/api/v1"
 COURSE_TITLE = "Python Fundamentals"
@@ -77,7 +78,7 @@ def demo_flow(label: str, cached: bool, admin: dict) -> Flow:
         return flow
     headers = {"Authorization": "Bearer " + reply.json()["access_token"]}
     agree(client, API, headers)
-    flow.timed("enroll", lambda: client.post(f"{API}/courses/{course}/enroll", headers=headers), ok(204))
+    flow.timed("enroll", lambda: join_course(client, API, course, headers), ok(200))
 
     started = flow.timed("placement start", lambda: client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course}), ok())
     if started is None or started.status_code != 200:
@@ -176,7 +177,7 @@ def timings() -> int:
         token = client.post(f"{API}/auth/register", json={"email": f"time-{uuid.uuid4().hex[:8]}@eval.local", "password": "timing-pass-1"}).json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         agree(client, API, headers)
-        client.post(f"{API}/courses/{course}/enroll", headers=headers)
+        join_course(client, API, course, headers)
         return headers
 
     headers = student()
@@ -262,7 +263,7 @@ def cache(students: int) -> int:
         token = client.post(f"{API}/auth/register", json={"email": f"cache-{uuid.uuid4().hex[:8]}@eval.local", "password": "cache-pass-1"}).json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         agree(client, API, headers)
-        client.post(f"{API}/courses/{course}/enroll", headers=headers)
+        join_course(client, API, course, headers)
         sid = client.post(f"{API}/submissions", headers=headers, json={"problem_id": problem, "code": CACHE_CODE}).json()["submission_id"]
         started = time.perf_counter()
         reply = client.post(f"{API}/submissions/{sid}/explain", headers=headers).json()
@@ -289,7 +290,7 @@ def prepare() -> int:
     token = client.post(f"{API}/auth/register", json={"email": f"restart-{uuid.uuid4().hex[:8]}@eval.local", "password": "restart-pass-1"}).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     agree(client, API, headers)
-    client.post(f"{API}/courses/{course}/enroll", headers=headers)
+    join_course(client, API, course, headers)
     started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course}).json()
     session, item = started["session_id"], started["item"]
     for _ in range(4):

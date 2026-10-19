@@ -22,6 +22,7 @@ from app.db import get_engine
 from app.feedback import leak as guard
 from app.llm.adapter import LLMError, build_adapter
 from evaluation.consent import agree
+from evaluation.join import join_course
 
 API = "http://localhost:8000/api/v1"
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,7 +72,7 @@ def session() -> tuple[httpx.Client, dict, int]:
     agree(client, API, headers)
     with get_engine().connect() as conn:
         course_id, = conn.execute(text("SELECT id FROM courses WHERE title = :t ORDER BY id LIMIT 1"), {"t": COURSE_TITLE}).one()
-    client.post(f"{API}/courses/{course_id}/enroll", headers=headers)
+    join_course(client, API, course_id, headers)
     return client, headers, course_id
 
 

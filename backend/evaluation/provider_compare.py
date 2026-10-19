@@ -23,6 +23,7 @@ from app.llm.adapter import GEMINI_KEYS, OPENAI_COMPATIBLE, build_adapter  # noq
 from app.main import app  # noqa: E402
 from app.routers.feedback import llm_adapter  # noqa: E402
 from evaluation.consent import agree
+from evaluation.join import join_course
 from evaluation.real_feedback import WRONG_SUBMISSIONS  # noqa: E402
 
 API = "/api/v1"
@@ -50,7 +51,7 @@ def main(providers: list[str]) -> int:
             text("SELECT id FROM courses WHERE title = 'Python Fundamentals' ORDER BY id DESC LIMIT 1")
         ).scalar_one()
         problems = dict(conn.execute(text("SELECT title, id FROM problems WHERE course_id = :c"), {"c": course}).all())
-    client.post(f"{API}/courses/{course}/enroll", headers=headers)
+    join_course(client, API, course, headers)
     configs = {p: settings_for(p) for p in providers}
     results: dict[str, list[tuple[float, str, int]]] = {p: [] for p in providers}
     for title, code in WRONG_SUBMISSIONS:

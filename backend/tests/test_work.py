@@ -7,6 +7,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import text
 
+from tests.helpers import enroll
+
 API = "/api/v1"
 
 
@@ -23,7 +25,7 @@ def course(client, make_user):
     teacher_id, teacher = make_user("instructor")
     made = client.post(f"{API}/courses", headers=teacher, json={"title": f"Work {uuid.uuid4().hex[:6]}"}).json()
     student_id, student = make_user("student")
-    assert client.post(f"{API}/courses/{made['id']}/enroll", headers=student).status_code == 204
+    assert enroll(client, made['id'], student).status_code == 200
     return {"id": made["id"], "teacher": teacher, "teacher_id": teacher_id, "student": student, "student_id": student_id}
 
 
@@ -232,7 +234,7 @@ def test_only_the_courses_own_people_can_read_or_grade_the_work(client, make_use
 def test_the_teacher_sees_every_enrolled_student_with_a_state(client, make_user, course):
     a = make_assignment(client, course)
     other_id, other = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=other)
+    enroll(client, course['id'], other)
     hand_in(client, course, a)
     listed = client.get(path(course, a, "/submissions"), headers=course["teacher"]).json()
     states = {r["student_id"]: r["state"] for r in listed["rows"]}
@@ -269,7 +271,7 @@ def test_private_comments_are_visible_only_to_the_student_and_their_instructor(c
     theirs = client.get(path(course, a, f"/students/{course['student_id']}"), headers=course["teacher"]).json()
     assert [(c["from_teacher"], c["mine"]) for c in theirs["comments"]] == [(False, False), (True, True)]
     _, other_student = make_user("student")
-    client.post(f"{API}/courses/{course['id']}/enroll", headers=other_student)
+    enroll(client, course['id'], other_student)
     assert client.get(path(course, a), headers=other_student).json()["comments"] == []
     assert "Can I use a link" not in client.get(path(course, a), headers=other_student).text
     assert client.post(path(course, a, "/comments"), headers=course["student"], json={"body": "  "}).status_code == 422

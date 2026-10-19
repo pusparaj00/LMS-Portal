@@ -5,6 +5,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from tests.helpers import enroll
+
 API = "/api/v1"
 
 
@@ -33,7 +35,7 @@ def course(client, make_user):
     _, teacher = make_user("instructor")
     made = client.post(f"{API}/courses", headers=teacher, json={"title": f"Quizzes {uuid.uuid4().hex[:6]}"}).json()
     _, student = make_user("student")
-    assert client.post(f"{API}/courses/{made['id']}/enroll", headers=student).status_code == 204
+    assert enroll(client, made['id'], student).status_code == 200
     return {"id": made["id"], "teacher": teacher, "student": student}
 
 

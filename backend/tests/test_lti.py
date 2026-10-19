@@ -74,6 +74,7 @@ def platform(owner):
             f"DELETE FROM assignments WHERE course_id IN ({courses})",
             "DELETE FROM lti_contexts WHERE platform_id = :p",
             "DELETE FROM lti_users WHERE platform_id = :p",
+            "DELETE FROM course_teachers WHERE course_id IN (SELECT course_id FROM gone_courses)",
             "DELETE FROM courses WHERE id IN (SELECT course_id FROM gone_courses)",
             "DELETE FROM users WHERE id IN (SELECT user_id FROM gone_users)",
             "DELETE FROM lti_platforms WHERE id = :p",

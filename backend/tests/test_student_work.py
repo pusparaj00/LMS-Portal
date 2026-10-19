@@ -3,6 +3,7 @@ nobody else does, hidden test inputs never show, and every view of code is audit
 from sqlalchemy import text
 
 from tests.conftest import HIDDEN_INPUT
+from tests.helpers import enroll
 
 API = "/api/v1"
 VISIBLE_ONLY = "print({'1': 2, '41': 42}.get(input(), 0))\n"  # right on the two examples, wrong on the two hidden tests
@@ -10,7 +11,7 @@ VISIBLE_ONLY = "print({'1': 2, '41': 42}.get(input(), 0))\n"  # right on the two
 
 def enrolled(client, make_user, course):
     student_id, headers = make_user("student")
-    assert client.post(f"{API}/courses/{course['id']}/enroll", headers=headers).status_code == 204
+    assert enroll(client, course['id'], headers).status_code == 200
     return student_id, headers
 
 

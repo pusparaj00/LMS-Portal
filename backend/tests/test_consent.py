@@ -4,6 +4,7 @@ from sqlalchemy import text
 
 from app import consent
 from app.config import Settings
+from tests.helpers import enroll
 from tests.test_feedback_api import FakeLLM, explain, failed_submission, good_reply, llm, new_student, world  # noqa: F401
 
 API = "/api/v1"
@@ -42,7 +43,7 @@ def test_a_new_student_has_not_agreed_and_the_notice_says_what_is_collected_and_
 
 def test_nothing_is_processed_for_a_student_who_has_not_agreed(client, world, newcomer):
     _, headers = newcomer
-    assert client.post(f"{API}/courses/{world['course']}/enroll", headers=headers).status_code == 204  # enrolling is fine
+    assert enroll(client, world['course'], headers).status_code == 200  # enrolling is fine
     blocked = [
         client.post(f"{API}/submissions", headers=headers, json={"problem_id": world["p"], "code": "print(1)"}),
         client.post(f"{API}/submissions/run", headers=headers, json={"problem_id": world["p"], "code": "print(1)"}),
@@ -58,7 +59,7 @@ def test_nothing_is_processed_for_a_student_who_has_not_agreed(client, world, ne
 
 def test_the_student_can_still_read_their_own_mastery_and_the_notice_without_agreeing(client, world, newcomer):
     _, headers = newcomer
-    client.post(f"{API}/courses/{world['course']}/enroll", headers=headers)
+    enroll(client, world['course'], headers)
     mastery = client.get(f"{API}/students/me/mastery", params={"course_id": world["course"]}, headers=headers)
     assert mastery.status_code == 200
     assert client.get(f"{API}/consent/notice", headers=headers).status_code == 200
@@ -66,7 +67,7 @@ def test_the_student_can_still_read_their_own_mastery_and_the_notice_without_agr
 
 def test_agreeing_records_a_timestamp_unlocks_processing_and_is_idempotent(client, world, owner, newcomer):
     user_id, headers = newcomer
-    client.post(f"{API}/courses/{world['course']}/enroll", headers=headers)
+    enroll(client, world['course'], headers)
     first = agree(client, headers)
     assert first.status_code == 200 and first.json()["accepted"] is True and first.json()["accepted_at"]
     again = agree(client, headers)
@@ -80,7 +81,7 @@ def test_agreeing_records_a_timestamp_unlocks_processing_and_is_idempotent(clien
 
 def test_withdrawing_stops_processing_at_once_and_keeps_the_record(client, world, owner, newcomer):
     user_id, headers = newcomer
-    client.post(f"{API}/courses/{world['course']}/enroll", headers=headers)
+    enroll(client, world['course'], headers)
     agree(client, headers)
     withdrawn = client.post(f"{API}/consent/withdraw", headers=headers).json()
     assert withdrawn["accepted"] is False and withdrawn["withdrawn_at"] and withdrawn["accepted_at"] is None
