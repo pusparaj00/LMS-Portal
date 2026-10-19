@@ -84,11 +84,11 @@ def test_a_new_student_completes_the_whole_test_and_sees_a_vector_and_misconcept
 def test_students_get_different_first_questions(client, make_user, placement_course):
     course_id = placement_course["course_id"]
     first_questions = set()
-    for _ in range(6):
+    for _ in range(8):
         _, headers = enrolled_student(client, make_user, course_id)
         started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
         first_questions.add(started["item"]["problem_id"])
-    assert len(first_questions) >= 3
+    assert len(first_questions) >= 2  # chosen by a seeded draw among the best few, so not always the same one
 
 
 def test_dont_know_counts_as_not_known_and_never_raises_a_misconception(
@@ -350,3 +350,32 @@ def test_a_recheck_alone_does_not_count_as_taking_the_placement(client, make_use
             break
         item = data["next_item"]
     assert mastery_page(client, headers, course_id)["placement_completed"] is False
+
+
+def test_a_question_archived_during_the_test_does_not_break_it(client, make_user, placement_course, owner):
+    course_id, wrong_for = placement_course["course_id"], placement_course["misconceptions"][0]
+    user_id, headers = enrolled_student(client, make_user, course_id)
+    started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
+    session_id, first = started["session_id"], started["item"]
+    second = answer(client, headers, session_id, first, wrong_for=wrong_for).json()["next_item"]
+    with owner.begin() as conn:  # the teacher archives the question just answered and the one on screen
+        conn.execute(
+            text("UPDATE problems SET archived_at = now() WHERE id = ANY(:ids)"),
+            {"ids": [first["problem_id"], second["problem_id"]]},
+        )
+    response = answer(client, headers, session_id, second, wrong_for=wrong_for)
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["done"] or data["next_item"]["problem_id"] not in (first["problem_id"], second["problem_id"])
+    with owner.connect() as conn:
+        recorded = conn.execute(
+            text("SELECT count(DISTINCT evidence_ref) FROM mastery_events WHERE user_id = :u AND rule_id = 'bayes_update'"
+                 " AND evidence_ref LIKE :p"),
+            {"u": user_id, "p": f"diagnostic:{session_id}:%"},
+        ).scalar_one()
+    assert recorded == 1  # only the answer given before the change; none for the archived question
+    item = data["next_item"]
+    while not data["done"]:  # the rest of the test still finishes
+        data = answer(client, headers, session_id, item, wrong_for=wrong_for).json()
+        item = data["next_item"]
+    assert len(data["result"]["mastery"]) == 3

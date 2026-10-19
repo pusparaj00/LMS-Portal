@@ -252,8 +252,8 @@ def set_prerequisites(course_id: int, concept_id: int, body: PrerequisitesUpdate
     _own(conn, user, course_id)
     _concept(conn, course_id, concept_id)
     wanted = list(dict.fromkeys(body.prerequisite_ids))
-    rows = conn.execute(
-        text("SELECT id, name, parent_ids FROM concepts WHERE course_id = :c"), {"c": course_id}
+    rows = conn.execute(  # locked, so two teachers editing at once cannot together create a circle
+        text("SELECT id, name, parent_ids FROM concepts WHERE course_id = :c FOR UPDATE"), {"c": course_id}
     ).all()
     known = {r.id: r for r in rows}
     unknown = [k for k in wanted if k not in known]

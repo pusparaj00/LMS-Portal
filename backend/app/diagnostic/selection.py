@@ -100,6 +100,8 @@ def posterior(
     by_id = {i.id: i for i in items}
     answers = []
     for item_id, correct, evidence in responses:
+        if item_id not in by_id:  # the question was archived since it was answered; its answer stays in the ledger
+            continue
         q = _question(by_id[item_id], index, evidence)
         answers.append(pooled.Answer(q.weights, q.a, q.b, q.slip, q.guess, correct))
     theta, covariance = pooled.fit(answers, len(index), prior_mean, **prior)

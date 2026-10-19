@@ -293,6 +293,8 @@ def record_pooled(
                 text("SELECT concept_id, weight FROM problem_concepts WHERE problem_id = :p"), {"p": problem_id}
             ) if c in index
         }
+        if not weights:  # a question whose concepts were all removed says nothing about this course's concepts
+            continue
         slip, guess = core.DEFAULT_PARAMS[row.evidence_type]
         answers.append(pooled.Answer(weights, a, b, slip, guess, bool(row.correct)))
     theta, covariance = pooled.fit(answers, len(concepts), prior_mean)

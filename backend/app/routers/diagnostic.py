@@ -302,25 +302,27 @@ def _answer(body: DiagnosticAnswerRequest, user: CurrentUser, conn: Connection) 
     state = _load_state(body.session_id, user)
     if body.problem_id != state["current"]:
         raise HTTPException(409, "this is not the current placement item")
-    item = next(i for i in _items(conn, state["course_id"]) if i.id == body.problem_id)
-    correct, option_id = _grade_answer(conn, body, item.kind)
-    confidence = body.confidence if item.kind == "mcq" and not body.dont_know else None
-    evidence = core.answer_evidence_type(selection.EVIDENCE_TYPE[item.kind], body.dont_know, confidence)
-
-    try:
-        mastery.record_answer(
-            user_id=user.id, problem_id=item.id, correct=correct,
-            evidence_type=selection.EVIDENCE_TYPE[item.kind],
-            evidence_ref=f"diagnostic:{body.session_id}:{item.id}", option_id=option_id,
-            dont_know=body.dont_know, confidence=confidence,
+    # A question the teacher archived or put into an assignment since it was shown is skipped: nothing is graded or
+    # recorded for it and the student is given the next one.
+    item = next((i for i in _items(conn, state["course_id"]) if i.id == body.problem_id), None)
+    if item is not None:
+        correct, option_id = _grade_answer(conn, body, item.kind)
+        confidence = body.confidence if item.kind == "mcq" and not body.dont_know else None
+        evidence = core.answer_evidence_type(selection.EVIDENCE_TYPE[item.kind], body.dont_know, confidence)
+        try:
+            mastery.record_answer(
+                user_id=user.id, problem_id=item.id, correct=correct,
+                evidence_type=selection.EVIDENCE_TYPE[item.kind],
+                evidence_ref=f"diagnostic:{body.session_id}:{item.id}", option_id=option_id,
+                dont_know=body.dont_know, confidence=confidence,
+            )
+        except mastery.MasteryUnavailable:
+            raise HTTPException(503, "mastery service unavailable, try again shortly") from None
+        state["asked"].append(item.id)
+        state["responses"].append(
+            {"problem_id": item.id, "kind": item.kind, "a": item.a, "b": item.b, "correct": correct,
+             "evidence": evidence}
         )
-    except mastery.MasteryUnavailable:
-        raise HTTPException(503, "mastery service unavailable, try again shortly") from None
-
-    state["asked"].append(item.id)
-    state["responses"].append(
-        {"problem_id": item.id, "kind": item.kind, "a": item.a, "b": item.b, "correct": correct, "evidence": evidence}
-    )
     upcoming = _next_item(conn, state, user.id)
 
     if upcoming is not None:
