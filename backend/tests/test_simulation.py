@@ -17,12 +17,18 @@ def test_same_seed_gives_the_same_result():
     assert one["auc"] == two["auc"]
 
 
-def test_five_item_test_beats_predicting_the_population_mean_on_the_concepts_it_tested():
-    # Holds on 10 of 10 seeds. Against the average over ALL concepts it holds on only 3 of 10
-    # (docs/results/diagnostic.md), so that target is reported there, not asserted here.
+def test_five_question_pooled_estimate_beats_predicting_the_population_mean():
+    # The average mastery after 5 questions against the true average mastery (TR-V-06), on three seeds.
     for seed in (5, 6, 7):
-        result = run.simulate(300, seed, model.load_bank(BANK))["sanity_5_items"]["tested_concepts"]
-        assert result["estimate_rmse"] < result["population_mean_rmse"], seed
+        sanity = run.simulate(150, seed, model.load_bank(BANK))["sanity_5_items"]
+        for key in ("pooled_all", "pooled_tested"):
+            assert sanity[key]["estimate_rmse"] < sanity[key]["population_mean_rmse"], (seed, key)
+
+
+def test_the_pooled_estimate_is_closer_to_the_truth_than_the_independent_one():
+    result = run.simulate(150, 11, model.load_bank(BANK))["curves"]
+    assert result["adaptive_pooled"][-1] < result["adaptive"][-1]
+    assert result["random_pooled"][-1] < result["random"][-1]
 
 
 def test_the_simulator_differs_from_the_selection_model():

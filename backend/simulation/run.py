@@ -9,13 +9,14 @@ from pathlib import Path
 
 import numpy as np
 
-from app.diagnostic import selection
+from app.diagnostic import pooled, selection
 from app.mastery import core
 from simulation import model
 
 BKT_LEARN = 0.1  # BKT's transition probability: the one thing that distinguishes it from the update rule
 ECE_BINS = 10
 POLICIES = ("adaptive", "random", "bkt", "irt_only")
+POOLED = ("adaptive_pooled", "random_pooled")  # the same questions, estimated with the pooled model
 
 
 def predict_from_mastery(item: selection.Item, mastery: dict[int, float]) -> float:
@@ -26,23 +27,27 @@ def predict_from_mastery(item: selection.Item, mastery: dict[int, float]) -> flo
     return float(p @ weights)
 
 
-def run_student(policy: str, items, outcomes: np.ndarray, truth: np.ndarray, rng, concepts: int, seed: str = ""):
+def run_student(
+    policy: str, items, outcomes: np.ndarray, truth: np.ndarray, rng, concepts: int, seed: str = "",
+    prior: dict | None = None,
+):
     """One placement test. Returns (error after each item, mastery, ability after each item, asked ids)."""
     mastery = {c: 0.5 for c in range(concepts)}
     asked: list[int] = []
     responses: list[tuple[float, float, bool, str]] = []
+    given: list[selection.Response] = []
     errors = []
     abilities = []
     for _ in range(selection.max_questions(items)):
-        theta = selection.eap_theta(responses)
         if policy == "adaptive":
-            item = selection.select_next(items, asked, mastery, theta, seed)
+            item = selection.select_next(items, given, seed, **(prior or {}))
         else:
             pool = selection.allowed(items, asked)
             item = pool[rng.integers(len(pool))]
         correct = bool(outcomes[item.id])
         asked.append(item.id)
         responses.append((item.a, item.b, correct, item.kind))
+        given.append((item.id, correct, selection.EVIDENCE_TYPE[item.kind]))
         slip, guess = core.DEFAULT_PARAMS[selection.EVIDENCE_TYPE[item.kind]]
         for c, w in item.concepts.items():
             if policy == "bkt":
@@ -53,6 +58,50 @@ def run_student(policy: str, items, outcomes: np.ndarray, truth: np.ndarray, rng
         errors.append(float(np.mean([abs(mastery[c] - truth[c]) for c in range(concepts)])))
         abilities.append(selection.eap_theta(responses))
     return errors, mastery, abilities, asked
+
+
+def independent_mastery(items, outcomes: np.ndarray, asked: list[int], concepts: int) -> dict[int, float]:
+    """The mastery rule's per-concept estimate after the asked questions (what the app did before the pooled model)."""
+    mastery = {c: 0.5 for c in range(concepts)}
+    for i in asked:
+        slip, guess = core.DEFAULT_PARAMS[selection.EVIDENCE_TYPE[items[i].kind]]
+        for c, w in items[i].concepts.items():
+            mastery[c] = core.weighted_update(mastery[c], slip, guess, bool(outcomes[i]), min(1.0, w))
+    return mastery
+
+
+def pooled_answers(items, outcomes: np.ndarray, asked: list[int]) -> list[pooled.Answer]:
+    out = []
+    for i in asked:
+        slip, guess = core.DEFAULT_PARAMS[selection.EVIDENCE_TYPE[items[i].kind]]
+        out.append(pooled.Answer(items[i].concepts, items[i].a, items[i].b, slip, guess, bool(outcomes[i])))
+    return out
+
+
+def pooled_trace(items, outcomes: np.ndarray, truth: np.ndarray, asked: list[int], concepts: int, **prior):
+    """Pooled estimate after each question: error per prefix, and the estimate after 5 and after all questions."""
+    errors, five = [], None
+    answers = pooled_answers(items, outcomes, asked)
+    for n in range(1, len(asked) + 1):
+        theta, covariance = pooled.fit(answers[:n], concepts, **prior)
+        estimate = pooled.mastery(theta, covariance)
+        errors.append(float(np.mean(np.abs(estimate - truth))))
+        if n == 5:
+            five = estimate
+    return errors, five, theta, covariance
+
+
+def pooled_success(item, theta: np.ndarray, covariance: np.ndarray) -> float:
+    """Chance of a right answer to a held-out question, with the spread of the ability estimate taken into account."""
+    slip, guess = core.DEFAULT_PARAMS[selection.EVIDENCE_TYPE[item.kind]]
+    w = np.zeros(len(theta))
+    for c, weight in item.concepts.items():
+        w[c] = weight
+    w = w / w.sum()
+    spread = np.sqrt(1.0 + np.pi * (pooled.D * item.a) ** 2 * float(w @ covariance @ w) / 8.0)
+    link = 1.0 / (1.0 + np.exp(-pooled.D * item.a * (float(w @ theta) - item.b) / spread))
+    return guess + (1.0 - slip - guess) * float(link)
+
 
 
 def auc(scores: np.ndarray, labels: np.ndarray) -> float:
@@ -83,13 +132,15 @@ def calibration_error(scores: np.ndarray, labels: np.ndarray) -> float:
 
 
 def _rmse_pair(estimate: np.ndarray, target: np.ndarray) -> dict[str, float]:
+    """Error of the estimate against the error of predicting the population mean of the target (TR-V-06)."""
     return {
         "estimate_rmse": float(np.sqrt(np.mean((estimate - target) ** 2))),
-        "population_mean_rmse": float(np.sqrt(np.mean(target**2))),
+        "population_mean_rmse": float(np.sqrt(np.mean((target - target.mean()) ** 2))),
     }
 
 
-def simulate(students: int, seed: int, bank: model.Bank) -> dict:
+def simulate(students: int, seed: int, bank: model.Bank, prior: dict | None = None) -> dict:
+    prior = prior or {}
     rng = np.random.default_rng(seed)
     items, k = bank.items, len(bank.concepts)
     theta = model.make_students(rng, students, k)
@@ -99,31 +150,43 @@ def simulate(students: int, seed: int, bank: model.Bank) -> dict:
     outcomes = (rng.random(probabilities.shape) < probabilities).astype(int)  # one fixed answer per student and item
 
     length = selection.max_questions(items)
-    curves = {p: np.zeros((students, length)) for p in POLICIES}
-    held_scores = {p: [] for p in (*POLICIES, "prior_only")}
+    curves = {p: np.zeros((students, length)) for p in (*POLICIES, *POOLED)}
+    held_scores = {p: [] for p in (*POLICIES, *POOLED, "prior_only")}
     held_labels: list[int] = []
     coverage = {p: [] for p in POLICIES}
-    correlation = {p: [] for p in POLICIES}
-    ability_after_5: list[float] = []
-    tested_ability_5: list[float] = []
+    correlation = {p: [] for p in (*POLICIES, *POOLED)}
+    five = {name: ([], []) for name in ("independent_all", "independent_tested", "pooled_all", "pooled_tested")}
     for s in range(students):
         asked_by_policy = {}
+        pooled_by_policy = {}
         for policy in POLICIES:
             run_rng = np.random.default_rng([seed, s])
             errors, mastery, abilities, asked = run_student(
-                policy, items, outcomes[s], mastery_true[s], run_rng, k, f"{seed}:{s}"
+                policy, items, outcomes[s], mastery_true[s], run_rng, k, f"{seed}:{s}", prior
             )
             curves[policy][s] = errors
             asked_by_policy[policy] = (mastery, abilities[-1], asked)
             coverage[policy].append(len({c for i in asked for c in items[i].concepts}))
             estimate = [mastery[c] for c in range(k)]
             correlation[policy].append(float(np.corrcoef(estimate, mastery_true[s])[0, 1]))
-            if policy == "adaptive":
-                ability_after_5.append(abilities[4])
-                first_five = [items[i] for i in asked[:5]]
-                tested_ability_5.append(
-                    float(np.mean([np.mean([theta[s][c] for c in it.concepts]) for it in first_five]))
+            if policy in ("adaptive", "random"):
+                errors, after_five, theta_hat, covariance = pooled_trace(
+                    items, outcomes[s], mastery_true[s], asked, k, **prior
                 )
+                curves[f"{policy}_pooled"][s] = errors
+                pooled_by_policy[policy] = (theta_hat, covariance)
+                estimate_pooled = pooled.mastery(theta_hat, covariance)
+                correlation[f"{policy}_pooled"].append(float(np.corrcoef(estimate_pooled, mastery_true[s])[0, 1]))
+            if policy == "adaptive":
+                tested = sorted({c for i in asked[:5] for c in items[i].concepts})
+                independent_5 = independent_mastery(items, outcomes[s], asked[:5], k)
+                for name, values in (
+                    ("independent", np.array([independent_5[c] for c in range(k)])), ("pooled", after_five),
+                ):
+                    five[f"{name}_all"][0].append(float(values.mean()))
+                    five[f"{name}_all"][1].append(float(mastery_true[s].mean()))
+                    five[f"{name}_tested"][0].append(float(values[tested].mean()))
+                    five[f"{name}_tested"][1].append(float(mastery_true[s][tested].mean()))
         # held-out responses: bank items asked by neither test, so no predictor has seen them
         seen = set(asked_by_policy["adaptive"][2]) | set(asked_by_policy["random"][2])
         held = [i for i in items if i.id not in seen]
@@ -137,20 +200,20 @@ def simulate(students: int, seed: int, bank: model.Bank) -> dict:
             else:
                 held_scores[policy] += [predict_from_mastery(i, mastery) for i in held]
         held_scores["prior_only"] += [predict_from_mastery(i, {c: 0.5 for c in range(k)}) for i in held]
+        for policy in ("adaptive", "random"):
+            theta_hat, covariance = pooled_by_policy[policy]
+            held_scores[f"{policy}_pooled"] += [pooled_success(i, theta_hat, covariance) for i in held]
 
     labels = np.array(held_labels)
     return {
-        "curves": {p: curves[p].mean(axis=0) for p in POLICIES},
+        "curves": {p: curves[p].mean(axis=0) for p in (*POLICIES, *POOLED)},
         "auc": {p: auc(np.array(v), labels) for p, v in held_scores.items()},
         "ece": {p: calibration_error(np.array(v), labels) for p, v in held_scores.items()},
         "held_out_responses": len(labels),
         "coverage": {p: float(np.mean(v)) for p, v in coverage.items()},
         "correlation": {p: float(np.nanmean(v)) for p, v in correlation.items()},
-        # TR-V-06: error of the 5-item ability estimate against the student's true average ability
-        "sanity_5_items": {
-            "all_concepts": _rmse_pair(np.array(ability_after_5), theta.mean(axis=1)),
-            "tested_concepts": _rmse_pair(np.array(ability_after_5), np.array(tested_ability_5)),
-        },
+        # TR-V-06: error of the average mastery after 5 questions against the true average mastery
+        "sanity_5_items": {name: _rmse_pair(np.array(e), np.array(t)) for name, (e, t) in five.items()},
     }
 
 
@@ -165,21 +228,26 @@ def report(result: dict, args: argparse.Namespace) -> str:
     adaptive_items = items_to_reach(curves["adaptive"], threshold)
     length = len(curves["random"])
     fewer = (length - adaptive_items) / length * 100 if adaptive_items else None
+    pooled_threshold = float(curves["random_pooled"][-1])
+    pooled_items = items_to_reach(curves["adaptive_pooled"], pooled_threshold)
+    pooled_fewer = (length - pooled_items) / length * 100 if pooled_items else None
     lines = [
         "# Diagnostic simulation results",
         "",
-        f"- Command: `python -m simulation.run --students {args.students} --seed {args.seed}`",
+        f"- Command: `python -m simulation.run --students {args.students} --seed {args.seed}"
+        f"{args.prior_flags}`",
         f"- Run at: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}",
         f"- Simulated students: {args.students}, bank: {len(args.items)} items, test length: {length}",
         "",
         "## Error of the mastery vector (mean absolute error against true mastery)",
         "",
-        "| Items asked | adaptive | random | BKT (random order) |",
-        "| --- | --- | --- | --- |",
+        "| Items asked | adaptive | random | BKT (random order) | adaptive + pooled | random + pooled |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for n in sorted({1, 3, 5, 8, 10, 16, length}):
         lines.append(
             f"| {n} | {curves['adaptive'][n - 1]:.3f} | {curves['random'][n - 1]:.3f} | {curves['bkt'][n - 1]:.3f} |"
+            f" {curves['adaptive_pooled'][n - 1]:.3f} | {curves['random_pooled'][n - 1]:.3f} |"
         )
     lines += [
         "",
@@ -191,6 +259,13 @@ def report(result: dict, args: argparse.Namespace) -> str:
             else "Adaptive selection does not reach it within the test length."
         ),
         "",
+        f"With the pooled estimate the threshold is random's error after {length} items ({pooled_threshold:.3f}). "
+        + (
+            f"Adaptive selection reaches it after {pooled_items} items, {pooled_fewer:.0f}% fewer than random."
+            if pooled_items
+            else "Adaptive selection does not reach it within the test length."
+        ),
+        "",
         "## Coverage and ranking after the whole test",
         "",
         "| Policy | Concepts touched (of 12) | Correlation of estimate with true mastery |",
@@ -199,23 +274,25 @@ def report(result: dict, args: argparse.Namespace) -> str:
             f"| {name} | {result['coverage'][key]:.1f} | {result['correlation'][key]:.3f} |"
             for key, name in (("adaptive", "adaptive"), ("random", "random"), ("bkt", "BKT (random order)"))
         ],
+        *[
+            f"| {name} | {result['coverage'][key]:.1f} | {result['correlation'][key + '_pooled']:.3f} |"
+            for key, name in (("adaptive", "adaptive + pooled"), ("random", "random + pooled"))
+        ],
         "",
         "## Five-item sanity test (TR-V-06)",
         "",
-        "RMSE of the ability estimate after 5 adaptive items, against two definitions of true ability, "
-        "compared with predicting the population mean (ability 0).",
+        "RMSE of the average mastery estimated after 5 adaptive items against the student's true average mastery, "
+        "compared with predicting the population mean of the true average mastery.",
         "",
-        "| True ability is | Estimate RMSE | Population-mean RMSE | Result |",
-        "| --- | --- | --- | --- |",
+        "| Estimate | True value is | Estimate RMSE | Population-mean RMSE | Result |",
+        "| --- | --- | --- | --- | --- |",
         *[
-            f"| {label} | {v['estimate_rmse']:.3f} | {v['population_mean_rmse']:.3f} | "
+            f"| {est} | {label} | {v['estimate_rmse']:.3f} | {v['population_mean_rmse']:.3f} | "
             f"{'beats the mean predictor' if v['estimate_rmse'] < v['population_mean_rmse'] else 'does NOT beat it'} |"
+            for est, key_est in (("independent", "independent"), ("pooled", "pooled"))
             for label, v in (
-                (
-                    "the average over all 12 concepts (declared before the first run)",
-                    result["sanity_5_items"]["all_concepts"],
-                ),
-                ("the average over the concepts the 5 items tested", result["sanity_5_items"]["tested_concepts"]),
+                ("average over all concepts", result["sanity_5_items"][f"{key_est}_all"]),
+                ("average over the concepts the 5 items tested", result["sanity_5_items"][f"{key_est}_tested"]),
             )
         ],
         "",
@@ -231,6 +308,8 @@ def report(result: dict, args: argparse.Namespace) -> str:
         "random": "Random selection + mastery update",
         "bkt": "BKT baseline (random order, learning rate 0.1)",
         "irt_only": "Ability-only 2PL baseline (random order)",
+        "adaptive_pooled": "Adaptive selection + pooled estimate",
+        "random_pooled": "Random selection + pooled estimate",
         "prior_only": "No evidence (every concept at its prior)",
     }
     for key, name in names.items():
@@ -251,13 +330,20 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--students", type=int, default=500)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--correlation", type=float, default=pooled.CORRELATION)
+    parser.add_argument("--prior-sd", type=float, default=pooled.PRIOR_SD)
     root = Path(__file__).resolve().parents[1]
     default_bank = next(p for p in (root / "data" / "bank", root.parent / "data" / "bank") if p.exists())
     parser.add_argument("--bank", type=Path, default=default_bank)
     args = parser.parse_args()
     bank = model.load_bank(args.bank)
     args.items = bank.items
-    sys.stdout.write(report(simulate(args.students, args.seed, bank), args))
+    prior = {"correlation": args.correlation, "sd": args.prior_sd}
+    args.prior_flags = (
+        "" if (args.correlation, args.prior_sd) == (pooled.CORRELATION, pooled.PRIOR_SD)
+        else f" --correlation {args.correlation} --prior-sd {args.prior_sd}"
+    )
+    sys.stdout.write(report(simulate(args.students, args.seed, bank, prior), args))
 
 
 if __name__ == "__main__":
