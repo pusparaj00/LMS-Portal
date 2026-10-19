@@ -30,6 +30,7 @@ from app.routers import (
     lti,
     me,
     problems,
+    quizzes,
     student_work,
     students,
     submissions,
@@ -83,6 +84,6 @@ async def request_context(request: Request, call_next):
 app.include_router(health.router, prefix="/api/v1")
 for module in (
     accounts, courses, documents, problems, submissions, feedback, diagnostic, students, chat, instructor, export,
-    consent, erasure, lti, assignments, announcements, me, admin, student_work, dashboards, content,
+    consent, erasure, lti, assignments, announcements, me, admin, student_work, dashboards, content, quizzes,
 ):
     app.include_router(module.router, prefix="/api/v1")

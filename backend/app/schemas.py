@@ -210,15 +210,25 @@ def _aware(value: datetime) -> datetime:
     return value
 
 
+class AssignmentQuizIn(BaseModel):
+    quiz_id: int
+    points: float = Field(default=1.0, gt=0, le=100)
+
+
 class AssignmentIn(BaseModel):
     title: Text = Field(min_length=1, max_length=200)
     due_at: Annotated[datetime, AfterValidator(_aware)]
-    problems: list[AssignmentProblemIn] = Field(min_length=1, max_length=50)
+    problems: list[AssignmentProblemIn] = Field(default_factory=list, max_length=50)
+    quizzes: list[AssignmentQuizIn] = Field(default_factory=list, max_length=50)
 
     @model_validator(mode="after")
     def _distinct(self):
+        if not self.problems and not self.quizzes:
+            raise ValueError("an assignment needs at least one problem or quiz")
         if len({p.problem_id for p in self.problems}) != len(self.problems):
             raise ValueError("each problem can be in an assignment only once")
+        if len({q.quiz_id for q in self.quizzes}) != len(self.quizzes):
+            raise ValueError("each quiz can be in an assignment only once")
         return self
 
 
@@ -238,6 +248,12 @@ class MyScore(BaseModel):
     status: Status
 
 
+class AssignmentQuizOut(BaseModel):
+    quiz_id: int
+    title: str
+    points: float
+
+
 class AssignmentOut(BaseModel):
     id: int
     course_id: int
@@ -245,6 +261,7 @@ class AssignmentOut(BaseModel):
     due_at: datetime
     possible: float
     problems: list[AssignmentProblemOut]
+    quizzes: list[AssignmentQuizOut] = Field(default_factory=list)
     mine: MyScore | None = Field(default=None, description="the signed-in student's own score; absent for staff")
 
 
@@ -993,3 +1010,122 @@ class ContentOut(BaseModel):
     modules: list[ModuleOut]
     total: int
     completed: int | None = None
+
+
+QuestionKind = Literal["single", "multiple", "short"]
+MAX_OPTIONS = 8
+
+
+class QuestionIn(BaseModel):
+    """A choice question has `options` and the indices of the right ones; a short-answer question has `accepted`."""
+
+    kind: QuestionKind
+    prompt: Text = Field(min_length=1, max_length=2000)
+    options: list[Annotated[Text, Field(min_length=1, max_length=300)]] = Field(
+        default_factory=list, max_length=MAX_OPTIONS
+    )
+    correct_choices: list[int] = Field(default_factory=list, max_length=MAX_OPTIONS)
+    accepted: list[Annotated[Text, Field(min_length=1, max_length=200)]] = Field(default_factory=list, max_length=10)
+    weight: float = Field(default=1.0, gt=0, le=100)
+
+    @model_validator(mode="after")
+    def _fields_match_the_kind(self):
+        if not self.prompt.strip():
+            raise ValueError("a question needs a prompt")
+        if self.kind == "short":
+            if self.options or self.correct_choices:
+                raise ValueError("a short-answer question takes accepted answers, not options")
+            if not [a for a in self.accepted if a.strip()]:
+                raise ValueError("a short-answer question needs at least one accepted answer")
+            return self
+        if self.accepted:
+            raise ValueError("a choice question takes options, not accepted answers")
+        if not 2 <= len(self.options) <= MAX_OPTIONS:
+            raise ValueError(f"a choice question needs 2 to {MAX_OPTIONS} options")
+        if len(set(self.options)) != len(self.options):
+            raise ValueError("the options must differ from each other")
+        if len(set(self.correct_choices)) != len(self.correct_choices) or not self.correct_choices:
+            raise ValueError("give each right option once, and at least one")
+        if any(not 0 <= i < len(self.options) for i in self.correct_choices):
+            raise ValueError("a right option is not one of the options")
+        if self.kind == "single" and len(self.correct_choices) != 1:
+            raise ValueError("a single-choice question has exactly one right option")
+        return self
+
+
+class QuizIn(BaseModel):
+    title: Text = Field(min_length=1, max_length=200)
+    max_attempts: int = Field(default=3, ge=1, le=10)
+    show_answers: bool = False
+    published: bool = False
+    questions: list[QuestionIn] = Field(min_length=1, max_length=50)
+
+
+class QuestionOut(BaseModel):
+    """`correct_choices` and `accepted` are only ever filled for staff."""
+
+    id: int
+    kind: QuestionKind
+    prompt: str
+    options: list[str]
+    weight: float
+    correct_choices: list[int] | None = None
+    accepted: list[str] | None = None
+
+
+class QuizSummary(BaseModel):
+    id: int
+    title: str
+    max_attempts: int
+    show_answers: bool
+    published: bool
+    questions: int
+    in_assignments: int
+    attempts_used: int | None = Field(default=None, description="the signed-in student's own attempts")
+    best_fraction: float | None = None
+
+
+class QuizOut(QuizSummary):
+    question_list: list[QuestionOut]
+
+
+class AnswerIn(BaseModel):
+    question_id: int
+    choices: list[int] = Field(default_factory=list, max_length=MAX_OPTIONS)
+    text: Text | None = Field(default=None, max_length=500)
+
+
+class AttemptIn(BaseModel):
+    answers: list[AnswerIn] = Field(max_length=50)
+
+
+class ReviewItem(BaseModel):
+    question_id: int
+    correct: bool
+    correct_choices: list[int] | None = None
+    accepted: list[str] | None = None
+
+
+class AttemptOut(BaseModel):
+    attempt_id: int
+    attempt_number: int
+    attempts_left: int
+    earned: float
+    possible: float
+    fraction: float
+    review: list[ReviewItem] | None = Field(
+        default=None, description="only when the instructor allows review and it is open"
+    )
+
+
+class AttemptRow(BaseModel):
+    id: int
+    number: int
+    fraction: float
+    submitted_at: datetime
+
+
+class MyAttempts(BaseModel):
+    attempts: list[AttemptRow]
+    attempts_left: int
+    review: list[ReviewItem] | None = None

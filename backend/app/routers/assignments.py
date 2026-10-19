@@ -10,6 +10,7 @@ from app.schemas import (
     AssignmentIn,
     AssignmentOut,
     AssignmentProblemOut,
+    AssignmentQuizOut,
     Gradebook,
     GradebookAssignment,
     GradebookCell,
@@ -30,22 +31,34 @@ def _check(conn: Connection, user: CurrentUser, course_id: int) -> None:
 
 
 def _assignments(conn: Connection, course_id: int, assignment_id: int | None = None) -> list[AssignmentOut]:
-    rows = conn.execute(
+    which = {"c": course_id, "a": assignment_id}
+    where = "a.course_id = :c AND (CAST(:a AS integer) IS NULL OR a.id = :a)"
+    out = {
+        r.id: AssignmentOut(id=r.id, course_id=course_id, title=r.title, due_at=r.due_at, possible=0, problems=[])
+        for r in conn.execute(
+            text(f"SELECT a.id, a.title, a.due_at FROM assignments a WHERE {where} ORDER BY a.due_at, a.id"), which
+        )
+    }
+    for r in conn.execute(
         text(
-            "SELECT a.id, a.title, a.due_at, ap.problem_id, p.title AS problem_title, ap.points"
-            " FROM assignments a JOIN assignment_problems ap ON ap.assignment_id = a.id"
-            " JOIN problems p ON p.id = ap.problem_id"
-            " WHERE a.course_id = :c AND (CAST(:a AS integer) IS NULL OR a.id = :a) ORDER BY a.due_at, a.id, p.id"
+            "SELECT a.id, ap.problem_id, p.title, ap.points FROM assignments a"
+            " JOIN assignment_problems ap ON ap.assignment_id = a.id JOIN problems p ON p.id = ap.problem_id"
+            f" WHERE {where} ORDER BY p.id"
         ),
-        {"c": course_id, "a": assignment_id},
-    ).all()
-    out: dict[int, AssignmentOut] = {}
-    for r in rows:
-        item = out.setdefault(r.id, AssignmentOut(
-            id=r.id, course_id=course_id, title=r.title, due_at=r.due_at, possible=0, problems=[]
-        ))
-        item.problems.append(AssignmentProblemOut(problem_id=r.problem_id, title=r.problem_title, points=r.points))
-        item.possible += r.points
+        which,
+    ):
+        out[r.id].problems.append(AssignmentProblemOut(problem_id=r.problem_id, title=r.title, points=r.points))
+        out[r.id].possible += r.points
+    for r in conn.execute(
+        text(
+            "SELECT a.id, aq.quiz_id, q.title, aq.points FROM assignments a"
+            " JOIN assignment_quizzes aq ON aq.assignment_id = a.id JOIN quizzes q ON q.id = aq.quiz_id"
+            f" WHERE {where} ORDER BY q.id"
+        ),
+        which,
+    ):
+        out[r.id].quizzes.append(AssignmentQuizOut(quiz_id=r.quiz_id, title=r.title, points=r.points))
+        out[r.id].possible += r.points
     return list(out.values())
 
 
@@ -66,6 +79,22 @@ def _save_problems(conn: Connection, course_id: int, assignment_id: int, body: A
         conn.execute(
             text("INSERT INTO assignment_problems (assignment_id, problem_id, points) VALUES (:a, :p, :w)"),
             {"a": assignment_id, "p": p.problem_id, "w": p.points},
+        )
+
+
+def _save_quizzes(conn: Connection, course_id: int, assignment_id: int, body: AssignmentIn) -> None:
+    ids = [q.quiz_id for q in body.quizzes]
+    usable = set(conn.execute(
+        text("SELECT id FROM quizzes WHERE id = ANY(:ids) AND course_id = :c"), {"ids": ids, "c": course_id}
+    ).scalars())
+    refused = [i for i in ids if i not in usable]
+    if refused:
+        raise HTTPException(422, f"not a quiz of this course: {', '.join(map(str, refused))}")
+    conn.execute(text("DELETE FROM assignment_quizzes WHERE assignment_id = :a"), {"a": assignment_id})
+    for q in body.quizzes:
+        conn.execute(
+            text("INSERT INTO assignment_quizzes (assignment_id, quiz_id, points) VALUES (:a, :q, :w)"),
+            {"a": assignment_id, "q": q.quiz_id, "w": q.points},
         )
 
 
@@ -100,6 +129,7 @@ def create_assignment(course_id: int, body: AssignmentIn, user: Instructor, conn
         {"c": course_id, "t": body.title, "d": body.due_at},
     ).scalar_one()
     _save_problems(conn, course_id, assignment_id, body)
+    _save_quizzes(conn, course_id, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
 
@@ -113,6 +143,7 @@ def update_assignment(course_id: int, assignment_id: int, body: AssignmentIn, us
         {"t": body.title, "d": body.due_at, "a": assignment_id},
     )
     _save_problems(conn, course_id, assignment_id, body)
+    _save_quizzes(conn, course_id, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
 

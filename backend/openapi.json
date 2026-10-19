@@ -132,6 +132,39 @@
         "title": "AnnouncementIn",
         "type": "object"
       },
+      "AnswerIn": {
+        "properties": {
+          "choices": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 8,
+            "title": "Choices",
+            "type": "array"
+          },
+          "question_id": {
+            "title": "Question Id",
+            "type": "integer"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "question_id"
+        ],
+        "title": "AnswerIn",
+        "type": "object"
+      },
       "AssignmentIn": {
         "properties": {
           "due_at": {
@@ -144,8 +177,15 @@
               "$ref": "#/components/schemas/AssignmentProblemIn"
             },
             "maxItems": 50,
-            "minItems": 1,
             "title": "Problems",
+            "type": "array"
+          },
+          "quizzes": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentQuizIn"
+            },
+            "maxItems": 50,
+            "title": "Quizzes",
             "type": "array"
           },
           "title": {
@@ -157,8 +197,7 @@
         },
         "required": [
           "title",
-          "due_at",
-          "problems"
+          "due_at"
         ],
         "title": "AssignmentIn",
         "type": "object"
@@ -198,6 +237,13 @@
               "$ref": "#/components/schemas/AssignmentProblemOut"
             },
             "title": "Problems",
+            "type": "array"
+          },
+          "quizzes": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentQuizOut"
+            },
+            "title": "Quizzes",
             "type": "array"
           },
           "title": {
@@ -306,6 +352,148 @@
           "not_started"
         ],
         "title": "AssignmentProgress",
+        "type": "object"
+      },
+      "AssignmentQuizIn": {
+        "properties": {
+          "points": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Points",
+            "type": "number"
+          },
+          "quiz_id": {
+            "title": "Quiz Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quiz_id"
+        ],
+        "title": "AssignmentQuizIn",
+        "type": "object"
+      },
+      "AssignmentQuizOut": {
+        "properties": {
+          "points": {
+            "title": "Points",
+            "type": "number"
+          },
+          "quiz_id": {
+            "title": "Quiz Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quiz_id",
+          "title",
+          "points"
+        ],
+        "title": "AssignmentQuizOut",
+        "type": "object"
+      },
+      "AttemptIn": {
+        "properties": {
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerIn"
+            },
+            "maxItems": 50,
+            "title": "Answers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "answers"
+        ],
+        "title": "AttemptIn",
+        "type": "object"
+      },
+      "AttemptOut": {
+        "properties": {
+          "attempt_id": {
+            "title": "Attempt Id",
+            "type": "integer"
+          },
+          "attempt_number": {
+            "title": "Attempt Number",
+            "type": "integer"
+          },
+          "attempts_left": {
+            "title": "Attempts Left",
+            "type": "integer"
+          },
+          "earned": {
+            "title": "Earned",
+            "type": "number"
+          },
+          "fraction": {
+            "title": "Fraction",
+            "type": "number"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "only when the instructor allows review and it is open",
+            "title": "Review"
+          }
+        },
+        "required": [
+          "attempt_id",
+          "attempt_number",
+          "attempts_left",
+          "earned",
+          "possible",
+          "fraction"
+        ],
+        "title": "AttemptOut",
+        "type": "object"
+      },
+      "AttemptRow": {
+        "properties": {
+          "fraction": {
+            "title": "Fraction",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "fraction",
+          "submitted_at"
+        ],
+        "title": "AttemptRow",
         "type": "object"
       },
       "ChatRequest": {
@@ -2831,6 +3019,41 @@
         "title": "Move",
         "type": "object"
       },
+      "MyAttempts": {
+        "properties": {
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/AttemptRow"
+            },
+            "title": "Attempts",
+            "type": "array"
+          },
+          "attempts_left": {
+            "title": "Attempts Left",
+            "type": "integer"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review"
+          }
+        },
+        "required": [
+          "attempts",
+          "attempts_left"
+        ],
+        "title": "MyAttempts",
+        "type": "object"
+      },
       "MyScore": {
         "properties": {
           "possible": {
@@ -3587,6 +3810,319 @@
         "title": "ProfileUpdate",
         "type": "object"
       },
+      "QuestionIn": {
+        "description": "A choice question has `options` and the indices of the right ones; a short-answer question has `accepted`.",
+        "properties": {
+          "accepted": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Accepted",
+            "type": "array"
+          },
+          "correct_choices": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 8,
+            "title": "Correct Choices",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "single",
+              "multiple",
+              "short"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "maxLength": 300,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Options",
+            "type": "array"
+          },
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "weight": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "prompt"
+        ],
+        "title": "QuestionIn",
+        "type": "object"
+      },
+      "QuestionOut": {
+        "description": "`correct_choices` and `accepted` are only ever filled for staff.",
+        "properties": {
+          "accepted": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "correct_choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct Choices"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "single",
+              "multiple",
+              "short"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "prompt",
+          "options",
+          "weight"
+        ],
+        "title": "QuestionOut",
+        "type": "object"
+      },
+      "QuizIn": {
+        "properties": {
+          "max_attempts": {
+            "default": 3,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "published": {
+            "default": false,
+            "title": "Published",
+            "type": "boolean"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionIn"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Questions",
+            "type": "array"
+          },
+          "show_answers": {
+            "default": false,
+            "title": "Show Answers",
+            "type": "boolean"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "questions"
+        ],
+        "title": "QuizIn",
+        "type": "object"
+      },
+      "QuizOut": {
+        "properties": {
+          "attempts_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the signed-in student's own attempts",
+            "title": "Attempts Used"
+          },
+          "best_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Fraction"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "in_assignments": {
+            "title": "In Assignments",
+            "type": "integer"
+          },
+          "max_attempts": {
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "question_list": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionOut"
+            },
+            "title": "Question List",
+            "type": "array"
+          },
+          "questions": {
+            "title": "Questions",
+            "type": "integer"
+          },
+          "show_answers": {
+            "title": "Show Answers",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "max_attempts",
+          "show_answers",
+          "published",
+          "questions",
+          "in_assignments",
+          "question_list"
+        ],
+        "title": "QuizOut",
+        "type": "object"
+      },
+      "QuizSummary": {
+        "properties": {
+          "attempts_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the signed-in student's own attempts",
+            "title": "Attempts Used"
+          },
+          "best_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Fraction"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "in_assignments": {
+            "title": "In Assignments",
+            "type": "integer"
+          },
+          "max_attempts": {
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "questions": {
+            "title": "Questions",
+            "type": "integer"
+          },
+          "show_answers": {
+            "title": "Show Answers",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "max_attempts",
+          "show_answers",
+          "published",
+          "questions",
+          "in_assignments"
+        ],
+        "title": "QuizSummary",
+        "type": "object"
+      },
       "RatingIn": {
         "properties": {
           "course_rating": {
@@ -3809,6 +4345,52 @@
           "password"
         ],
         "title": "RegisterRequest",
+        "type": "object"
+      },
+      "ReviewItem": {
+        "properties": {
+          "accepted": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "correct": {
+            "title": "Correct",
+            "type": "boolean"
+          },
+          "correct_choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct Choices"
+          },
+          "question_id": {
+            "title": "Question Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "question_id",
+          "correct"
+        ],
+        "title": "ReviewItem",
         "type": "object"
       },
       "RoleChange": {
@@ -7475,6 +8057,403 @@
         "summary": "Move Module",
         "tags": [
           "content"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/quizzes": {
+      "get": {
+        "operationId": "list_quizzes_api_v1_courses__course_id__quizzes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuizSummary"
+                  },
+                  "title": "Response List Quizzes Api V1 Courses  Course Id  Quizzes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Quizzes",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "post": {
+        "operationId": "create_quiz_api_v1_courses__course_id__quizzes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/quizzes/{quiz_id}": {
+      "delete": {
+        "operationId": "delete_quiz_api_v1_courses__course_id__quizzes__quiz_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "title": "Quiz Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Quiz",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "get": {
+        "description": "Staff get the right answers; a student gets the questions only.",
+        "operationId": "read_quiz_api_v1_courses__course_id__quizzes__quiz_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "title": "Quiz Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Quiz",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "put": {
+        "operationId": "update_quiz_api_v1_courses__course_id__quizzes__quiz_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "title": "Quiz Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/quizzes/{quiz_id}/attempts": {
+      "post": {
+        "operationId": "submit_attempt_api_v1_courses__course_id__quizzes__quiz_id__attempts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "title": "Quiz Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttemptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Attempt",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/quizzes/{quiz_id}/attempts/mine": {
+      "get": {
+        "description": "The student's own attempts; the right answers only when review is open (see the module note).",
+        "operationId": "my_attempts_api_v1_courses__course_id__quizzes__quiz_id__attempts_mine_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "title": "Quiz Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyAttempts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My Attempts",
+        "tags": [
+          "quizzes"
         ]
       }
     },
