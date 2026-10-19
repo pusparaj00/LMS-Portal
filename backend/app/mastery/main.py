@@ -12,7 +12,7 @@ from functools import lru_cache
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import Engine, create_engine, text
 
 from app.logging import configure_logging
@@ -67,6 +67,15 @@ class AnswerEvidence(BaseModel):
     evidence_type: Literal["diagnostic_mcq", "diagnostic_code", "probe_mcq", "probe_code"]
     evidence_ref: str
     option_id: int | None = None
+    dont_know: bool = False
+    confidence: Literal["guessing", "fairly", "sure"] | None = None
+
+
+class AbilityEvidence(BaseModel):
+    user_id: int
+    course_id: int
+    ability: float = Field(ge=-4, le=4)
+    evidence_ref: str
 
 
 class ChangeOut(BaseModel):
@@ -117,3 +126,10 @@ def submission(body: SubmissionEvidence):
 def answer(body: AnswerEvidence):
     with engine().begin() as conn:
         return _out(service.record_answer(conn, **body.model_dump()))
+
+
+@app.post("/evidence/ability", response_model=ChangesOut, dependencies=[Depends(authorised)])
+def ability(body: AbilityEvidence):
+    """TR-M-15: concepts the placement test did not ask about are estimated from the student's overall ability."""
+    with engine().begin() as conn:
+        return _out(service.record_ability(conn, **body.model_dump()))

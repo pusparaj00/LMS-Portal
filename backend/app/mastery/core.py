@@ -1,4 +1,5 @@
 """Mastery update rules (DRD section 4, TR-M-01, TR-M-07, TR-M-09). Pure functions, no I/O."""
+import math
 from dataclasses import dataclass
 
 EPS = 1e-6
@@ -18,6 +19,14 @@ DEFAULT_PARAMS: dict[str, tuple[float, float]] = {
     "memory_limit": (0.25, 0.20),  # a crash at run time, like runtime_error
     "diagnostic_mcq": (0.10, 0.25),
     "diagnostic_code": (0.10, 0.20),
+    # F-27, TR-M-14: how a confidence rating or "I don't know" changes what a placement answer is worth. A right answer
+    # marked guessing earns less (higher guess), one marked sure earns a little more and a wrong one costs more (lower
+    # slip); someone who knows the answer does not say "I don't know", so that has no guess chance. Starting values,
+    # changed only with a simulation result that supports the change.
+    "diagnostic_mcq_guess": (0.10, 0.50),
+    "diagnostic_mcq_sure": (0.05, 0.25),
+    "diagnostic_mcq_dontknow": (0.10, 0.0),
+    "diagnostic_code_dontknow": (0.10, 0.0),
     "probe_mcq": (0.10, 0.25),
     "probe_code": (0.10, 0.20),
 }
@@ -26,6 +35,38 @@ DEFAULT_PARAMS: dict[str, tuple[float, float]] = {
 P_PICK_IF_HAS = 0.8
 P_PICK_IF_NOT = 0.15
 P_AVOID_IF_HAS = 0.2  # picks the correct option although holding the misconception
+
+
+SURE_WRONG_REPEATS = 2  # a wrong answer marked sure raises the picked misconception twice
+
+# TR-M-15: concepts the placement test never asked about are moved towards a value from the student's overall ability.
+RULE_INFERENCE = "ability_inference"
+INFERENCE_WEIGHT = 0.3
+INFERENCE_SHRINK = 0.6  # how far the value is allowed to leave 0.5, because no question of that concept was answered
+INFERENCE_LIMITS = (0.05, 0.95)
+
+
+def answer_evidence_type(base: str, dont_know: bool = False, confidence: str | None = None) -> str:
+    """The evidence type of a placement answer once "I don't know" and the confidence rating are taken into account."""
+    if dont_know:
+        return f"{base}_dontknow"
+    if base == "diagnostic_mcq" and confidence == "guessing":
+        return "diagnostic_mcq_guess"
+    if base == "diagnostic_mcq" and confidence == "sure":
+        return "diagnostic_mcq_sure"
+    return base
+
+
+def inferred_target(ability: float, concept_difficulty: float) -> float:
+    """What a concept with no evidence is moved towards: the 2PL chance of success at this ability on items as hard as
+    the concept's own, pulled towards 0.5 because it is only an estimate."""
+    chance = 1.0 / (1.0 + math.exp(-(ability - concept_difficulty)))
+    low, high = INFERENCE_LIMITS
+    return min(high, max(low, 0.5 + INFERENCE_SHRINK * (chance - 0.5)))
+
+
+def inferred_update(p: float, value: float, weight: float = INFERENCE_WEIGHT) -> float:
+    return clamp(p + weight * (value - p))
 
 
 def clamp(p: float) -> float:
@@ -81,6 +122,7 @@ class Event:
     p_before: float
     p_after: float
     source_event_id: int | None
+    value: float | None = None
 
 
 def replay(
@@ -93,7 +135,9 @@ def replay(
     by_id = {e.id: e for e in events}
     for event in sorted(events, key=lambda e: e.id):
         p = state.get(event.concept_id, priors[event.concept_id])
-        if event.rule_id == "prerequisite_propagation":
+        if event.rule_id == RULE_INFERENCE:
+            state[event.concept_id] = inferred_update(p, event.value, event.weight)
+        elif event.rule_id == "prerequisite_propagation":
             source = by_id[event.source_event_id]
             updated = propagated(p, source.p_before, source.p_after)
             state[event.concept_id] = p if updated is None else updated

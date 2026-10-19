@@ -51,19 +51,20 @@ def _locked_mastery(conn: Connection, user_id: int, concept_id: int) -> float:
 def _write_event(
     conn: Connection, *, user_id: int, concept_id: int, rule_id: str, evidence_type: str,
     weight: float, correct: bool | None, evidence_ref: str, submission_id: int | None,
-    source_event_id: int | None, new_p: float, before: float,
+    source_event_id: int | None, new_p: float, before: float, evidence_value: float | None = None,
 ) -> int | None:
     """Insert the ledger row and move mastery, once per (user, concept, rule, evidence)."""
     event_id = conn.execute(
         text(
             "INSERT INTO mastery_events (user_id, concept_id, p_before, p_after, evidence_type,"
-            " rule_id, submission_id, evidence_ref, weight, correct, source_event_id)"
-            " VALUES (:u, :c, :b, :a, :et, :r, :s, :ref, :w, :ok, :src)"
+            " rule_id, submission_id, evidence_ref, weight, correct, source_event_id, evidence_value)"
+            " VALUES (:u, :c, :b, :a, :et, :r, :s, :ref, :w, :ok, :src, :val)"
             " ON CONFLICT (user_id, concept_id, rule_id, evidence_ref) DO NOTHING RETURNING id"
         ),
         {
             "u": user_id, "c": concept_id, "b": before, "a": new_p, "et": evidence_type, "r": rule_id,
             "s": submission_id, "ref": evidence_ref, "w": weight, "ok": correct, "src": source_event_id,
+            "val": evidence_value,
         },
     ).scalar()
     if event_id is not None:
@@ -189,14 +190,15 @@ def backfill(conn: Connection) -> int:
 
 
 def _update_misconception(
-    conn: Connection, user_id: int, misconception_id: int, picked: bool, chose_correct: bool
+    conn: Connection, user_id: int, misconception_id: int, picked: bool, chose_correct: bool, repeats: int = 1
 ) -> None:
     current = conn.execute(
         text("SELECT probability FROM misconception_state WHERE user_id = :u AND misconception_id = :m FOR UPDATE"),
         {"u": user_id, "m": misconception_id},
     ).scalar()
-    probability = DEFAULT_MISCONCEPTION_PRIOR if current is None else current
-    updated = core.misconception_update(probability, picked, chose_correct)
+    updated = DEFAULT_MISCONCEPTION_PRIOR if current is None else current
+    for _ in range(repeats):
+        updated = core.misconception_update(updated, picked, chose_correct)
     conn.execute(
         text(
             "INSERT INTO misconception_state (user_id, misconception_id, probability)"
@@ -209,12 +211,20 @@ def _update_misconception(
 
 def record_answer(
     conn: Connection, *, user_id: int, problem_id: int, correct: bool, evidence_type: str,
-    evidence_ref: str, option_id: int | None,
+    evidence_ref: str, option_id: int | None, dont_know: bool = False, confidence: str | None = None,
 ) -> list[Change]:
-    """A diagnostic or probe answer: update the item's concepts and any tagged misconceptions (TR-M-04)."""
+    """A diagnostic or probe answer: update the item's concepts and any tagged misconceptions (TR-M-04).
+
+    "I don't know" counts as a wrong answer that picked no option, and a confidence rating changes the evidence type
+    (TR-M-14); a probe is a plain right or wrong answer."""
+    if dont_know:
+        correct, option_id = False, None
+    ledger_type = evidence_type if evidence_type.startswith("probe") else core.answer_evidence_type(
+        evidence_type, dont_know, confidence
+    )
     full_weight = evidence_type.startswith("probe")  # a probe is aimed at the weak concept: extra weight
     plan = {
-        c: Plan(evidence_type, 1.0 if full_weight else min(1.0, w), correct)
+        c: Plan(ledger_type, 1.0 if full_weight else min(1.0, w), correct)
         for c, w in conn.execute(
             text("SELECT concept_id, weight FROM problem_concepts WHERE problem_id = :p"),
             {"p": problem_id},
@@ -230,7 +240,7 @@ def record_answer(
             {"o": option_id, "p": problem_id},
         ).first()
         if picked_misconception and picked_misconception.concept_id not in plan:
-            plan[picked_misconception.concept_id] = Plan(evidence_type, 1.0, False)
+            plan[picked_misconception.concept_id] = Plan(ledger_type, 1.0, False)
 
     changes = _apply(conn, user_id, plan, evidence_ref, None)
     if not changes:
@@ -243,8 +253,49 @@ def record_answer(
         ),
         {"p": problem_id},
     ).scalars().all()
+    repeats = core.SURE_WRONG_REPEATS if confidence == "sure" and not correct else 1
     for misconception_id in tagged:
         picked = picked_misconception is not None and picked_misconception.id == misconception_id
         if picked or correct:
-            _update_misconception(conn, user_id, misconception_id, picked, correct)
+            _update_misconception(conn, user_id, misconception_id, picked, correct, repeats if picked else 1)
+    return changes
+
+
+def record_ability(
+    conn: Connection, *, user_id: int, course_id: int, ability: float, evidence_ref: str
+) -> list[Change]:
+    """TR-M-15: move every concept of the course that has no real evidence for this student towards a value from their
+    overall ability. One ledger row per concept, once per evidence reference."""
+    asked = set(
+        conn.execute(
+            text(
+                "SELECT DISTINCT concept_id FROM mastery_events WHERE user_id = :u AND rule_id = :r"
+            ),
+            {"u": user_id, "r": RULE_BAYES},
+        ).scalars()
+    )
+    difficulty = conn.execute(
+        text(
+            "SELECT pc.concept_id, avg(p.difficulty_b) AS b FROM problem_concepts pc"
+            " JOIN problems p ON p.id = pc.problem_id"
+            " JOIN concepts c ON c.id = pc.concept_id WHERE c.course_id = :c AND p.archived_at IS NULL"
+            " GROUP BY pc.concept_id ORDER BY pc.concept_id"
+        ),
+        {"c": course_id},
+    ).all()
+    changes = []
+    for row in difficulty:
+        if row.concept_id in asked:
+            continue
+        before = _locked_mastery(conn, user_id, row.concept_id)
+        target = core.inferred_target(ability, row.b)
+        after = core.inferred_update(before, target)
+        event_id = _write_event(
+            conn, user_id=user_id, concept_id=row.concept_id, rule_id=core.RULE_INFERENCE,
+            evidence_type="diagnostic_inferred", weight=core.INFERENCE_WEIGHT, correct=None,
+            evidence_ref=evidence_ref, submission_id=None, source_event_id=None, new_p=after, before=before,
+            evidence_value=target,
+        )
+        if event_id is not None:
+            changes.append(Change(row.concept_id, _concept_name(conn, row.concept_id), before, after))
     return changes

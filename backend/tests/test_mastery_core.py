@@ -118,3 +118,37 @@ def test_a_timeout_goes_to_the_mapped_concept_and_replaces_the_wrong_answer_evid
     result = plan(error_type="time_limit", failed_categories=["zero"])
     assert result[12] == Plan("time_limit", 1.0, False)
     assert result[10].evidence_type == "partial_fail"
+
+
+def test_answer_rules_pick_the_evidence_type_and_keep_the_rates_valid():
+    assert core.answer_evidence_type("diagnostic_mcq") == "diagnostic_mcq"
+    assert core.answer_evidence_type("diagnostic_mcq", confidence="fairly") == "diagnostic_mcq"
+    assert core.answer_evidence_type("diagnostic_mcq", confidence="guessing") == "diagnostic_mcq_guess"
+    assert core.answer_evidence_type("diagnostic_mcq", confidence="sure") == "diagnostic_mcq_sure"
+    assert core.answer_evidence_type("diagnostic_code", confidence="sure") == "diagnostic_code"
+    assert core.answer_evidence_type("diagnostic_code", dont_know=True) == "diagnostic_code_dontknow"
+    assert core.answer_evidence_type("diagnostic_mcq", dont_know=True, confidence="sure") == "diagnostic_mcq_dontknow"
+
+
+def test_confidence_and_dont_know_change_how_much_an_answer_is_worth():
+    def after(evidence, correct):
+        return core.weighted_update(0.5, *core.DEFAULT_PARAMS[evidence], correct, 1.0)
+
+    assert after("diagnostic_mcq_guess", True) < after("diagnostic_mcq", True) < after("diagnostic_mcq_sure", True)
+    assert after("diagnostic_mcq_sure", False) < after("diagnostic_mcq", False) < after("diagnostic_mcq_guess", False)
+    assert after("diagnostic_mcq_dontknow", False) < after("diagnostic_mcq", False)
+
+
+def test_an_inferred_value_follows_ability_and_stays_near_one_half():
+    low, middle, high = (core.inferred_target(t, 0.0) for t in (-3.0, 0.0, 3.0))
+    assert low < middle == 0.5 < high
+    assert 0.05 <= low and high <= 0.95
+    assert core.inferred_target(0.0, 2.0) < core.inferred_target(0.0, -2.0)  # harder concepts get a lower value
+    moved = core.inferred_update(0.5, high)
+    assert 0.5 < moved < high  # a low weight: it moves part of the way, never all of it
+
+
+def test_replay_applies_an_ability_inference_row():
+    priors = {1: 0.5}
+    event = core.Event(1, 1, core.RULE_INFERENCE, "diagnostic_inferred", core.INFERENCE_WEIGHT, None, 0.5, 0.58, None, 0.77)
+    assert core.replay(priors, [event], {})[1] == pytest.approx(core.inferred_update(0.5, 0.77))

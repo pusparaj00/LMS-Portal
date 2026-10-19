@@ -43,12 +43,20 @@ def record_submission(submission_id: int) -> list[MasteryChange]:
 
 def record_answer(
     *, user_id: int, problem_id: int, correct: bool, evidence_type: str, evidence_ref: str,
-    option_id: int | None,
+    option_id: int | None, dont_know: bool = False, confidence: str | None = None,
 ) -> list[MasteryChange]:
     return _post(
         "/evidence/answer",
         {
             "user_id": user_id, "problem_id": problem_id, "correct": correct,
             "evidence_type": evidence_type, "evidence_ref": evidence_ref, "option_id": option_id,
+            "dont_know": dont_know, "confidence": confidence,
         },
+    )
+
+
+def record_ability(*, user_id: int, course_id: int, ability: float, evidence_ref: str) -> list[MasteryChange]:
+    return _post(
+        "/evidence/ability",
+        {"user_id": user_id, "course_id": course_id, "ability": ability, "evidence_ref": evidence_ref},
     )

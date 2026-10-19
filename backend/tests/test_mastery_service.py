@@ -327,3 +327,35 @@ def test_the_ledger_sentence_joins_the_error_and_the_failed_categories():
     assert _explain(row, {1: "Add one"}) == (
         "Submission #7 to 'Add one' stopped with a syntax error and failed tests in: basic, edge."
     )
+
+
+def test_ability_estimate_fills_only_concepts_without_evidence_and_replays(owner, mastery_db, make_user, world):
+    user_id, sid = submit(owner, make_user, world["two"], status="passed", passed=3, failed=0)
+    record(mastery_db, sid)  # real evidence for a and b; c has none
+    with mastery_db.begin() as conn:
+        course = conn.execute(text("SELECT course_id FROM concepts WHERE id = :c"), {"c": world["c"]}).scalar_one()
+        changes = service.record_ability(conn, user_id=user_id, course_id=course, ability=1.5, evidence_ref="placement:t")
+        again = service.record_ability(conn, user_id=user_id, course_id=course, ability=1.5, evidence_ref="placement:t")
+    assert [c.concept_id for c in changes] == [world["c"]] and again == []
+    row = events(owner, user_id)[-1]
+    assert row["rule_id"] == core.RULE_INFERENCE and row["correct"] is None and row["weight"] == core.INFERENCE_WEIGHT
+    assert row["evidence_value"] == pytest.approx(core.inferred_target(1.5, 0.0))
+    assert changes[0].after > 0.5 and changes[0].after < row["evidence_value"]
+
+    ledger = [
+        core.Event(r["id"], r["concept_id"], r["rule_id"], r["evidence_type"], r["weight"], r["correct"],
+                   r["p_before"], r["p_after"], r["source_event_id"], r["evidence_value"])
+        for r in events(owner, user_id)
+    ]
+    ids = {r.concept_id for r in ledger}
+    params = {(c, e): core.DEFAULT_PARAMS[e] for c in ids for e in core.DEFAULT_PARAMS}
+    assert core.replay({c: 0.5 for c in ids}, ledger, params) == pytest.approx(vector(owner, user_id))
+
+
+def test_the_http_ability_endpoint_checks_the_token_and_the_range(owner, make_user, world):
+    user_id, _ = make_user("student")
+    client = TestClient(mastery_app)
+    body = {"user_id": user_id, "course_id": 1, "ability": 0.0, "evidence_ref": "x"}
+    assert client.post("/evidence/ability", json=body).status_code == 401
+    right = {"X-Service-Token": os.environ["MASTERY_SERVICE_TOKEN"]}
+    assert client.post("/evidence/ability", json={**body, "ability": 9.0}, headers=right).status_code == 422
