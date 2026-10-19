@@ -142,7 +142,17 @@ The final-year timeline after 21 Oct is not fixed yet, so these phases use weeks
 
 **Step 46, quizzes (F-71, F-72, part of F-75).** Quizzes with auto-graded questions, attached to assignments with points, scored by the shared `assignment_scores` function. Gate: correct answers never reach a student before submission, scores match a hand calculation, the attempt limit and the late rule hold, existing scores do not change, erasure removes attempts.
 
-**Step 47, uploads and manual grading (F-73, F-74, rest of F-75).** File-upload assignments and instructor scores with comments, feeding the same gradebook. Gate: uploads are checked by content and never opened or run, an instructor reaches only their own course's work, every grade change is audited, erasure removes uploads.
+**Step 47, submissions and grading (F-73, F-74, F-75, F-76, F-77).** Hand-in work for an assignment (file, link or text), turn in and unsubmit, one review page with score, feedback, private comments and Return, and a to-review queue. Gate: files are checked by content and never opened or run, a student sees a score only after the return, an instructor reaches only their own course's work, every grade, return and view is audited, returned scores reach the gradebook by the late rule, erasure removes the work and comments.
+
+**Step 48, to-do, calendar and notifications (F-78, F-79, F-80).** Pages built from data that already exists, plus an in-app notification list. Gate: each person sees only their own items, no email is sent, unread counts are correct.
+
+**Step 49, class access and people (F-81, F-82, F-83).** Class code, invite link, People page with co-teachers and muting, course section, subject and colour. Gate: no course can be joined without its code, a reset code stops the old one, a student sees no classmate's name.
+
+**Step 50, course page structure and scheduling (F-84, F-85, F-86).** Stream, Classwork and People tabs, topics, draft and scheduled announcements, assigning to selected students. Gate: unpublished posts and assignments not given to a student never reach them, and scores ignore assignments not given.
+
+**Step 51, grading structure (F-87, F-88, F-89).** Grade categories with weights, rubrics, audited score overrides. Gate: weighted totals match a hand calculation, an override is audited and visible to the student.
+
+**Step 52, instructor insight (F-90, F-91, F-92).** At-risk alerts with reasons, quiz question analysis, content report. Gate: every alert lists the facts behind it and each figure is a query over the instructor's own courses.
 
 **Order matters.** Phase 6 comes before Phase 8, because the extensions are only worth building if the core claims hold on real data.
 

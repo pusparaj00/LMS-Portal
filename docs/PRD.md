@@ -106,9 +106,26 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-68 | A student marks lesson items complete and sees progress per module and per course; the instructor sees a completion rate per module; erasure removes a student's completions | P1 |
 | F-71 | An instructor builds a quiz of single-choice, multiple-choice and short-answer questions with an attempt limit, and publishes it; a quiz is graded automatically, a question is all-or-nothing, and the questions of a quiz that has attempts cannot be changed | P1 |
 | F-72 | A student takes a published quiz of a course they are enrolled in; correct answers are never sent to the student before they submit, and afterwards only when the instructor turned review on and every assignment holding the quiz is past due | P1 |
-| F-73 | An assignment can hold a file upload: a student uploads a PDF, text, Python or zip file of at most 4.5 MB, checked by content, stored in the database, downloaded as an attachment and never opened or run | P1 |
-| F-74 | An instructor scores each upload and writes a comment; the student sees their own score and comment, every change is audited, and an instructor reaches only their own course's uploads | P1 |
-| F-75 | Quiz scores and manual scores count in the gradebook, the grades page, the dashboards, the assistant's LMS answers and the LTI grade send, under the same late rule as coding problems | P1 |
+| F-73 | An assignment can ask for handed-in work: instructions plus a file, a link or text; a student saves a draft, turns it in and can unsubmit it until the instructor has graded it; a file is a PDF, text, Python or zip file of at most 4.5 MB, checked by content, stored in the database, downloaded as an attachment and never opened or run | P1 |
+| F-74 | An instructor opens each student's handed-in work on one page, enters a score and written feedback, and returns it; a student sees the score and feedback only after the return, every grade, return and view is audited, and an instructor reaches only their own course's work | P1 |
+| F-75 | Quiz scores and returned manual scores count in the gradebook, the grades page, the dashboards, the assistant's LMS answers and the LTI grade send, under the same late rule as coding problems | P1 |
+| F-76 | A to-review page lists, across the instructor's own courses, the work turned in and not yet graded, grouped by course and assignment with counts, and a second tab of reviewed work | P1 |
+| F-77 | A student and the course's instructor exchange private comments on one piece of handed-in work; nobody else can read them | P1 |
+| F-78 | A to-do page for students with Assigned, Missing and Done tabs, grouped by this week, next week, later and no due date | P1 |
+| F-79 | A calendar page shows the due dates of the signed-in user's own courses by week and month, and can be limited to one course | P2 |
+| F-80 | In-app notifications (a bell with an unread count) for new announcements, returned work, new work to review, new private comments and due dates coming up; each person sees only their own; no email is sent | P1 |
+| F-81 | A course has a class code and an invite link that students use to join; the instructor can reset or disable the code; a course can no longer be joined without it | P1 |
+| F-82 | A People page: the instructor sees every teacher and student and can remove a student, mute a student's private comments and add a co-teacher; a student sees only the teachers and the number of classmates | P1 |
+| F-83 | A course has an optional section, subject and accent colour, shown on the course cards and the course page | P2 |
+| F-84 | The course page has Stream, Classwork and People tabs; classwork is grouped by topic | P1 |
+| F-85 | An instructor saves an announcement as a draft or schedules it for a later time; students see it only once it is published | P1 |
+| F-86 | An assignment can be given to the whole class or to selected students; a student sees and is scored on only the assignments given to them | P1 |
+| F-87 | A course can group assignments into categories with weights and shows each student an overall grade from them | P1 |
+| F-88 | An instructor writes reusable rubrics and scores handed-in work against one; the student sees the rubric result with the returned work | P2 |
+| F-89 | An instructor overrides a student's score for an assignment in the gradebook with a reason; the change is audited and shown to the student | P2 |
+| F-90 | At-risk alerts list students with the factors that triggered each alert (missing work, low mastery, falling scores, inactivity), so an alert can be explained and checked | P1 |
+| F-91 | A quiz report shows, per question, how many students answered it and how many were right, so the instructor sees which questions most of the class missed | P1 |
+| F-92 | A content report compares, for each lesson item, the mastery or scores of students who completed it with those who did not, labelled as an association and not as proof of effect | P2 |
 | F-70 | Launch from Moodle or Canvas through LTI 1.3 so the system fits an existing LMS | P2 |
 
 ## 5. Non-functional requirements
