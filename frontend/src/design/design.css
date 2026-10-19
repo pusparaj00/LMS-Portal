@@ -1053,3 +1053,7 @@ a.evidence {
     grid-auto-flow: row;
   }
 }
+
+.clear-assistant {
+  margin-bottom: 5rem; /* keeps the buttons clear of the floating assistant button */
+}

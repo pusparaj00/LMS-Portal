@@ -193,7 +193,7 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
           {error}
         </p>
       )}
-      <p>
+      <p className="clear-assistant">
         <button className="primary" onClick={() => submit()} disabled={busy || !ready}>
           {busy ? "Checking…" : "Next question"}
         </button>{" "}
