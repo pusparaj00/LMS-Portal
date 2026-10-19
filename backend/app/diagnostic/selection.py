@@ -1,31 +1,30 @@
-"""Cold-start placement test: the maths and the choice of the next question (F-20 to F-27, TR-M-03, TR-M-10, TR-M-13).
+"""Cold-start placement test: the choice of the next question and when to stop (F-20 to F-27, TR-M-03, TR-M-13).
 
-The 2PL probability, Fisher information and prior-regularised ability estimate follow the formulas in the earlier
-smokebrook/lms-backend code; the rest (concept vector, expected information gain, the shape of the test) is new because
-that code models a single ability number.
-
-The test draws on the course's own questions in three difficulty bands. Each next question is scored by how many of its
-concepts have no evidence yet (coverage), how much it tells us about this student's ability (Fisher information at the
-current estimate, which moves the test up after right answers and down after wrong ones) and how much it would sharpen
-the concept vector (expected information gain). Among the questions scoring within 10% of the best, one is chosen by a
+The test draws on the course's own questions in three difficulty bands. The student's answers are turned into a pooled
+estimate (app.diagnostic.pooled), one ability per concept with the abilities correlated. Each next question is scored
+by how many of its concepts have no evidence yet (coverage) and by how much it is expected to shrink the uncertainty of
+that estimate (expected information gain). That gain depends on the current ability estimate, so the test moves up after
+right answers and down after wrong ones. Among the questions scoring within 10% of the best, one is chosen by a
 generator seeded from the session, so two students with the same answers still meet different questions in a different
 order.
+
+The 2PL probability and the one-number ability estimate (`eap_theta`, shown to the student as their ability) follow the
+formulas in the earlier smokebrook/lms-backend code.
 """
 import random
 from dataclasses import dataclass
 
 import numpy as np
 
+from app.diagnostic import pooled
 from app.mastery import core
 
 GRID = np.linspace(-4.0, 4.0, 161)
-MIN_ITEMS = 16
 MAX_ITEMS = 20
 MAX_MCQ = 14
 MAX_CODE = 6
 MAX_HARD_CODE = 2
 WARMUP_ITEMS = 4  # tracing questions only, so nobody starts by writing code
-UNCERTAINTY_STOP_BITS = 0.5
 NEAR_BEST = 0.9
 EASY_BELOW = -0.5
 HARD_ABOVE = 0.5
@@ -48,11 +47,6 @@ def band(b: float) -> str:
 
 def prob_correct(theta: float, a: float, b: float) -> float:
     return float(1.0 / (1.0 + np.exp(-a * (theta - b))))
-
-
-def fisher_information(theta: float, a: float, b: float) -> float:
-    p = prob_correct(theta, a, b)
-    return a * a * p * (1.0 - p)
 
 
 def _params(evidence: str) -> tuple[float, float]:
@@ -86,23 +80,30 @@ def eap_theta(
     return float(np.sum(GRID * weights) / np.sum(weights))
 
 
-def entropy(p: float) -> float:
-    p = min(1 - 1e-9, max(1e-9, p))
-    return float(-(p * np.log2(p) + (1 - p) * np.log2(1 - p)))
+Response = tuple[int, bool, str]  # (question id, answered correctly, evidence type)
 
 
-def expected_information_gain(item: Item, mastery: dict[int, float], theta: float) -> float:
-    """Expected drop in entropy over the item's concepts, with the answer predicted by the 2PL."""
-    slip, guess = core.DEFAULT_PARAMS[EVIDENCE_TYPE[item.kind]]
-    p_right = observed_probability(theta, item.a, item.b, item.kind)
-    gain = 0.0
-    for concept, weight in item.concepts.items():
-        p = mastery[concept]
-        w = min(1.0, weight)
-        after_right = core.weighted_update(p, slip, guess, True, w)
-        after_wrong = core.weighted_update(p, slip, guess, False, w)
-        gain += entropy(p) - p_right * entropy(after_right) - (1 - p_right) * entropy(after_wrong)
-    return gain
+def concept_index(items: list[Item]) -> dict[int, int]:
+    return {c: n for n, c in enumerate(sorted({c for i in items for c in i.concepts}))}
+
+
+def _question(item: Item, index: dict[int, int], evidence: str) -> pooled.Question:
+    slip, guess = _params(evidence)
+    return pooled.Question({index[c]: w for c, w in item.concepts.items()}, item.a, item.b, slip, guess)
+
+
+def posterior(
+    items: list[Item], responses: list[Response], prior_mean: float = 0.0, **prior
+) -> tuple[dict[int, int], np.ndarray, np.ndarray]:
+    """The pooled estimate of the abilities (concept index, mean, covariance) from the answers so far."""
+    index = concept_index(items)
+    by_id = {i.id: i for i in items}
+    answers = []
+    for item_id, correct, evidence in responses:
+        q = _question(by_id[item_id], index, evidence)
+        answers.append(pooled.Answer(q.weights, q.a, q.b, q.slip, q.guess, correct))
+    theta, covariance = pooled.fit(answers, len(index), prior_mean, **prior)
+    return index, theta, covariance
 
 
 def covered(items: list[Item], asked: list[int]) -> set[int]:
@@ -132,27 +133,25 @@ def allowed(items: list[Item], asked: list[int]) -> list[Item]:
 
 
 def select_next(
-    items: list[Item], asked: list[int], mastery: dict[int, float], theta: float, seed: str
+    items: list[Item], responses: list[Response], seed: str, prior_mean: float = 0.0, **prior
 ) -> Item | None:
+    asked = [r[0] for r in responses]
     candidates = allowed(items, asked)
     if not candidates:
         return None
     candidates.sort(key=lambda i: i.id)
+    index, theta, covariance = posterior(items, responses, prior_mean, **prior)
+    current = pooled.mastery(theta, covariance)
     seen = covered(items, asked)
-    cover = [
+    cover = np.array([
         sum(w for c, w in i.concepts.items() if c not in seen) / (sum(i.concepts.values()) or 1.0) for i in candidates
-    ]
-    info = np.array([fisher_information(theta, i.a, i.b) for i in candidates])
-    gain = np.array([expected_information_gain(i, mastery, theta) for i in candidates])
-    score = np.array(cover) + info / (info.max() or 1.0) + gain / (gain.max() or 1.0)
+    ])
+    gain = np.array([
+        pooled.expected_gain(_question(i, index, EVIDENCE_TYPE[i.kind]), theta, covariance, current) for i in candidates
+    ])
+    score = cover + gain / (gain.max() or 1.0)
     near = [i for i, s in zip(candidates, score, strict=True) if s >= NEAR_BEST * score.max()]
     return random.Random(f"{seed}:{len(asked)}").choice(near)
-
-
-def settled(mastery: dict[int, float]) -> bool:
-    """Even the three most uncertain concepts are well determined."""
-    top = sorted((entropy(p) for p in mastery.values()), reverse=True)[:3]
-    return float(np.mean(top)) < UNCERTAINTY_STOP_BITS
 
 
 def max_questions(items: list[Item]) -> int:
@@ -162,12 +161,9 @@ def max_questions(items: list[Item]) -> int:
     return min(MAX_ITEMS, min(MAX_MCQ, mcq) + min(MAX_CODE, code))
 
 
-def should_stop(items: list[Item], asked: list[int], mastery: dict[int, float]) -> bool:
-    """Stop at the longest the course allows, or from the minimum once every concept has evidence and the rest is
-    settled."""
-    total = max_questions(items)
-    if len(asked) >= total or not allowed(items, asked):
-        return True
-    minimum = min(MIN_ITEMS, total)
-    every_concept = {c for i in items for c in i.concepts} <= covered(items, asked)
-    return len(asked) >= minimum and every_concept and settled(mastery)
+def should_stop(items: list[Item], responses: list[Response]) -> bool:
+    """The test runs to the longest the course allows. An earlier stop on "uncertainty is low" was measured and removed:
+    after 16 questions the three least certain concepts still have a spread of 0.46 to 0.49 for every simulated student
+    (docs/results/step-56-pooled-model.md), so no threshold separates students who could stop."""
+    asked = [r[0] for r in responses]
+    return len(asked) >= max_questions(items) or not allowed(items, asked)
