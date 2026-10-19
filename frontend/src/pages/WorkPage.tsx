@@ -85,6 +85,35 @@ export function WorkPage({ session, courseId, assignmentId }: { session: Session
             </small>
           </p>
           <p className="instructions">{work.instructions}</p>
+          {work.rubric && (
+            <section aria-label="Rubric">
+              <h2>{work.rubric.title}</h2>
+              <small>This is how your work will be scored ({work.rubric.max_points} points).</small>
+              <table className="grades-table">
+                <tbody>
+                  {work.rubric.criteria.map((c) => (
+                    <tr key={c.id}>
+                      <th scope="row">
+                        {c.title}
+                        {c.description && (
+                          <>
+                            <br />
+                            <small>{c.description}</small>
+                          </>
+                        )}
+                      </th>
+                      {c.levels.map((l) => (
+                        <td key={l.id} className={l.id === c.chosen_level_id ? "chosen" : undefined}>
+                          {l.id === c.chosen_level_id && <strong>Your level: </strong>}
+                          {l.label} ({l.points})
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
 
           {work.state === "returned" && (
             <section className="notice">

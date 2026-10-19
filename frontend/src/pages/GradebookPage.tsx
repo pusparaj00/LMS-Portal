@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
 import { STATUS_TEXT, Status, points, when } from "./AssignmentsPage";
+import { CategoriesPanel } from "./CategoriesPanel";
+import { Overall } from "./dashboardTypes";
 
 type Gradebook = {
   assignments: { id: number; title: string; due_at: string; possible: number }[];
@@ -9,8 +11,9 @@ type Gradebook = {
     student_id: number;
     label: string;
     synthetic: boolean;
-    cells: { assignment_id: number; score: number; with_late: number; status: Status }[];
+    cells: { assignment_id: number; score: number; with_late: number; status: Status; override_reason: string | null }[];
     possible: number;
+    overall: Overall | null;
     total: number;
     total_with_late: number;
   }[];
@@ -30,6 +33,8 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<SendResult | null>(null);
+  const [adjust, setAdjust] = useState<{ studentId: number; label: string; assignmentId: number; title: string; possible: number; score: string; reason: string; existing: boolean } | null>(null);
+  const teacher = session.role === "instructor";
 
   async function sendToLms() {
     setSending(true);
@@ -44,11 +49,41 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
     }
   }
 
-  useEffect(() => {
+  const reload = () =>
     api<Gradebook>(`/courses/${courseId}/gradebook`, session)
       .then(setBook)
       .catch((e: Error) => setError(e.message));
+
+  useEffect(() => {
+    reload();
   }, [courseId]);
+
+  async function saveAdjust() {
+    if (!adjust) return;
+    setError(null);
+    try {
+      await api(`/courses/${courseId}/assignments/${adjust.assignmentId}/students/${adjust.studentId}/override`, session, {
+        method: "PUT",
+        body: { score: Number(adjust.score), reason: adjust.reason },
+      });
+      setAdjust(null);
+      await reload();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "The score could not be changed.");
+    }
+  }
+
+  async function removeAdjust() {
+    if (!adjust) return;
+    setError(null);
+    try {
+      await api(`/courses/${courseId}/assignments/${adjust.assignmentId}/students/${adjust.studentId}/override`, session, { method: "DELETE" });
+      setAdjust(null);
+      await reload();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "The adjustment could not be removed.");
+    }
+  }
 
   async function download() {
     setError(null);
@@ -73,6 +108,7 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
         <a href={`#/course/${courseId}/assignments`}>Assignments</a>
       </p>
       <h1>Gradebook</h1>
+      <CategoriesPanel session={session} courseId={courseId} onChange={reload} />
       {error && <p role="alert" className="error">{error}</p>}
       {!book && !error && <p>Loading…</p>}
       {book && book.assignments.length === 0 && (
@@ -139,6 +175,7 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
                       <br />
                       <small>of {points(book.possible)}</small>
                     </th>
+                    {book.students.some((s) => s.overall) && <th scope="col">Overall</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -163,7 +200,25 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
                             <small>
                               {STATUS_TEXT[c.status]}
                               {c.status === "late" && ` (${points(c.with_late)} with late)`}
+                              {c.override_reason && " · adjusted"}
                             </small>
+                            {teacher && (
+                              <>
+                                <br />
+                                <button
+                                  className="link"
+                                  aria-label={`Adjust ${s.label}'s score for ${a.title}`}
+                                  onClick={() =>
+                                    setAdjust({
+                                      studentId: s.student_id, label: s.label, assignmentId: a.id, title: a.title, possible: a.possible,
+                                      score: String(c.score), reason: c.override_reason ?? "", existing: c.override_reason !== null,
+                                    })
+                                  }
+                                >
+                                  Adjust
+                                </button>
+                              </>
+                            )}
                           </td>
                         );
                       })}
@@ -182,11 +237,57 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
                           </>
                         )}
                       </td>
+                      {book.students.some((x) => x.overall) && (
+                        <td>
+                          {s.overall?.percent == null ? "—" : <strong>{s.overall.percent}%</strong>}
+                          {s.overall && s.overall.uncategorised > 0 && (
+                            <>
+                              <br />
+                              <small>{s.overall.uncategorised} uncategorised</small>
+                            </>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          )}
+          {adjust && (
+            <form
+              className="stack panel"
+              aria-label="Adjust a score"
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveAdjust();
+              }}
+            >
+              <h2>
+                Adjust {adjust.label}'s score for {adjust.title}
+              </h2>
+              <label className="inline">
+                Score out of {points(adjust.possible)}
+                <input type="number" min={0} max={adjust.possible} step={0.5} required value={adjust.score} onChange={(e) => setAdjust({ ...adjust, score: e.target.value })} />
+              </label>
+              <label>
+                Reason (the student can read this)
+                <input value={adjust.reason} maxLength={500} required onChange={(e) => setAdjust({ ...adjust, reason: e.target.value })} />
+              </label>
+              <p className="actions">
+                <button className="primary" type="submit">
+                  Save adjustment
+                </button>
+                {adjust.existing && (
+                  <button type="button" onClick={removeAdjust}>
+                    Remove the adjustment
+                  </button>
+                )}
+                <button type="button" onClick={() => setAdjust(null)}>
+                  Cancel
+                </button>
+              </p>
+            </form>
           )}
           <small>
             A score is the best attempt before the due time: points times the share of tests passed, hidden tests

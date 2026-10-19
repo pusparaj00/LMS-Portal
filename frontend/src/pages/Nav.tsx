@@ -30,6 +30,7 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
         0,
         { href: `#/course/${id}/content`, label: "Content" },
         { href: `#/course/${id}/quizzes`, label: "Quizzes" },
+        { href: `#/course/${id}/rubrics`, label: "Rubrics" },
         { href: `#/course/${id}/assignments`, label: "Assignments" },
         { href: `#/course/${id}/notes`, label: "Course notes" },
       );

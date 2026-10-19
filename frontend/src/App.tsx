@@ -5,6 +5,7 @@ import { AccountPage, Me } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { QuizPage } from "./pages/QuizPage";
+import { RubricsPage } from "./pages/RubricsPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { JoinPage } from "./pages/JoinPage";
 import { PeoplePage } from "./pages/PeoplePage";
@@ -175,6 +176,7 @@ export function App() {
   const handIn = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)$/);
   const reviewWork = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)\/review$/);
   const joinLink = hash.match(/^#\/join\/([0-9A-Za-z-]+)$/);
+  const rubrics = hash.match(/^#\/course\/(\d+)\/rubrics$/);
   const classwork = hash.match(/^#\/course\/(\d+)\/classwork$/);
   const people = hash.match(/^#\/course\/(\d+)\/people$/);
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
@@ -273,6 +275,8 @@ export function App() {
             <WorkPage key={handIn[2]} session={session} courseId={Number(handIn[1])} assignmentId={Number(handIn[2])} />
           ) : reviewWork && session.role === "instructor" ? (
             <WorkReviewPage key={reviewWork[2]} session={session} courseId={Number(reviewWork[1])} assignmentId={Number(reviewWork[2])} />
+          ) : rubrics && session.role === "instructor" ? (
+            <RubricsPage session={session} courseId={Number(rubrics[1])} />
           ) : classwork ? (
             <CoursePage
               key={`${classwork[1]}-classwork`}

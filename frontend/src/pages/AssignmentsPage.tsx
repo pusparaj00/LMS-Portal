@@ -13,11 +13,19 @@ export type Assignment = {
   quizzes: { quiz_id: number; title: string; points: number; published: boolean }[];
   work: WorkConfig | null;
   module_id: number | null;
+  category_id: number | null;
   students: number[] | null;
   mine: { score: number; with_late: number; possible: number; status: Status } | null;
 };
 
-export type WorkConfig = { instructions: string; points: number; allow_file: boolean; allow_link: boolean; allow_text: boolean };
+export type WorkConfig = {
+  instructions: string;
+  points: number;
+  allow_file: boolean;
+  allow_link: boolean;
+  allow_text: boolean;
+  rubric_id: number | null;
+};
 
 export const STATUS_TEXT: Record<Status, string> = {
   complete: "Complete",
@@ -107,7 +115,7 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
 }
 
 type WorkDraft = WorkConfig & { on: boolean };
-const NO_WORK: WorkDraft = { on: false, instructions: "", points: 10, allow_file: true, allow_link: true, allow_text: true };
+const NO_WORK: WorkDraft = { on: false, instructions: "", points: 10, allow_file: true, allow_link: true, allow_text: true, rubric_id: null };
 type Draft = {
   id: number | null;
   title: string;
@@ -116,10 +124,11 @@ type Draft = {
   quizzes: Record<number, number>;
   work: WorkDraft;
   moduleId: string;
+  categoryId: string;
   given: "all" | "selected";
   chosen: number[];
 };
-const EMPTY: Draft = { id: null, title: "", due: "", picked: {}, quizzes: {}, work: NO_WORK, moduleId: "", given: "all", chosen: [] };
+const EMPTY: Draft = { id: null, title: "", due: "", picked: {}, quizzes: {}, work: NO_WORK, moduleId: "", categoryId: "", given: "all", chosen: [] };
 type Topic = { id: number; title: string };
 type Classmate = { user_id: number; label: string };
 
@@ -130,6 +139,8 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [students, setStudents] = useState<Classmate[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [rubrics, setRubrics] = useState<{ id: number; title: string; max_points: number }[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -153,6 +164,12 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
     api<{ students: Classmate[] | null }>(`/courses/${courseId}/people`, session)
       .then((r) => setStudents(r.students ?? []))
       .catch(() => setStudents([]));
+    api<{ id: number; name: string }[]>(`/courses/${courseId}/categories`, session)
+      .then(setCategories)
+      .catch(() => setCategories([]));
+    api<{ id: number; title: string; max_points: number }[]>(`/courses/${courseId}/rubrics`, session)
+      .then(setRubrics)
+      .catch(() => setRubrics([]));
   }, [courseId]);
 
   function edit(a: Assignment) {
@@ -164,6 +181,7 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       quizzes: Object.fromEntries(a.quizzes.map((q) => [q.quiz_id, q.points])),
       work: a.work ? { ...a.work, on: true } : NO_WORK,
       moduleId: a.module_id === null ? "" : String(a.module_id),
+      categoryId: a.category_id === null ? "" : String(a.category_id),
       given: a.students === null ? "all" : "selected",
       chosen: a.students ?? [],
     });
@@ -179,8 +197,9 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       due_at: new Date(draft.due).toISOString(),
       problems: Object.entries(draft.picked).map(([id, p]) => ({ problem_id: Number(id), points: p })),
       quizzes: Object.entries(draft.quizzes).map(([id, p]) => ({ quiz_id: Number(id), points: p })),
-      work: draft.work.on ? { instructions: draft.work.instructions, points: draft.work.points, allow_file: draft.work.allow_file, allow_link: draft.work.allow_link, allow_text: draft.work.allow_text } : null,
+      work: draft.work.on ? { instructions: draft.work.instructions, points: draft.work.points, allow_file: draft.work.allow_file, allow_link: draft.work.allow_link, allow_text: draft.work.allow_text, rubric_id: draft.work.rubric_id } : null,
       module_id: draft.moduleId ? Number(draft.moduleId) : null,
+      category_id: draft.categoryId ? Number(draft.categoryId) : null,
       students: draft.given === "selected" ? draft.chosen : null,
     };
     try {
@@ -302,6 +321,17 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               ))}
             </select>
           </label>
+          <label>
+            Grade category
+            <select value={draft.categoryId} onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })}>
+              <option value="">No category (not part of the weighted grade)</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <fieldset>
             <legend>Given to</legend>
             <label className="inline">
@@ -343,7 +373,27 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               </label>
               <label className="inline">
                 Points
-                <input type="number" min={0.5} max={100} step={0.5} value={draft.work.points} onChange={(e) => setDraft({ ...draft, work: { ...draft.work, points: Number(e.target.value) } })} />
+                <input type="number" min={0.5} max={100} step={0.5} value={draft.work.points} disabled={draft.work.rubric_id !== null} onChange={(e) => setDraft({ ...draft, work: { ...draft.work, points: Number(e.target.value) } })} />
+              </label>
+              <label>
+                Rubric
+                <select
+                  value={draft.work.rubric_id ?? ""}
+                  onChange={(e) => {
+                    const chosen = rubrics.find((r) => r.id === Number(e.target.value));
+                    setDraft({ ...draft, work: { ...draft.work, rubric_id: chosen ? chosen.id : null, points: chosen ? chosen.max_points : draft.work.points } });
+                  }}
+                >
+                  <option value="">No rubric: I give a score</option>
+                  {rubrics.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.title} ({r.max_points} points)
+                    </option>
+                  ))}
+                </select>
+                <small>
+                  A rubric sets the points. <a href={`#/course/${courseId}/rubrics`}>Write a rubric</a>.
+                </small>
               </label>
               {(["allow_file", "allow_link", "allow_text"] as const).map((k) => (
                 <label key={k} className="inline">

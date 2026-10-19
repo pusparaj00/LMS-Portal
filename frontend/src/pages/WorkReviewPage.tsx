@@ -12,6 +12,7 @@ export function WorkReviewPage({ session, courseId, assignmentId }: { session: S
   const [chosen, setChosen] = useState<number | null>(null);
   const [work, setWork] = useState<TheirWork | null>(null);
   const [score, setScore] = useState("");
+  const [levels, setLevels] = useState<Record<number, number>>({});
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,6 +29,9 @@ export function WorkReviewPage({ session, courseId, assignmentId }: { session: S
   const show = (w: TheirWork) => {
     setWork(w);
     setScore(w.score === null ? "" : String(w.score));
+    setLevels(
+      Object.fromEntries((w.rubric?.criteria ?? []).filter((c) => c.chosen_level_id !== null).map((c) => [c.id, c.chosen_level_id as number])),
+    );
     setFeedback(w.feedback ?? "");
   };
 
@@ -57,7 +61,11 @@ export function WorkReviewPage({ session, courseId, assignmentId }: { session: S
   const saveGrade = (event: FormEvent) => {
     event.preventDefault();
     return act(
-      () => api<TheirWork>(`${base}/students/${chosen}/grade`, session, { method: "PUT", body: { score: Number(score), feedback: feedback.trim() || null } }),
+      () =>
+        api<TheirWork>(`${base}/students/${chosen}/grade`, session, {
+          method: "PUT",
+          body: work?.rubric ? { levels, feedback: feedback.trim() || null } : { score: Number(score), feedback: feedback.trim() || null },
+        }),
       "Could not save the score.",
     );
   };
@@ -146,17 +154,38 @@ export function WorkReviewPage({ session, courseId, assignmentId }: { session: S
                 <form className="stack" onSubmit={saveGrade}>
                   <fieldset disabled={busy}>
                     <legend>Score</legend>
-                    <label className="inline">
-                      Score out of {work.points}
-                      <input type="number" min={0} max={work.points} step={0.5} value={score} required onChange={(e) => setScore(e.target.value)} />
-                    </label>
+                    {work.rubric ? (
+                      <>
+                        <p>
+                          <strong>{work.rubric.title}</strong>: choose a level for every criterion. Score:{" "}
+                          {work.rubric.criteria.reduce((sum, c) => sum + (c.levels.find((l) => l.id === levels[c.id])?.points ?? 0), 0)} of {work.points}
+                        </p>
+                        {work.rubric.criteria.map((c) => (
+                          <fieldset key={c.id}>
+                            <legend>{c.title}</legend>
+                            {c.description && <small>{c.description}</small>}
+                            {c.levels.map((l) => (
+                              <label key={l.id} className="inline">
+                                <input type="radio" name={`criterion-${c.id}`} checked={levels[c.id] === l.id} onChange={() => setLevels({ ...levels, [c.id]: l.id })} />
+                                {l.label} ({l.points})
+                              </label>
+                            ))}
+                          </fieldset>
+                        ))}
+                      </>
+                    ) : (
+                      <label className="inline">
+                        Score out of {work.points}
+                        <input type="number" min={0} max={work.points} step={0.5} value={score} required onChange={(e) => setScore(e.target.value)} />
+                      </label>
+                    )}
                     <label>
                       Feedback for the student
                       <textarea value={feedback} rows={4} maxLength={5000} onChange={(e) => setFeedback(e.target.value)} />
                     </label>
                   </fieldset>
                   <p className="actions">
-                    <button type="submit" disabled={busy || score === ""}>
+                    <button type="submit" disabled={busy || (work.rubric ? Object.keys(levels).length !== work.rubric.criteria.length : score === "")}>
                       Save score
                     </button>
                     {work.graded_at && !work.returned_at && (

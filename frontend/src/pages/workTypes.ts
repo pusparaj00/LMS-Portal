@@ -1,4 +1,5 @@
 import { ApiError, Session } from "../api";
+import type { Rubric } from "./RubricsPage";
 
 export type Comment = { id: number; from_teacher: boolean; mine: boolean; body: string; created_at: string };
 
@@ -22,6 +23,7 @@ export type MyWork = {
   feedback: string | null;
   returned_at: string | null;
   comments: Comment[];
+  rubric: Rubric | null;
 };
 
 export type WorkState = "assigned" | "missing" | "turned_in" | "graded" | "returned";
@@ -56,6 +58,7 @@ export type TheirWork = {
   graded_at: string | null;
   returned_at: string | null;
   comments: Comment[];
+  rubric: Rubric | null;
 };
 
 export type ReviewGroup = {

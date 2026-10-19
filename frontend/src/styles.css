@@ -1627,3 +1627,7 @@ td.not-given {
   opacity: 0.5;
   text-align: center;
 }
+
+.grades-table td.chosen {
+  background: var(--signal-soft);
+}

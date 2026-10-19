@@ -45,7 +45,15 @@ export type CourseGrades = {
     with_late: number;
     possible: number;
     status: Status;
+    override_reason: string | null;
   }[];
+  overall: Overall | null;
+};
+
+export type Overall = {
+  percent: number | null;
+  parts: { category_id: number; name: string; weight: number; score: number; possible: number; percent: number }[];
+  uncategorised: number;
 };
 
 export type InstructorStats = {

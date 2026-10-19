@@ -33,6 +33,24 @@ export function GradesPage({ session }: { session: Session }) {
           <p>
             Course score: {points(c.score)} of {points(c.possible)} ({percent(c.percent)})
           </p>
+          {c.overall && (
+            <div className="notice">
+              <strong>Overall grade: {c.overall.percent === null ? "not yet" : `${c.overall.percent}%`}</strong>
+              <ul>
+                {c.overall.parts.map((p) => (
+                  <li key={p.category_id}>
+                    {p.name} (weight {p.weight}): {points(p.score)} of {points(p.possible)}, {p.percent}%
+                  </li>
+                ))}
+              </ul>
+              {c.overall.uncategorised > 0 && (
+                <small>
+                  {c.overall.uncategorised} {c.overall.uncategorised === 1 ? "assignment has" : "assignments have"} no category and{" "}
+                  {c.overall.uncategorised === 1 ? "is" : "are"} not part of the overall grade.
+                </small>
+              )}
+            </div>
+          )}
           {c.assignments.length === 0 ? (
             <p className="empty">This course has no assignments yet.</p>
           ) : (
@@ -48,7 +66,15 @@ export function GradesPage({ session }: { session: Session }) {
               <tbody>
                 {c.assignments.map((a) => (
                   <tr key={a.assignment_id}>
-                    <td>{a.title}</td>
+                    <td>
+                      {a.title}
+                      {a.override_reason && (
+                        <>
+                          <br />
+                          <small>Adjusted by your instructor: {a.override_reason}</small>
+                        </>
+                      )}
+                    </td>
                     <td>{when(a.due_at)}</td>
                     <td className="num">
                       {points(a.score)} / {points(a.possible)}
