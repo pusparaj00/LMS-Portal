@@ -370,6 +370,27 @@ def test_an_unreachable_local_server_is_an_ordinary_provider_failure_and_the_cha
     assert FallbackChain([first, second]).complete("s", "u") == "answered by the hosted fallback"
 
 
+def test_an_unreachable_provider_is_not_retried_and_is_skipped_for_the_next_requests(monkeypatch):
+    """Regression: a local model that was not running cost its retries and backoff on every single request."""
+    attempts = []
+    sleeps = []
+
+    def refuse(*args, **kwargs):
+        attempts.append(1)
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(llm.httpx, "post", refuse)
+    monkeypatch.setattr(llm.time, "sleep", sleeps.append)
+    down = OpenAICompatibleAdapter(LLMConfig("local", "m", 5, 3, 0.1), "", "http://down/v1", key_required=False)
+    hosted = Scripted("groq", "first answer", "second answer")
+    chain = FallbackChain([down, hosted])
+    assert chain.complete("s", "u") == "first answer"
+    assert len(attempts) == 1 and sleeps == []  # three retries were configured, none was spent on a dead address
+    assert chain.complete("s", "u") == "second answer"
+    assert len(attempts) == 1  # the second request did not try the dead provider first
+    assert llm._cooling[("local", "m")] > llm.time.monotonic() + 30
+
+
 def test_a_real_openai_compatible_server_on_localhost_answers_through_the_chain():
     import json as jsonlib
     import threading

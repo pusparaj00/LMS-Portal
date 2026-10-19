@@ -21,6 +21,7 @@ MIN_USEFUL_SECONDS = 1.0  # a call with less time left than this cannot finish
 PERMANENT_STATUS = {401, 403, 404}  # bad key, project denied, model gone: retrying soon cannot help
 REJECTED_COOLDOWN_SECONDS = 600
 QUOTA_COOLDOWN_SECONDS = 60  # when the provider does not say how long to wait
+UNREACHABLE_COOLDOWN_SECONDS = 60  # nothing listens there (a local model that is not running): do not retry per request
 # provider and model -> time.monotonic() until which it goes to the back of the chain
 _cooling: dict[tuple[str, str], float] = {}
 # The moment (time.monotonic) by which the whole chain must have answered; set by FallbackChain.
@@ -180,6 +181,11 @@ class GeminiAdapter:
                 if wait is not None and attempt < self.config.max_retries:
                     _pause(wait)
                     continue
+            except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+                last_error = LLMError(
+                    f"{type(exc).__name__}: cannot reach {self.config.provider}", UNREACHABLE_COOLDOWN_SECONDS
+                )
+                break
             except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
                 # Never include the request: its headers carry the key.
                 last_error = LLMError(f"{type(exc).__name__}: {str(exc)[:120]}".replace(self._api_key, "<key>"))
@@ -239,6 +245,11 @@ class OpenAICompatibleAdapter:
                 last_error = LLMError(f"HTTP {exc.response.status_code} from {self.config.provider}", cooldown)
                 if exc.response.status_code not in TRANSIENT_STATUS or cooldown:
                     break
+            except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+                last_error = LLMError(
+                    f"{type(exc).__name__}: cannot reach {self.config.provider}", UNREACHABLE_COOLDOWN_SECONDS
+                )
+                break
             except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
                 message = f"{type(exc).__name__}: {str(exc)[:120]}"
                 last_error = LLMError(message.replace(self._api_key, "<key>") if self._api_key else message)
