@@ -17,6 +17,7 @@ from app.schemas import (
     GradebookRow,
     GradeSendResult,
     MyScore,
+    WorkIn,
 )
 
 router = APIRouter(prefix="/courses/{course_id}", tags=["assignments"])
@@ -61,6 +62,18 @@ def _assignments(conn: Connection, course_id: int, assignment_id: int | None = N
             AssignmentQuizOut(quiz_id=r.quiz_id, title=r.title, points=r.points, published=r.published)
         )
         out[r.id].possible += r.points
+    for r in conn.execute(
+        text(
+            "SELECT a.id, w.instructions, w.points, w.allow_file, w.allow_link, w.allow_text FROM assignments a"
+            f" JOIN assignment_work w ON w.assignment_id = a.id WHERE {where}"
+        ),
+        which,
+    ):
+        out[r.id].work = WorkIn(
+            instructions=r.instructions, points=r.points, allow_file=r.allow_file, allow_link=r.allow_link,
+            allow_text=r.allow_text,
+        )
+        out[r.id].possible += r.points
     return list(out.values())
 
 
@@ -100,6 +113,32 @@ def _save_quizzes(conn: Connection, course_id: int, assignment_id: int, body: As
         )
 
 
+def _save_work(conn: Connection, assignment_id: int, body: AssignmentIn) -> None:
+    """Sets, changes or removes the handed-in work. Work that students have already handed in cannot be removed, and
+    its points cannot drop below a score already given."""
+    handed_in, top_score = conn.execute(
+        text("SELECT count(*), max(score) FROM work_submissions WHERE assignment_id = :a AND "
+             "(status = 'turned_in' OR body IS NOT NULL OR link IS NOT NULL OR file_name IS NOT NULL)"),
+        {"a": assignment_id},
+    ).one()
+    if body.work is None:
+        if handed_in:
+            raise HTTPException(409, "students have handed in work for this assignment, so the work cannot be removed")
+        conn.execute(text("DELETE FROM assignment_work WHERE assignment_id = :a"), {"a": assignment_id})
+        return
+    if top_score is not None and body.work.points < top_score:
+        raise HTTPException(409, f"a score of {top_score:g} has been given, so the work cannot be worth fewer points")
+    conn.execute(
+        text(
+            "INSERT INTO assignment_work (assignment_id, instructions, points, allow_file, allow_link, allow_text)"
+            " VALUES (:a, :i, :p, :f, :l, :t) ON CONFLICT (assignment_id) DO UPDATE SET"
+            " instructions = :i, points = :p, allow_file = :f, allow_link = :l, allow_text = :t"
+        ),
+        {"a": assignment_id, "i": body.work.instructions.strip(), "p": body.work.points, "f": body.work.allow_file,
+         "l": body.work.allow_link, "t": body.work.allow_text},
+    )
+
+
 def _owned(conn: Connection, course_id: int, assignment_id: int) -> None:
     if conn.execute(
         text("SELECT 1 FROM assignments WHERE id = :a AND course_id = :c"), {"a": assignment_id, "c": course_id}
@@ -132,6 +171,7 @@ def create_assignment(course_id: int, body: AssignmentIn, user: Instructor, conn
     ).scalar_one()
     _save_problems(conn, course_id, assignment_id, body)
     _save_quizzes(conn, course_id, assignment_id, body)
+    _save_work(conn, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
 
@@ -146,6 +186,7 @@ def update_assignment(course_id: int, assignment_id: int, body: AssignmentIn, us
     )
     _save_problems(conn, course_id, assignment_id, body)
     _save_quizzes(conn, course_id, assignment_id, body)
+    _save_work(conn, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
 
@@ -154,6 +195,10 @@ def delete_assignment(course_id: int, assignment_id: int, user: Instructor, conn
     """Removes the assignment only; the students' submissions stay."""
     _check(conn, user, course_id)
     _owned(conn, course_id, assignment_id)
+    if conn.execute(
+        text("SELECT 1 FROM work_submissions WHERE assignment_id = :a LIMIT 1"), {"a": assignment_id}
+    ).first():
+        raise HTTPException(409, "students have worked on this assignment, so it cannot be deleted")
     conn.execute(text("DELETE FROM assignments WHERE id = :a"), {"a": assignment_id})
     return Response(status_code=204)
 

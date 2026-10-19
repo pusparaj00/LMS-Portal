@@ -35,6 +35,8 @@ RULES: dict[str, Rule] = {
     "diagnostic_answer": Rule(60, 60),
     "probe": Rule(30, 60),
     "draft": Rule(10, 3600),  # each draft is up to two model calls and two sandbox runs per attempt
+    "work_upload": Rule(20, 60),  # each save may carry a file of several MB
+    "work_comment": Rule(30, 60),
     "lti": Rule(120, 60),  # per address; a class opening the tool together shares one campus address
 }
 

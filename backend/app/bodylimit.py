@@ -6,6 +6,7 @@ MAX_BODY_BYTES = 600_000  # a 50,000 character submission is well under this eve
 NOTES_PATH = re.compile(r"^/api/v1/courses/\d+/documents/?$")
 MAX_NOTES_BODY_BYTES = 6_000_000  # a PDF of up to 4 MB, sent as base64 inside JSON (F-03)
 LESSON_FILE_PATH = re.compile(r"^/api/v1/courses/\d+/modules/\d+/items/?$")
+WORK_FILE_PATH = re.compile(r"^/api/v1/courses/\d+/assignments/\d+/work/draft/?$")
 MAX_LESSON_BODY_BYTES = 6_200_000  # a lesson PDF of up to 4.5 MB as base64 in JSON (F-67); the proxy allows 6 MiB
 
 
@@ -27,6 +28,8 @@ class BodySizeLimit:
         if upload and NOTES_PATH.match(scope["path"]):
             limit = max(self.max_bytes, MAX_NOTES_BODY_BYTES)
         elif upload and LESSON_FILE_PATH.match(scope["path"]):
+            limit = max(self.max_bytes, MAX_LESSON_BODY_BYTES)
+        elif upload and WORK_FILE_PATH.match(scope["path"]):
             limit = max(self.max_bytes, MAX_LESSON_BODY_BYTES)
         else:
             limit = self.max_bytes

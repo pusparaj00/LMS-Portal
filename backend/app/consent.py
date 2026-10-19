@@ -15,7 +15,7 @@ from app.config import Settings, get_settings
 from app.llm.adapter import GEMINI_KEYS, LOCAL, OPENAI_COMPATIBLE
 from app.schemas import ConsentNotice, ConsentProvider, ConsentSection, ConsentStatus
 
-CONSENT_VERSION = "2026-10-v4"  # change it whenever the notice changes; everyone is then asked again
+CONSENT_VERSION = "2026-10-v5"  # change it whenever the notice changes; everyone is then asked again
 REQUIRED_MESSAGE = (
     "You have not agreed to the privacy notice, or you withdrew your agreement. "
     "Open Privacy in the top bar to read it."
@@ -67,7 +67,9 @@ def notice(settings: Settings) -> ConsentNotice:
             ]),
             ConsentSection(heading="What is collected", paragraphs=[
                 "The code you run or submit, and the results of running it.",
-                "Your answers in the placement test and in practice questions.",
+                "Your answers in the placement test, in practice questions and in quizzes.",
+                "The files, links and text you hand in for an assignment, and your private comments to your "
+                "instructor.",
                 "Your messages to the assistant.",
                 "The mastery estimates calculated from all of the above, and a record of every change to them.",
             ]),
@@ -83,8 +85,9 @@ def notice(settings: Settings) -> ConsentNotice:
                 "No model provider is configured, so explanations use fixed templates and nothing is sent outside "
                 "the system.",
                 "Your instructor can see your mastery and why it changed, the code you submit with its test "
-                "results, and whether you asked for an explanation. Your messages to the assistant are not shown to "
-                "them.",
+                "results, your quiz answers, the work you hand in with your private comments, and whether you "
+                "asked for an explanation. Your messages to the assistant are not shown to them. Other students "
+                "cannot see any of it.",
             ]),
             ConsentSection(heading="How long it is kept", paragraphs=[
                 (f"Your data is erased {settings.retention_days} days after your last activity."

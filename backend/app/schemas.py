@@ -215,16 +215,35 @@ class AssignmentQuizIn(BaseModel):
     points: float = Field(default=1.0, gt=0, le=100)
 
 
+class WorkIn(BaseModel):
+    """Handed-in work an assignment asks for: what to do, how many points, and which kinds of hand-in it accepts."""
+
+    instructions: Text = Field(min_length=1, max_length=5000)
+    points: float = Field(gt=0, le=100)
+    allow_file: bool = True
+    allow_link: bool = True
+    allow_text: bool = True
+
+    @model_validator(mode="after")
+    def _something_allowed(self):
+        if not self.instructions.strip():
+            raise ValueError("the work needs instructions")
+        if not (self.allow_file or self.allow_link or self.allow_text):
+            raise ValueError("allow at least one of file, link or text")
+        return self
+
+
 class AssignmentIn(BaseModel):
     title: Text = Field(min_length=1, max_length=200)
     due_at: Annotated[datetime, AfterValidator(_aware)]
     problems: list[AssignmentProblemIn] = Field(default_factory=list, max_length=50)
     quizzes: list[AssignmentQuizIn] = Field(default_factory=list, max_length=50)
+    work: WorkIn | None = None
 
     @model_validator(mode="after")
     def _distinct(self):
-        if not self.problems and not self.quizzes:
-            raise ValueError("an assignment needs at least one problem or quiz")
+        if not self.problems and not self.quizzes and self.work is None:
+            raise ValueError("an assignment needs at least one problem, quiz or piece of work")
         if len({p.problem_id for p in self.problems}) != len(self.problems):
             raise ValueError("each problem can be in an assignment only once")
         if len({q.quiz_id for q in self.quizzes}) != len(self.quizzes):
@@ -263,6 +282,7 @@ class AssignmentOut(BaseModel):
     possible: float
     problems: list[AssignmentProblemOut]
     quizzes: list[AssignmentQuizOut] = Field(default_factory=list)
+    work: WorkIn | None = None
     mine: MyScore | None = Field(default=None, description="the signed-in student's own score; absent for staff")
 
 
@@ -1130,3 +1150,132 @@ class MyAttempts(BaseModel):
     attempts: list[AttemptRow]
     attempts_left: int
     review: list[ReviewItem] | None = None
+
+
+WorkState = Literal["assigned", "missing", "turned_in", "graded", "returned"]
+
+
+class WorkDraftIn(BaseModel):
+    """A student's draft. Text and link replace what was saved (null clears them); a file replaces the saved one only
+    when `file_base64` is sent, and `remove_file` clears it."""
+
+    text: Text | None = Field(default=None, min_length=1, max_length=20_000)
+    link: Text | None = Field(default=None, max_length=2000)
+    file_base64: str | None = Field(default=None, min_length=1, max_length=MAX_PDF_BASE64)
+    file_name: Text | None = Field(default=None, min_length=1, max_length=200)
+    remove_file: bool = False
+
+    @model_validator(mode="after")
+    def _checked(self):
+        if (self.file_base64 is None) != (self.file_name is None):
+            raise ValueError("send a file with its name")
+        if self.file_base64 is not None and self.remove_file:
+            raise ValueError("send a new file or remove the file, not both")
+        if self.text is not None and not self.text.strip():
+            raise ValueError("the text must not be blank")
+        self.link = _link(self.link)
+        return self
+
+
+class CommentIn(BaseModel):
+    body: Text = Field(min_length=1, max_length=2000)
+
+    @model_validator(mode="after")
+    def _not_blank(self):
+        if not self.body.strip():
+            raise ValueError("write a comment")
+        return self
+
+
+class CommentOut(BaseModel):
+    id: int
+    from_teacher: bool
+    mine: bool
+    body: str
+    created_at: datetime
+
+
+class MyWork(BaseModel):
+    """What a student sees of their own hand-in. The score and feedback stay empty until the work is returned."""
+
+    assignment_id: int
+    title: str
+    due_at: datetime
+    instructions: str
+    points: float
+    allow_file: bool
+    allow_link: bool
+    allow_text: bool
+    state: Literal["assigned", "missing", "turned_in", "returned"]
+    late: bool
+    text: str | None = None
+    link: str | None = None
+    file_name: str | None = None
+    file_size: int | None = None
+    turned_in_at: datetime | None = None
+    score: float | None = None
+    feedback: str | None = None
+    returned_at: datetime | None = None
+    comments: list[CommentOut] = Field(default_factory=list)
+
+
+class WorkRow(BaseModel):
+    student_id: int
+    label: str
+    synthetic: bool
+    state: WorkState
+    late: bool
+    turned_in_at: datetime | None = None
+    score: float | None = None
+
+
+class WorkList(BaseModel):
+    assignment_id: int
+    title: str
+    due_at: datetime
+    points: float
+    rows: list[WorkRow]
+
+
+class TheirWork(BaseModel):
+    """One student's hand-in as the instructor sees it, with the saved score even before it is returned."""
+
+    student_id: int
+    label: str
+    synthetic: bool
+    title: str
+    due_at: datetime
+    instructions: str
+    points: float
+    state: WorkState
+    late: bool
+    text: str | None = None
+    link: str | None = None
+    file_name: str | None = None
+    file_size: int | None = None
+    turned_in_at: datetime | None = None
+    score: float | None = None
+    feedback: str | None = None
+    graded_at: datetime | None = None
+    returned_at: datetime | None = None
+    comments: list[CommentOut] = Field(default_factory=list)
+
+
+class GradeIn(BaseModel):
+    score: float = Field(ge=0, le=100)
+    feedback: Text | None = Field(default=None, max_length=5000)
+
+
+class ResultCount(BaseModel):
+    count: int
+
+
+class ReviewGroup(BaseModel):
+    course_id: int
+    course_title: str
+    assignment_id: int
+    title: str
+    due_at: datetime
+    waiting: int
+    graded: int
+    not_returned: int
