@@ -397,5 +397,433 @@
         "misconception": "missing_recursive_return"
       }
     ]
+  },
+  {
+    "title": "Trace: copy then change",
+    "question": "What does this program print?",
+    "code": "a = 1\nb = a\na = 5\nprint(b)\n",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -1.0,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "1",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "5",
+        "correct": false,
+        "misconception": "assignment_ties_variables"
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "assignment_ties_variables"
+      }
+    ]
+  },
+  {
+    "title": "Trace: if and else",
+    "question": "What does this program print?",
+    "code": "x = 7\nif x > 5:\n    print(\"big\")\nelse:\n    print(\"small\")\n",
+    "concepts": [
+      {
+        "name": "conditionals",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.9,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "big",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "small",
+        "correct": false,
+        "misconception": "condition_inverted"
+      },
+      {
+        "text": "big small",
+        "correct": false,
+        "misconception": "if_elif_confusion"
+      }
+    ]
+  },
+  {
+    "title": "Trace: while counter",
+    "question": "What does this program print?",
+    "code": "n = 0\nwhile n < 3:\n    n += 1\nprint(n)\n",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.8,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "3",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "2",
+        "correct": false,
+        "misconception": "off_by_one_range"
+      },
+      {
+        "text": "4",
+        "correct": false,
+        "misconception": "off_by_one_range"
+      }
+    ]
+  },
+  {
+    "title": "Trace: string length",
+    "question": "What does this program print?",
+    "code": "s = \"hello\"\nprint(len(s))\n",
+    "concepts": [
+      {
+        "name": "strings",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.9,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "5",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "4",
+        "correct": false,
+        "misconception": "len_off_by_one"
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "len_off_by_one"
+      }
+    ]
+  },
+  {
+    "title": "Trace: first element",
+    "question": "What does this program print?",
+    "code": "xs = [4, 5, 6]\nprint(xs[0])\n",
+    "concepts": [
+      {
+        "name": "lists",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.8,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "4",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "5",
+        "correct": false,
+        "misconception": "index_starts_at_one"
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "negative_index_confusion"
+      }
+    ]
+  },
+  {
+    "title": "Trace: dictionary lookup",
+    "question": "What does this program print?",
+    "code": "d = {\"a\": 1, \"b\": 2}\nprint(d[\"b\"])\n",
+    "concepts": [
+      {
+        "name": "dictionaries",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.7,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "2",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "1",
+        "correct": false,
+        "misconception": "dict_value_vs_key"
+      },
+      {
+        "text": "b",
+        "correct": false,
+        "misconception": "dict_value_vs_key"
+      }
+    ]
+  },
+  {
+    "title": "Trace: function result",
+    "question": "What does this program print?",
+    "code": "def double(x):\n    return x * 2\nprint(double(4))\n",
+    "concepts": [
+      {
+        "name": "functions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.8,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "8",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "4",
+        "correct": false,
+        "misconception": "argument_is_result"
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "argument_is_result"
+      }
+    ]
+  },
+  {
+    "title": "Trace: try and except",
+    "question": "What does this program print?",
+    "code": "try:\n    print(int(\"x\"))\nexcept ValueError:\n    print(\"bad\")\n",
+    "concepts": [
+      {
+        "name": "exceptions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.6,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "bad",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "x",
+        "correct": false,
+        "misconception": "try_always_completes"
+      },
+      {
+        "text": "0",
+        "correct": false,
+        "misconception": "try_always_completes"
+      }
+    ]
+  },
+  {
+    "title": "Trace: method changes the object",
+    "question": "What does this program print?",
+    "code": "class Counter:\n    def __init__(self):\n        self.n = 0\n    def add(self):\n        self.n += 1\nc = Counter()\nc.add()\nc.add()\nprint(c.n)\n",
+    "concepts": [
+      {
+        "name": "classes",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.0,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "2",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "0",
+        "correct": false,
+        "misconception": "method_does_not_change_object"
+      },
+      {
+        "text": "1",
+        "correct": false,
+        "misconception": "init_runs_each_call"
+      }
+    ]
+  },
+  {
+    "title": "Trace: shared class list",
+    "question": "What does this program print?",
+    "code": "class A:\n    items = []\na = A()\nb = A()\na.items.append(1)\nprint(len(b.items))\n",
+    "concepts": [
+      {
+        "name": "classes",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.6,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "1",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "0",
+        "correct": false,
+        "misconception": "class_attribute_shared"
+      },
+      {
+        "text": "2",
+        "correct": false,
+        "misconception": "class_attribute_shared"
+      }
+    ]
+  },
+  {
+    "title": "Trace: doubling comprehension",
+    "question": "What does this program print?",
+    "code": "print([x * 2 for x in range(3)])\n",
+    "concepts": [
+      {
+        "name": "comprehensions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.2,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "[0, 2, 4]",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "[0, 1, 2]",
+        "correct": false,
+        "misconception": "comprehension_ignores_expression"
+      },
+      {
+        "text": "[2, 4, 6]",
+        "correct": false,
+        "misconception": "off_by_one_range"
+      }
+    ]
+  },
+  {
+    "title": "Trace: filtered sum",
+    "question": "What does this program print?",
+    "code": "print(sum([x for x in range(6) if x % 2]))\n",
+    "concepts": [
+      {
+        "name": "comprehensions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.3,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "9",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "comprehension_filter_vs_map"
+      },
+      {
+        "text": "15",
+        "correct": false,
+        "misconception": "comprehension_filter_vs_map"
+      }
+    ]
+  },
+  {
+    "title": "Trace: largest so far",
+    "question": "What does this program print?",
+    "code": "nums = [3, 1, 2]\nbig = 0\nfor n in nums:\n    if n > big:\n        big = n\nprint(big)\n",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 0.6
+      },
+      {
+        "name": "conditionals",
+        "weight": 0.4
+      }
+    ],
+    "difficulty_b": 0.1,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "3",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "2",
+        "correct": false,
+        "misconception": "running_max_confusion"
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "running_max_confusion"
+      }
+    ]
+  },
+  {
+    "title": "Trace: counting letters",
+    "question": "What does this program print?",
+    "code": "s = \"banana\"\ncount = 0\nfor ch in s:\n    if ch == \"a\":\n        count += 1\nprint(count)\n",
+    "concepts": [
+      {
+        "name": "loops",
+        "weight": 0.5
+      },
+      {
+        "name": "strings",
+        "weight": 0.5
+      }
+    ],
+    "difficulty_b": 0.3,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "3",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "1",
+        "correct": false,
+        "misconception": "loop_stops_at_first_match"
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "counter_vs_sum"
+      }
+    ]
   }
 ]

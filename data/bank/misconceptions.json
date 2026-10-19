@@ -63,5 +63,75 @@
     "name": "missing_recursive_return",
     "concept": "recursion",
     "description": "Forgets that a recursive call's value must be returned."
+  },
+  {
+    "name": "assignment_ties_variables",
+    "concept": "variables_io",
+    "description": "Believes that after b = a, changing a also changes b."
+  },
+  {
+    "name": "condition_inverted",
+    "concept": "conditionals",
+    "description": "Takes the else branch when the if condition is true, or the reverse."
+  },
+  {
+    "name": "len_off_by_one",
+    "concept": "strings",
+    "description": "Believes len counts one character fewer or more than the string has."
+  },
+  {
+    "name": "index_starts_at_one",
+    "concept": "lists",
+    "description": "Believes the first element of a list has index 1."
+  },
+  {
+    "name": "dict_value_vs_key",
+    "concept": "dictionaries",
+    "description": "Mixes up keys, values and positions when reading a dictionary."
+  },
+  {
+    "name": "argument_is_result",
+    "concept": "functions",
+    "description": "Believes calling a function gives back its argument, not what its body computes."
+  },
+  {
+    "name": "try_always_completes",
+    "concept": "exceptions",
+    "description": "Believes the code in a try block always finishes, or that except runs anyway."
+  },
+  {
+    "name": "method_does_not_change_object",
+    "concept": "classes",
+    "description": "Believes a method that changes self.x leaves the object unchanged."
+  },
+  {
+    "name": "init_runs_each_call",
+    "concept": "classes",
+    "description": "Believes __init__ runs again every time a method is called."
+  },
+  {
+    "name": "class_attribute_shared",
+    "concept": "classes",
+    "description": "Does not realise a list defined in the class body is shared by every object."
+  },
+  {
+    "name": "comprehension_ignores_expression",
+    "concept": "comprehensions",
+    "description": "Believes the expression before for in a comprehension is not applied."
+  },
+  {
+    "name": "comprehension_filter_vs_map",
+    "concept": "comprehensions",
+    "description": "Reads the if of a comprehension as changing the values, not as a filter."
+  },
+  {
+    "name": "loop_stops_at_first_match",
+    "concept": "loops",
+    "description": "Believes a loop stops at the first item that matches."
+  },
+  {
+    "name": "running_max_confusion",
+    "concept": "loops",
+    "description": "Believes the largest value is the last one, or the total."
   }
 ]
