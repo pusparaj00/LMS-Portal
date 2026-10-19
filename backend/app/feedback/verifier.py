@@ -2,7 +2,11 @@
 
 Every check is independent so the log shows exactly which one failed.
 """
+import ast
+import builtins
 import json
+import keyword
+import re
 from dataclasses import dataclass
 
 from app.feedback import leak
@@ -11,6 +15,9 @@ MAX_CLAIM_CHARS = 400
 ALLOWED_HINT_LEVELS = {1, 2}  # level 3 is the worked example, which never comes from the model
 MIN_HIDDEN_TEXT = 4  # shorter hidden values (such as "0") would match ordinary words
 MAX_EXAMPLE_CHARS = 300  # an input a student could type; also keeps the sandbox runs small
+
+QUOTED_CODE = re.compile(r"`([^`\n]+)`")
+PLAIN_NAMES = set(dir(builtins)) | set(keyword.kwlist)  # a claim may name these without the student having used them
 
 REQUIRED = {
     "failing_test_id": int,
@@ -97,6 +104,28 @@ def parse(raw: str) -> tuple[Explanation | None, Check]:
     return Explanation(**{k: data[k] for k in REQUIRED}, example_input=example or ""), Check("json_valid", True)
 
 
+def _squash(text: str) -> str:
+    return re.sub(r"\s+", "", text)
+
+
+def foreign_quotes(claim: str, code: str) -> list[str]:
+    """Code the claim quotes in backticks that is not in the student's code (F-43): a made-up name or a suggested fix.
+
+    Plain Python names (len, range, ValueError), literals such as 0 or "a" and `name()` forms of those are allowed.
+    """
+    own = _squash(code)
+    foreign = []
+    for quoted in QUOTED_CODE.findall(claim):
+        bare = re.sub(r"\(\)$", "", quoted.strip()).lstrip(".")
+        if _squash(quoted) in own or _squash(bare) in own or bare in PLAIN_NAMES:
+            continue
+        try:
+            ast.literal_eval(quoted.strip())
+        except (ValueError, SyntaxError):
+            foreign.append(quoted)
+    return foreign
+
+
 def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check]]:
     explanation, parsed = parse(raw)
     if explanation is None:
@@ -118,6 +147,7 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
     example = explanation.example_input.strip()
     if example and example in hidden_secrets:
         leaked.append(example)  # the example would show a student a hidden test input or output
+    foreign = foreign_quotes(explanation.claim, evidence.code)
     guard = leak.check(explanation.claim, evidence.reference_solution, evidence.leak_threshold)
     unknown_chunks = sorted(set(explanation.source_chunk_ids) - evidence.retrieved_chunk_ids)
     example_ok = len(explanation.example_input) <= MAX_EXAMPLE_CHARS and "\x00" not in explanation.example_input
@@ -142,6 +172,7 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
             1 <= len(explanation.claim.strip()) <= MAX_CLAIM_CHARS,
             f"{len(explanation.claim.strip())} characters",
         ),
+        Check("quoted_code_is_theirs", not foreign, f"quotes code that is not in the student's program: {foreign}"),
         Check("no_code_leak", guard.passed, guard.reason),
         Check("no_hidden_test_leak", not leaked, "claim or example repeats hidden test data" if leaked else ""),
         Check(

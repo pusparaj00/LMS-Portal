@@ -154,3 +154,20 @@ def test_every_failed_check_is_reported_not_just_the_first():
     assert failed_checks(reply(failing_test_id=999, line=0, concept_id=STRINGS, source_chunk_ids=[999])) == {
         "test_exists", "line_exists", "concept_matches", "sources_real"
     }
+
+
+@pytest.mark.parametrize("claim", [
+    "The loop `for i in range(n)` stops one value early.",
+    "`range` leaves out its upper limit, so `total += i` misses `n`.",
+    "Line 2 sets `total` to `0`, and `len()` is not used. A `ValueError` is not raised.",
+])
+def test_code_the_claim_quotes_may_come_from_the_students_program_or_plain_python(claim):
+    assert "quoted_code_is_theirs" not in failed_checks(reply(claim=claim))
+
+
+@pytest.mark.parametrize("claim", [
+    "Use `sorted(values)` here instead of the loop.",
+    "The call `total.add(i)` is wrong because totals have no add method.",
+])
+def test_code_the_claim_quotes_that_is_not_in_the_students_program_is_rejected(claim):
+    assert failed_checks(reply(claim=claim)) == {"quoted_code_is_theirs"}

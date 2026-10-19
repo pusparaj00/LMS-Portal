@@ -21,6 +21,8 @@ CLOSE = "values = [int(x) for x in input().split()]\nprint(sum(values))"
 # Three inline snippets, measured at about 0.53 similar to the add-one solution.
 P_CLAIM = ("Read the number, add one, then print it: `n = int(input())`, then `result = n + 1`, "
            "then `print(result)`.")
+# The student's own program holds these lines (and prints an extra 0, so it fails): a claim may quote them
+P_STUDENT = "n = int(input())\nresult = n + 1\nprint(result)\nprint(0)\n"
 
 
 def similarity(text, reference):
@@ -71,7 +73,7 @@ def test_an_explanation_quoting_part_of_the_solution_obeys_the_problems_policy(
                json={"max_hint_level": 3, "leak_threshold": threshold})
     try:
         _, headers = new_student(client, make_user, world)
-        sid = failed_submission(client, world, headers)
+        sid = failed_submission(client, world, headers, code=P_STUDENT)
         reply = good_reply(owner, sid, world, claim=P_CLAIM)
         llm(FakeLLM(reply, reply, reply))
         body = explain(client, headers, sid).json()
