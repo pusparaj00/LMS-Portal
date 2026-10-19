@@ -81,7 +81,7 @@ def _mastery_vector(conn: Connection, user_id: int, course_id: int) -> list[Conc
             "   count(*) FILTER (WHERE rule_id = 'bayes_update') AS n,"
             "   COALESCE(sum(weight) FILTER (WHERE rule_id = 'bayes_update'), 0) AS n_eff,"
             "   max(created_at) FILTER (WHERE rule_id = 'bayes_update') AS last,"
-            "   bool_or(rule_id = 'ability_inference') AS inferred"
+            "   bool_or(rule_id IN ('ability_inference', 'pooled_estimate')) AS inferred"
             "  FROM mastery_events WHERE user_id = :u GROUP BY concept_id) e ON e.concept_id = c.id"
             " WHERE c.course_id = :c ORDER BY c.id"
         ),
@@ -136,7 +136,7 @@ def _item_out(conn: Connection, problem_id: int, session_id: str) -> DiagnosticI
 def _theta(state: dict) -> float:
     return selection.eap_theta(
         [(r["a"], r["b"], r["correct"], r["evidence"]) for r in state["responses"]],
-        prior_mean=selection.BACKGROUND_PRIOR_MEAN.get(state["background"], 0.0),
+        prior_mean=_prior_mean(state),
     )
 
 
@@ -150,15 +150,16 @@ def _usable_items(conn: Connection, state: dict, user_id: int) -> list[selection
     return [i for i in _items(conn, state["course_id"]) if i.id not in seen or i.id in state["asked"]]
 
 
+def _prior_mean(state: dict) -> float:
+    return selection.BACKGROUND_PRIOR_MEAN.get(state["background"], 0.0)
+
+
 def _next_item(conn: Connection, state: dict, user_id: int) -> selection.Item | None:
     items = _usable_items(conn, state, user_id)
-    tested = {c for i in items for c in i.concepts}
-    vector = {
-        c.concept_id: c.p_known for c in _mastery_vector(conn, user_id, state["course_id"]) if c.concept_id in tested
-    }
-    if selection.should_stop(items, state["asked"], vector):
+    given = [(r["problem_id"], r["correct"], r["evidence"]) for r in state["responses"]]
+    if selection.should_stop(items, given):
         return None
-    return selection.select_next(items, state["asked"], vector, _theta(state), state["seed"])
+    return selection.select_next(items, given, state["seed"], _prior_mean(state))
 
 
 @router.post("/start", response_model=DiagnosticStartResponse)
@@ -273,8 +274,9 @@ def _answer(body: DiagnosticAnswerRequest, user: CurrentUser, conn: Connection) 
 
     theta = _theta(state)
     try:
-        mastery.record_ability(
-            user_id=user.id, course_id=state["course_id"], ability=theta, evidence_ref=f"diagnostic:{body.session_id}"
+        mastery.record_pooled(
+            user_id=user.id, course_id=state["course_id"], prior_mean=_prior_mean(state),
+            evidence_ref=f"diagnostic:{body.session_id}",
         )
     except mastery.MasteryUnavailable:
         raise HTTPException(503, "mastery service unavailable, try again shortly") from None

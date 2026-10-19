@@ -55,8 +55,8 @@ def record_answer(
     )
 
 
-def record_ability(*, user_id: int, course_id: int, ability: float, evidence_ref: str) -> list[MasteryChange]:
+def record_pooled(*, user_id: int, course_id: int, prior_mean: float, evidence_ref: str) -> list[MasteryChange]:
     return _post(
-        "/evidence/ability",
-        {"user_id": user_id, "course_id": course_id, "ability": ability, "evidence_ref": evidence_ref},
+        "/evidence/pooled",
+        {"user_id": user_id, "course_id": course_id, "prior_mean": prior_mean, "evidence_ref": evidence_ref},
     )

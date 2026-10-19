@@ -139,19 +139,16 @@ def test_confidence_and_dont_know_change_how_much_an_answer_is_worth():
     assert after("diagnostic_mcq_dontknow", False) < after("diagnostic_mcq", False)
 
 
-def test_an_inferred_value_follows_ability_and_stays_near_one_half():
-    low, middle, high = (core.inferred_target(t, 0.0) for t in (-3.0, 0.0, 3.0))
-    assert low < middle == 0.5 < high
-    assert 0.05 <= low and high <= 0.95
-    assert core.inferred_target(0.0, 2.0) < core.inferred_target(0.0, -2.0)  # harder concepts get a lower value
-    moved = core.inferred_update(0.5, high)
-    assert 0.5 < moved < high  # a low weight: it moves part of the way, never all of it
+def test_moving_towards_a_value_is_by_weight_and_stays_inside_the_unit_interval():
+    assert core.moved_towards(0.5, 0.9, 1.0) == pytest.approx(0.9)
+    assert core.moved_towards(0.5, 0.9, 0.3) == pytest.approx(0.62)
+    assert 0.0 < core.moved_towards(0.5, 1.5, 1.0) < 1.0
 
 
-def test_replay_applies_an_ability_inference_row():
-    priors = {1: 0.5}
-    event = core.Event(1, 1, core.RULE_INFERENCE, "diagnostic_inferred", core.INFERENCE_WEIGHT, None, 0.5, 0.58, None, 0.77)
-    assert core.replay(priors, [event], {})[1] == pytest.approx(core.inferred_update(0.5, 0.77))
+@pytest.mark.parametrize("rule", [core.RULE_POOLED, core.RULE_INFERENCE])
+def test_replay_applies_pooled_and_older_inference_rows(rule):
+    event = core.Event(1, 1, rule, "diagnostic_pooled", 0.5, None, 0.5, 0.67, None, 0.77)
+    assert core.replay({1: 0.5}, [event], {})[1] == pytest.approx(core.moved_towards(0.5, 0.77, 0.5))
 
 
 def test_confidence_grows_with_the_amount_of_real_evidence():

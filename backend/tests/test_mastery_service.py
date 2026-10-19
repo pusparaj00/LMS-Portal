@@ -329,18 +329,33 @@ def test_the_ledger_sentence_joins_the_error_and_the_failed_categories():
     )
 
 
-def test_ability_estimate_fills_only_concepts_without_evidence_and_replays(owner, mastery_db, make_user, world):
-    user_id, sid = submit(owner, make_user, world["two"], status="passed", passed=3, failed=0)
-    record(mastery_db, sid)  # real evidence for a and b; c has none
+def answer_placement(mastery_db, user_id, problem_id, correct, session="7"):
+    with mastery_db.begin() as conn:
+        return service.record_answer(
+            conn, user_id=user_id, problem_id=problem_id, correct=correct, evidence_type="diagnostic_mcq",
+            evidence_ref=f"diagnostic:{session}:{problem_id}", option_id=None,
+        )
+
+
+def pool(mastery_db, user_id, world, session="7", prior_mean=0.0):
     with mastery_db.begin() as conn:
         course = conn.execute(text("SELECT course_id FROM concepts WHERE id = :c"), {"c": world["c"]}).scalar_one()
-        changes = service.record_ability(conn, user_id=user_id, course_id=course, ability=1.5, evidence_ref="placement:t")
-        again = service.record_ability(conn, user_id=user_id, course_id=course, ability=1.5, evidence_ref="placement:t")
-    assert [c.concept_id for c in changes] == [world["c"]] and again == []
-    row = events(owner, user_id)[-1]
-    assert row["rule_id"] == core.RULE_INFERENCE and row["correct"] is None and row["weight"] == core.INFERENCE_WEIGHT
-    assert row["evidence_value"] == pytest.approx(core.inferred_target(1.5, 0.0))
-    assert changes[0].after > 0.5 and changes[0].after < row["evidence_value"]
+        return service.record_pooled(
+            conn, user_id=user_id, course_id=course, prior_mean=prior_mean, evidence_ref=f"diagnostic:{session}"
+        )
+
+
+def test_the_pooled_estimate_sets_every_placement_only_concept_and_replays(owner, mastery_db, make_user, world):
+    user_id, _ = make_user("student")
+    answer_placement(mastery_db, user_id, world["two"], True)
+    changes = pool(mastery_db, user_id, world)
+    assert {c.concept_id for c in changes} == {world["a"], world["b"], world["c"]}  # c was never asked about
+    assert pool(mastery_db, user_id, world) == []  # once per placement
+    rows = [r for r in events(owner, user_id) if r["rule_id"] == core.RULE_POOLED]
+    assert len(rows) == 3 and all(r["evidence_value"] is not None and r["weight"] == core.POOLED_WEIGHT for r in rows)
+    stored = vector(owner, user_id)
+    assert all(stored[r["concept_id"]] == pytest.approx(r["evidence_value"]) for r in rows)
+    assert stored[world["c"]] > 0.5  # a right answer on a related concept lifts the one not asked about
 
     ledger = [
         core.Event(r["id"], r["concept_id"], r["rule_id"], r["evidence_type"], r["weight"], r["correct"],
@@ -349,13 +364,24 @@ def test_ability_estimate_fills_only_concepts_without_evidence_and_replays(owner
     ]
     ids = {r.concept_id for r in ledger}
     params = {(c, e): core.DEFAULT_PARAMS[e] for c in ids for e in core.DEFAULT_PARAMS}
-    assert core.replay({c: 0.5 for c in ids}, ledger, params) == pytest.approx(vector(owner, user_id))
+    assert core.replay({c: 0.5 for c in ids}, ledger, params) == pytest.approx(stored)
 
 
-def test_the_http_ability_endpoint_checks_the_token_and_the_range(owner, make_user, world):
+def test_concepts_with_other_evidence_keep_their_own_estimate(owner, mastery_db, make_user, world):
+    user_id, sid = submit(owner, make_user, world["two"], status="passed", passed=3, failed=0)
+    record(mastery_db, sid)  # real submission evidence for a and b
+    before = vector(owner, user_id)
+    answer_placement(mastery_db, user_id, world["child"], False)
+    changes = pool(mastery_db, user_id, world)
+    assert [c.concept_id for c in changes] == [world["c"]]
+    after = vector(owner, user_id)
+    assert after[world["b"]] == before[world["b"]]
+
+
+def test_the_http_pooled_endpoint_checks_the_token_and_the_range(owner, make_user, world):
     user_id, _ = make_user("student")
     client = TestClient(mastery_app)
-    body = {"user_id": user_id, "course_id": 1, "ability": 0.0, "evidence_ref": "x"}
-    assert client.post("/evidence/ability", json=body).status_code == 401
+    body = {"user_id": user_id, "course_id": 1, "prior_mean": 0.0, "evidence_ref": "x"}
+    assert client.post("/evidence/pooled", json=body).status_code == 401
     right = {"X-Service-Token": os.environ["MASTERY_SERVICE_TOKEN"]}
-    assert client.post("/evidence/ability", json={**body, "ability": 9.0}, headers=right).status_code == 422
+    assert client.post("/evidence/pooled", json={**body, "prior_mean": 9.0}, headers=right).status_code == 422

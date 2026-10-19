@@ -77,6 +77,8 @@ def _explain(row, titles: dict[int, str]) -> str:
         if row.failed_categories:
             parts.append("failed tests in: " + ", ".join(row.failed_categories))
         return f"Submission #{row.submission_id} to '{title}' " + (" and ".join(parts) or "failed") + "."
+    if row.rule_id == "pooled_estimate":
+        return "Placement result: your answers on all concepts together, which also tell us about concepts not asked."
     if row.rule_id == "ability_inference":
         return "Not asked about in the placement test: an estimate from your overall level that real answers replace."
     title = titles.get(row.diagnostic_problem_id)

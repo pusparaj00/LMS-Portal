@@ -196,13 +196,11 @@ def timings() -> int:
         e = items.setdefault(pid, {"kind": kind, "a": a, "b": b, "concepts": {}})
         e["concepts"][cid] = w
     pool = [selection.Item(pid, e["kind"], e["a"], e["b"], e["concepts"]) for pid, e in sorted(items.items())]
-    concepts = sorted({c for i in pool for c in i.concepts})
     selection_times = []
     for step in range(200):
-        mastery = {c: 0.2 + 0.6 * ((c * 7 + step) % 10) / 10 for c in concepts}
-        asked = {i.id for i in pool[: step % 8]}
+        given = [(i.id, (i.id + step) % 3 > 0, selection.EVIDENCE_TYPE[i.kind]) for i in pool[: step % 8]]
         started = time.perf_counter()
-        selection.select_next(pool, asked, mastery, theta=0.0)
+        selection.select_next(pool, given, f"load:{step}")
         selection_times.append(time.perf_counter() - started)
     print(f"| Next diagnostic item, selection function alone (TR-P-02) | {len(selection_times)} | {statistics.median(selection_times) * 1000:.1f} ms | {percentile(selection_times, 0.95) * 1000:.1f} ms | {max(selection_times) * 1000:.1f} ms | under 1 s |")
 

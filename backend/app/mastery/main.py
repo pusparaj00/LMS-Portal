@@ -71,10 +71,10 @@ class AnswerEvidence(BaseModel):
     confidence: Literal["guessing", "fairly", "sure"] | None = None
 
 
-class AbilityEvidence(BaseModel):
+class PooledEvidence(BaseModel):
     user_id: int
     course_id: int
-    ability: float = Field(ge=-4, le=4)
+    prior_mean: float = Field(ge=-4, le=4)
     evidence_ref: str
 
 
@@ -128,8 +128,8 @@ def answer(body: AnswerEvidence):
         return _out(service.record_answer(conn, **body.model_dump()))
 
 
-@app.post("/evidence/ability", response_model=ChangesOut, dependencies=[Depends(authorised)])
-def ability(body: AbilityEvidence):
-    """TR-M-15: concepts the placement test did not ask about are estimated from the student's overall ability."""
+@app.post("/evidence/pooled", response_model=ChangesOut, dependencies=[Depends(authorised)])
+def pooled_estimate(body: PooledEvidence):
+    """TR-M-15: at the end of placement, concepts that rest on it alone are set to the pooled estimate."""
     with engine().begin() as conn:
-        return _out(service.record_ability(conn, **body.model_dump()))
+        return _out(service.record_pooled(conn, **body.model_dump()))

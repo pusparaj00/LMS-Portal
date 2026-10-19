@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Connection, text
 
+from app.diagnostic import pooled
 from app.mastery import core
 from app.mastery.plan import Plan, plan_submission
 
@@ -261,41 +262,62 @@ def record_answer(
     return changes
 
 
-def record_ability(
-    conn: Connection, *, user_id: int, course_id: int, ability: float, evidence_ref: str
+def record_pooled(
+    conn: Connection, *, user_id: int, course_id: int, prior_mean: float, evidence_ref: str
 ) -> list[Change]:
-    """TR-M-15: move every concept of the course that has no real evidence for this student towards a value from their
-    overall ability. One ledger row per concept, once per evidence reference."""
-    asked = set(
+    """TR-M-15: set every concept that rests on this placement alone to the pooled estimate of the placement answers.
+
+    Concepts with other evidence (an earlier submission, a probe, a previous placement) keep their own estimate. One
+    ledger row per concept and placement, with the value it moved to, so the vector can be replayed.
+    """
+    concepts = conn.execute(
+        text("SELECT id FROM concepts WHERE course_id = :c ORDER BY id"), {"c": course_id}
+    ).scalars().all()
+    index = {c: n for n, c in enumerate(concepts)}
+    pattern = evidence_ref + ":%"
+    given = conn.execute(
+        text(
+            "SELECT DISTINCT ON (evidence_ref) evidence_ref, evidence_type, correct FROM mastery_events"
+            " WHERE user_id = :u AND rule_id = :r AND evidence_ref LIKE :p ORDER BY evidence_ref, id"
+        ),
+        {"u": user_id, "r": RULE_BAYES, "p": pattern},
+    ).all()
+    answers = []
+    for row in given:
+        problem_id = int(row.evidence_ref.rsplit(":", 1)[1])
+        a, b = conn.execute(
+            text("SELECT discrimination_a, difficulty_b FROM problems WHERE id = :p"), {"p": problem_id}
+        ).one()
+        weights = {
+            index[c]: w for c, w in conn.execute(
+                text("SELECT concept_id, weight FROM problem_concepts WHERE problem_id = :p"), {"p": problem_id}
+            ) if c in index
+        }
+        slip, guess = core.DEFAULT_PARAMS[row.evidence_type]
+        answers.append(pooled.Answer(weights, a, b, slip, guess, bool(row.correct)))
+    theta, covariance = pooled.fit(answers, len(concepts), prior_mean)
+    estimate = pooled.mastery(theta, covariance)
+    elsewhere = set(
         conn.execute(
             text(
-                "SELECT DISTINCT concept_id FROM mastery_events WHERE user_id = :u AND rule_id = :r"
+                "SELECT DISTINCT concept_id FROM mastery_events WHERE user_id = :u AND rule_id IN (:r1, :r2)"
+                " AND evidence_ref NOT LIKE :p"
             ),
-            {"u": user_id, "r": RULE_BAYES},
+            {"u": user_id, "r1": RULE_BAYES, "r2": RULE_PROPAGATION, "p": pattern},
         ).scalars()
     )
-    difficulty = conn.execute(
-        text(
-            "SELECT pc.concept_id, avg(p.difficulty_b) AS b FROM problem_concepts pc"
-            " JOIN problems p ON p.id = pc.problem_id"
-            " JOIN concepts c ON c.id = pc.concept_id WHERE c.course_id = :c AND p.archived_at IS NULL"
-            " GROUP BY pc.concept_id ORDER BY pc.concept_id"
-        ),
-        {"c": course_id},
-    ).all()
     changes = []
-    for row in difficulty:
-        if row.concept_id in asked:
+    for concept_id in concepts:
+        if concept_id in elsewhere:
             continue
-        before = _locked_mastery(conn, user_id, row.concept_id)
-        target = core.inferred_target(ability, row.b)
-        after = core.inferred_update(before, target)
+        value = float(estimate[index[concept_id]])
+        before = _locked_mastery(conn, user_id, concept_id)
+        after = core.moved_towards(before, value, core.POOLED_WEIGHT)
         event_id = _write_event(
-            conn, user_id=user_id, concept_id=row.concept_id, rule_id=core.RULE_INFERENCE,
-            evidence_type="diagnostic_inferred", weight=core.INFERENCE_WEIGHT, correct=None,
-            evidence_ref=evidence_ref, submission_id=None, source_event_id=None, new_p=after, before=before,
-            evidence_value=target,
+            conn, user_id=user_id, concept_id=concept_id, rule_id=core.RULE_POOLED,
+            evidence_type="diagnostic_pooled", weight=core.POOLED_WEIGHT, correct=None, evidence_ref=evidence_ref,
+            submission_id=None, source_event_id=None, new_p=after, before=before, evidence_value=value,
         )
         if event_id is not None:
-            changes.append(Change(row.concept_id, _concept_name(conn, row.concept_id), before, after))
+            changes.append(Change(concept_id, _concept_name(conn, concept_id), before, after))
     return changes

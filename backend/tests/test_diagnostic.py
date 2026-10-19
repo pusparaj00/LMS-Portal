@@ -218,7 +218,7 @@ def test_dashboard_and_the_why_view_read_from_the_ledger(client, make_user, plac
         if any(h["rule_id"] == "bayes_update" for h in history):
             assert any(h["explanation"].startswith("Placement answer to") for h in history)
     # eight wrong answers on chained concepts pass part of the drop to the prerequisites
-    assert "bayes_update" in rules
+    assert {"bayes_update", "pooled_estimate"} <= rules  # the placement ends by setting each concept to the pooled estimate
 
 
 def test_session_checks(client, make_user, placement_course):
