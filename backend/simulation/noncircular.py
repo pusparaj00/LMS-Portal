@@ -18,10 +18,11 @@ from simulation import run
 SHORT_CODING_MAX_B = 0.5  # must match the generator
 
 
-def load_bank_items(bank_dir: Path) -> tuple[list[selection.Item], list[str], int, int]:
+def load_bank_items(bank_dir: Path, mcq_known: int) -> tuple[list[selection.Item], list[str], int, int]:
+    """Items the persona file has answers for: its first `mcq_known` tracing items (later ones are newer)."""
     concepts = json.loads((bank_dir / "concepts.json").read_text(encoding="utf-8"))
     index = {c["name"]: i for i, c in enumerate(concepts)}
-    mcq = json.loads((bank_dir / "items.json").read_text(encoding="utf-8"))
+    mcq = json.loads((bank_dir / "items.json").read_text(encoding="utf-8"))[:mcq_known]
     code = []
     for path in sorted((bank_dir / "problems").glob("*.json")):
         code += json.loads(path.read_text(encoding="utf-8"))
@@ -216,7 +217,8 @@ def main() -> None:
     args = parser.parse_args()
 
     data = json.loads(args.students_json.read_text(encoding="utf-8"))
-    items, concepts, n_code, _ = load_bank_items(args.bank)
+    answered = {int(k.split(":")[1]) for st in data["students"] for k in st["answers"] if k.startswith("mcq:")}
+    items, concepts, n_code, _ = load_bank_items(args.bank, len(answered))
     outcomes, truth = build_matrices(data, items, concepts, n_code)
     half = len(outcomes) // 2
     chosen = {"all": slice(None), "first": slice(0, half), "second": slice(half, None)}[args.part]

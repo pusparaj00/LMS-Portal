@@ -109,7 +109,7 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
         transaction = conn.begin()
         try:
             summary = import_bank(conn, bank, titles, email)
-            assert (summary["created"], summary["updated"], summary["unchanged"]) == (47, 0, 0)
+            assert (summary["created"], summary["updated"], summary["unchanged"]) == (61, 0, 0)
             rows = conn.execute(
                 text(
                     "SELECT kind, review_status, param_source, count(*) FROM problems"
@@ -119,7 +119,7 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
             ).all()
             assert [tuple(r) for r in rows] == [
                 ("code", "needs human review", "prior", 35),
-                ("mcq", "needs human review", "prior", 12),
+                ("mcq", "needs human review", "prior", 26),
             ]
             untagged = conn.execute(
                 text(
@@ -141,13 +141,13 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
                 text("UPDATE problems SET review_status = 'reviewed' WHERE course_id = :c"), {"c": summary["course_id"]}
             )
             again = import_bank(conn, bank, titles, email)
-            assert (again["created"], again["updated"], again["unchanged"]) == (0, 0, 47)
+            assert (again["created"], again["updated"], again["unchanged"]) == (0, 0, 61)
             assert ids() == before  # nothing was deleted and re-inserted
             reviewed = conn.execute(
                 text("SELECT count(*) FROM problems WHERE course_id = :c AND review_status = 'reviewed'"),
                 {"c": summary["course_id"]},
             ).scalar_one()
-            assert reviewed == 47  # a human review survives running the seed again
+            assert reviewed == 61  # a human review survives running the seed again
         finally:
             transaction.rollback()
 
@@ -188,3 +188,10 @@ def test_importing_the_bank_into_a_second_course_leaves_the_first_course_its_mis
             assert conn.execute(foreign_links, {"c": second}).scalar_one() == 0
         finally:
             transaction.rollback()
+
+
+def test_every_concept_has_tracing_questions_in_all_three_bands(bank):
+    covered = {c["name"] for i in bank.items for c in i["concepts"]}
+    assert covered == {c["name"] for c in bank.concepts}  # classes and comprehensions included
+    bands = [("easy" if i["difficulty_b"] < -0.5 else "hard" if i["difficulty_b"] > 0.5 else "medium") for i in bank.items]
+    assert bands.count("easy") >= 8 and bands.count("medium") >= 8 and bands.count("hard") >= 3
