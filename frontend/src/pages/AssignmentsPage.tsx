@@ -12,6 +12,8 @@ export type Assignment = {
   problems: { problem_id: number; title: string; points: number }[];
   quizzes: { quiz_id: number; title: string; points: number; published: boolean }[];
   work: WorkConfig | null;
+  module_id: number | null;
+  students: number[] | null;
   mine: { score: number; with_late: number; possible: number; status: Status } | null;
 };
 
@@ -37,50 +39,68 @@ function localInput(iso: string): string {
 /** F-04: what is due in the course, with the student's own score and status. */
 export function StudentAssignments({ session, courseId }: { session: Session; courseId: number }) {
   const [items, setItems] = useState<Assignment[] | null>(null);
+  const [topics, setTopics] = useState<{ id: number; title: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api<Assignment[]>(`/courses/${courseId}/assignments`, session)
       .then(setItems)
       .catch((e: Error) => setError(e.message));
+    // a student is only sent the topics that are published, so work under a hidden topic is filed under "Other work"
+    api<{ modules: { id: number; title: string }[] }>(`/courses/${courseId}/content`, session)
+      .then((r) => setTopics(r.modules))
+      .catch(() => setTopics([]));
   }, [courseId]);
 
   if (error) return <p role="alert" className="error">{error}</p>;
   if (!items || items.length === 0) return null;
+
+  const row = (a: Assignment) => (
+    <li key={a.id}>
+      <span className="grow">
+        <strong>{a.title}</strong>
+        <br />
+        <small>
+          Due {when(a.due_at)} ·{" "}
+          {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`), ...(a.work ? ["Handed-in work"] : [])].join(", ")}
+        </small>
+        {a.quizzes.map((q) => (
+          <small key={q.quiz_id}>
+            {" "}
+            {q.published ? <a href={`#/course/${courseId}/quiz/${q.quiz_id}`}>Take {q.title}</a> : `${q.title} is not open yet`}
+          </small>
+        ))}
+        {a.work && (
+          <small>
+            {" "}
+            <a href={`#/course/${courseId}/assignment/${a.id}`}>Hand in your work</a>
+          </small>
+        )}
+      </span>
+      {a.mine && (
+        <span className={`status status-${a.mine.status}`}>
+          {STATUS_TEXT[a.mine.status]} · {points(a.mine.score)} / {points(a.possible)}
+          {a.mine.status === "late" && <small> (with late work {points(a.mine.with_late)})</small>}
+        </span>
+      )}
+    </li>
+  );
+
+  const known = new Set(topics.map((t) => t.id));
+  const groups = [
+    ...topics.map((t) => ({ title: t.title, rows: items.filter((a) => a.module_id === t.id) })),
+    { title: "Other work", rows: items.filter((a) => a.module_id === null || !known.has(a.module_id)) },
+  ].filter((g) => g.rows.length > 0);
+
   return (
     <section>
       <h2>Assignments</h2>
-      <ul className="rows">
-        {items.map((a) => (
-          <li key={a.id}>
-            <span className="grow">
-              <strong>{a.title}</strong>
-              <br />
-              <small>
-                Due {when(a.due_at)} · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`), ...(a.work ? ["Handed-in work"] : [])].join(", ")}
-              </small>
-              {a.quizzes.map((q) => (
-                <small key={q.quiz_id}>
-                  {" "}
-                  {q.published ? <a href={`#/course/${courseId}/quiz/${q.quiz_id}`}>Take {q.title}</a> : `${q.title} is not open yet`}
-                </small>
-              ))}
-              {a.work && (
-                <small>
-                  {" "}
-                  <a href={`#/course/${courseId}/assignment/${a.id}`}>Hand in your work</a>
-                </small>
-              )}
-            </span>
-            {a.mine && (
-              <span className={`status status-${a.mine.status}`}>
-                {STATUS_TEXT[a.mine.status]} · {points(a.mine.score)} / {points(a.possible)}
-                {a.mine.status === "late" && <small> (with late work {points(a.mine.with_late)})</small>}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
+      {groups.map((g) => (
+        <div key={g.title}>
+          {(groups.length > 1 || g.title !== "Other work") && <h3>{g.title}</h3>}
+          <ul className="rows">{g.rows.map(row)}</ul>
+        </div>
+      ))}
       <small>Your best attempt before the due time counts. Work handed in late is shown but not counted.</small>
     </section>
   );
@@ -88,14 +108,28 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
 
 type WorkDraft = WorkConfig & { on: boolean };
 const NO_WORK: WorkDraft = { on: false, instructions: "", points: 10, allow_file: true, allow_link: true, allow_text: true };
-type Draft = { id: number | null; title: string; due: string; picked: Record<number, number>; quizzes: Record<number, number>; work: WorkDraft };
-const EMPTY: Draft = { id: null, title: "", due: "", picked: {}, quizzes: {}, work: NO_WORK };
+type Draft = {
+  id: number | null;
+  title: string;
+  due: string;
+  picked: Record<number, number>;
+  quizzes: Record<number, number>;
+  work: WorkDraft;
+  moduleId: string;
+  given: "all" | "selected";
+  chosen: number[];
+};
+const EMPTY: Draft = { id: null, title: "", due: "", picked: {}, quizzes: {}, work: NO_WORK, moduleId: "", given: "all", chosen: [] };
+type Topic = { id: number; title: string };
+type Classmate = { user_id: number; label: string };
 
 /** F-04: the instructor creates, edits and deletes the course's assignments. */
 export function AssignmentsPage({ session, courseId }: { session: Session; courseId: number }) {
   const [items, setItems] = useState<Assignment[] | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [students, setStudents] = useState<Classmate[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -113,6 +147,12 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
     api<QuizSummary[]>(`/courses/${courseId}/quizzes`, session)
       .then(setQuizzes)
       .catch((e: Error) => setError(e.message));
+    api<{ modules: Topic[] }>(`/courses/${courseId}/content`, session)
+      .then((r) => setTopics(r.modules))
+      .catch(() => setTopics([]));
+    api<{ students: Classmate[] | null }>(`/courses/${courseId}/people`, session)
+      .then((r) => setStudents(r.students ?? []))
+      .catch(() => setStudents([]));
   }, [courseId]);
 
   function edit(a: Assignment) {
@@ -123,6 +163,9 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       picked: Object.fromEntries(a.problems.map((p) => [p.problem_id, p.points])),
       quizzes: Object.fromEntries(a.quizzes.map((q) => [q.quiz_id, q.points])),
       work: a.work ? { ...a.work, on: true } : NO_WORK,
+      moduleId: a.module_id === null ? "" : String(a.module_id),
+      given: a.students === null ? "all" : "selected",
+      chosen: a.students ?? [],
     });
     window.scrollTo({ top: 0 });
   }
@@ -137,6 +180,8 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       problems: Object.entries(draft.picked).map(([id, p]) => ({ problem_id: Number(id), points: p })),
       quizzes: Object.entries(draft.quizzes).map(([id, p]) => ({ quiz_id: Number(id), points: p })),
       work: draft.work.on ? { instructions: draft.work.instructions, points: draft.work.points, allow_file: draft.work.allow_file, allow_link: draft.work.allow_link, allow_text: draft.work.allow_text } : null,
+      module_id: draft.moduleId ? Number(draft.moduleId) : null,
+      students: draft.given === "selected" ? draft.chosen : null,
     };
     try {
       const path = `/courses/${courseId}/assignments${draft.id ? `/${draft.id}` : ""}`;
@@ -246,6 +291,45 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               )}
             </div>
           ))}
+          <label>
+            Topic
+            <select value={draft.moduleId} onChange={(e) => setDraft({ ...draft, moduleId: e.target.value })}>
+              <option value="">No topic</option>
+              {topics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <fieldset>
+            <legend>Given to</legend>
+            <label className="inline">
+              <input type="radio" name="given" checked={draft.given === "all"} onChange={() => setDraft({ ...draft, given: "all" })} />
+              The whole class
+            </label>
+            <label className="inline">
+              <input type="radio" name="given" checked={draft.given === "selected"} onChange={() => setDraft({ ...draft, given: "selected" })} />
+              Chosen students
+            </label>
+            {draft.given === "selected" && (
+              <>
+                {students.length === 0 && <p className="empty">Nobody has joined the class yet.</p>}
+                {students.map((s) => (
+                  <label key={s.user_id} className="inline">
+                    <input
+                      type="checkbox"
+                      checked={draft.chosen.includes(s.user_id)}
+                      onChange={(e) =>
+                        setDraft({ ...draft, chosen: e.target.checked ? [...draft.chosen, s.user_id] : draft.chosen.filter((id) => id !== s.user_id) })
+                      }
+                    />
+                    {s.label}
+                  </label>
+                ))}
+              </>
+            )}
+          </fieldset>
           <p>Handed-in work</p>
           <label className="inline">
             <input type="checkbox" checked={draft.work.on} onChange={(e) => setDraft({ ...draft, work: { ...draft.work, on: e.target.checked } })} />
@@ -272,7 +356,7 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
           {draft.id && <small>Changing the problems or the due date changes every student's score straight away.</small>}
         </fieldset>
         <p className="actions">
-          <button className="primary" type="submit" disabled={busy || Object.keys(draft.picked).length + Object.keys(draft.quizzes).length + (draft.work.on ? 1 : 0) === 0}>
+          <button className="primary" type="submit" disabled={busy || Object.keys(draft.picked).length + Object.keys(draft.quizzes).length + (draft.work.on ? 1 : 0) === 0 || (draft.given === "selected" && draft.chosen.length === 0)}>
             {draft.id ? "Save changes" : "Create assignment"}
           </button>
           {draft.id && (
@@ -293,6 +377,8 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               <br />
               <small>
                 Due {when(a.due_at)} · {points(a.possible)} points · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`), ...(a.work ? ["Handed-in work"] : [])].join(", ")}
+                {a.students !== null && ` · given to ${a.students.length} ${a.students.length === 1 ? "student" : "students"}`}
+                {a.module_id !== null && ` · topic: ${topics.find((t) => t.id === a.module_id)?.title ?? "removed"}`}
               </small>
             </span>
             {a.work && <a className="button" href={`#/course/${courseId}/assignment/${a.id}/review`}>Review work</a>}

@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
 import { when } from "./AssignmentsPage";
+import { CourseTabs } from "./CourseTabs";
 
 type Teacher = { user_id: number; label: string; owner: boolean };
 type Classmate = { user_id: number; label: string; muted: boolean; joined_at: string };
@@ -42,6 +43,7 @@ export function PeoplePage({ session, courseId }: { session: Session; courseId: 
   return (
     <>
       <h1>People</h1>
+      <CourseTabs courseId={courseId} active="people" />
       {error && (
         <p role="alert" className="error">
           {error}

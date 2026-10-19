@@ -175,6 +175,7 @@ export function App() {
   const handIn = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)$/);
   const reviewWork = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)\/review$/);
   const joinLink = hash.match(/^#\/join\/([0-9A-Za-z-]+)$/);
+  const classwork = hash.match(/^#\/course\/(\d+)\/classwork$/);
   const people = hash.match(/^#\/course\/(\d+)\/people$/);
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
   const contentEditor = hash.match(/^#\/course\/(\d+)\/content$/);
@@ -272,6 +273,15 @@ export function App() {
             <WorkPage key={handIn[2]} session={session} courseId={Number(handIn[1])} assignmentId={Number(handIn[2])} />
           ) : reviewWork && session.role === "instructor" ? (
             <WorkReviewPage key={reviewWork[2]} session={session} courseId={Number(reviewWork[1])} assignmentId={Number(reviewWork[2])} />
+          ) : classwork ? (
+            <CoursePage
+              key={`${classwork[1]}-classwork`}
+              session={session}
+              courseId={Number(classwork[1])}
+              title={courses.find((c) => c.id === Number(classwork[1]))?.title}
+              details={courses.find((c) => c.id === Number(classwork[1]))}
+              tab="classwork"
+            />
           ) : joinLink ? (
             <JoinPage key={joinLink[1]} session={session} code={joinLink[1]} />
           ) : people && session.role !== "admin" ? (
@@ -329,6 +339,7 @@ export function App() {
               courseId={Number(course[1])}
               title={courses.find((c) => c.id === Number(course[1]))?.title}
               details={courses.find((c) => c.id === Number(course[1]))}
+              tab="stream"
             />
           ) : hash === "#/dashboard" ? (
             <RoleDashboard session={session} me={me} courses={courses} />

@@ -1599,3 +1599,31 @@ blockquote {
 .course-row {
   padding-left: 0.75rem;
 }
+
+.course-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.5rem 0 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.course-tabs a {
+  padding: 0.5rem 1rem;
+  border-bottom: 3px solid transparent;
+  color: var(--slate);
+  text-decoration: none;
+}
+
+.course-tabs a[aria-current="page"] {
+  border-bottom-color: var(--signal);
+  color: var(--ink);
+}
+
+.upcoming {
+  margin-bottom: 1rem;
+}
+
+td.not-given {
+  opacity: 0.5;
+  text-align: center;
+}

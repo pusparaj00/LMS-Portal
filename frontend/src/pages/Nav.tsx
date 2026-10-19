@@ -10,13 +10,15 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
   const course = (id: number): Item[] => {
     if (role === "student")
       return [
-        { href: `#/course/${id}`, label: "Course home" },
+        { href: `#/course/${id}`, label: "Stream" },
+        { href: `#/course/${id}/classwork`, label: "Classwork" },
         { href: `#/placement/${id}`, label: "Placement test" },
         { href: `#/course/${id}/people`, label: "People" },
         { href: `#/mastery/${id}`, label: "My progress", prefix: `#/mastery/${id}/` },
       ];
     const staff: Item[] = [
-      { href: `#/course/${id}`, label: "Problems", prefix: `#/course/${id}/problem/` },
+      { href: `#/course/${id}`, label: "Stream" },
+      { href: `#/course/${id}/classwork`, label: "Classwork", prefix: `#/course/${id}/problem/` },
       { href: `#/class/${id}`, label: "Class overview", prefix: `#/class/${id}/` },
       { href: `#/course/${id}/analytics`, label: "Analytics" },
       ...(role === "instructor" ? [{ href: `#/course/${id}/people`, label: "People" }] : []),

@@ -10,6 +10,7 @@ type Gradebook = {
     label: string;
     synthetic: boolean;
     cells: { assignment_id: number; score: number; with_late: number; status: Status }[];
+    possible: number;
     total: number;
     total_with_late: number;
   }[];
@@ -147,18 +148,33 @@ export function GradebookPage({ session, courseId }: { session: Session; courseI
                         {s.label}
                         {s.synthetic && <span className="tag">synthetic</span>}
                       </th>
-                      {book.assignments.map((a) => s.cells.find((c) => c.assignment_id === a.id)!).map((c) => (
-                        <td key={c.assignment_id} className={`status-${c.status}`}>
-                          {points(c.score)}
-                          <br />
-                          <small>
-                            {STATUS_TEXT[c.status]}
-                            {c.status === "late" && ` (${points(c.with_late)} with late)`}
-                          </small>
-                        </td>
-                      ))}
+                      {book.assignments.map((a) => {
+                        const c = s.cells.find((cell) => cell.assignment_id === a.id);
+                        if (!c)
+                          return (
+                            <td key={a.id} className="not-given" title="This assignment was not given to this student">
+                              <small>not given</small>
+                            </td>
+                          );
+                        return (
+                          <td key={a.id} className={`status-${c.status}`}>
+                            {points(c.score)}
+                            <br />
+                            <small>
+                              {STATUS_TEXT[c.status]}
+                              {c.status === "late" && ` (${points(c.with_late)} with late)`}
+                            </small>
+                          </td>
+                        );
+                      })}
                       <td>
                         <strong>{points(s.total)}</strong>
+                        {s.possible !== book.possible && (
+                          <>
+                            <br />
+                            <small>of {points(s.possible)}</small>
+                          </>
+                        )}
                         {s.total_with_late > s.total && (
                           <>
                             <br />

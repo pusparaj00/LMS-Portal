@@ -2,11 +2,26 @@ import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
 
-type Announcement = { id: number; title: string; body: string; created_at: string; edited_at: string | null };
-type Draft = { id: number | null; title: string; body: string };
+type State = "published" | "draft" | "scheduled";
+type Announcement = {
+  id: number;
+  title: string;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+  state: State;
+  publish_at: string | null;
+};
+type Mode = "publish" | "draft" | "schedule";
+type Draft = { id: number | null; title: string; body: string; mode: Mode; at: string };
 
 const SHOWN = 3;
-const EMPTY: Draft = { id: null, title: "", body: "" };
+const EMPTY: Draft = { id: null, title: "", body: "", mode: "publish", at: "" };
+const localInput = (iso: string) => {
+  const d = new Date(iso);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+};
+const MODE_TEXT: Record<Mode, string> = { publish: "Post now", draft: "Save as a draft (only teachers see it)", schedule: "Schedule for later" };
 const when = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
 
 /** F-05: the course's announcements, newest first. The teacher can post, edit and delete. Text is shown as text. */
@@ -34,7 +49,10 @@ export function Announcements({ session, courseId }: { session: Session; courseI
     setError(null);
     try {
       const target = `/courses/${courseId}/announcements${draft.id ? `/${draft.id}` : ""}`;
-      await api(target, session, { method: draft.id ? "PUT" : "POST", body: { title: draft.title, body: draft.body } });
+      await api(target, session, {
+        method: draft.id ? "PUT" : "POST",
+        body: { title: draft.title, body: draft.body, mode: draft.mode, publish_at: draft.mode === "schedule" ? new Date(draft.at).toISOString() : null },
+      });
       setDraft(null);
       await load();
     } catch (e) {
@@ -77,9 +95,25 @@ export function Announcements({ session, courseId }: { session: Session; courseI
             Text
             <textarea rows={4} value={draft.body} maxLength={5000} required onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
           </label>
+          <label>
+            When
+            <select value={draft.mode} onChange={(e) => setDraft({ ...draft, mode: e.target.value as Mode })}>
+              {(Object.keys(MODE_TEXT) as Mode[]).map((m) => (
+                <option key={m} value={m}>
+                  {MODE_TEXT[m]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {draft.mode === "schedule" && (
+            <label>
+              Publish at (your local time)
+              <input type="datetime-local" value={draft.at} required onChange={(e) => setDraft({ ...draft, at: e.target.value })} />
+            </label>
+          )}
           <p className="actions">
             <button className="primary" type="submit" disabled={busy}>
-              {draft.id ? "Save changes" : "Post"}
+              {draft.id ? "Save changes" : draft.mode === "publish" ? "Post" : draft.mode === "draft" ? "Save draft" : "Schedule"}
             </button>
             <button type="button" onClick={() => setDraft(null)}>
               Cancel
@@ -90,15 +124,30 @@ export function Announcements({ session, courseId }: { session: Session; courseI
       {items.length === 0 && <p className="empty">No announcements yet.</p>}
       {shown.map((a) => (
         <article key={a.id} className="announcement">
-          <h3>{a.title}</h3>
+          <h3>
+            {a.title} {a.state === "draft" && <span className="flag">draft</span>}
+            {a.state === "scheduled" && <span className="flag">scheduled</span>}
+          </h3>
           <small>
-            Posted {when(a.created_at)}
+            {a.state === "scheduled" && a.publish_at ? `Will be posted ${when(a.publish_at)}` : `Posted ${when(a.publish_at ?? a.created_at)}`}
             {a.edited_at && ` · edited ${when(a.edited_at)}`}
           </small>
           <p className="announcement-body">{a.body}</p>
           {teacher && (
             <p className="actions">
-              <button onClick={() => setDraft({ id: a.id, title: a.title, body: a.body })}>Edit</button>
+              <button
+                onClick={() =>
+                  setDraft({
+                    id: a.id,
+                    title: a.title,
+                    body: a.body,
+                    mode: a.state === "draft" ? "draft" : a.state === "scheduled" ? "schedule" : "publish",
+                    at: a.publish_at ? localInput(a.publish_at) : "",
+                  })
+                }
+              >
+                Edit
+              </button>
               <button className="link" onClick={() => remove(a)}>
                 Delete
               </button>

@@ -4,6 +4,7 @@ import { ApiError, Course, Problem, Session, api } from "../api";
 import { Dashboard } from "../types";
 import { Announcements } from "./Announcements";
 import { StudentAssignments } from "./AssignmentsPage";
+import { CourseTabs, UpcomingBox } from "./CourseTabs";
 import { StudentQuizzes } from "./QuizPage";
 import { CourseContent } from "./CourseContent";
 import { CourseSettings } from "./CourseSettings";
@@ -97,11 +98,13 @@ export function CoursePage({
   courseId,
   title,
   details,
+  tab,
 }: {
   session: Session;
   courseId: number;
   title?: string;
   details?: Course;
+  tab: "stream" | "classwork";
 }) {
   const [problems, setProblems] = useState<Problem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -155,18 +158,44 @@ export function CoursePage({
           </a>
         )}
       </div>
+      <CourseTabs courseId={courseId} active={tab} />
       {error && <p role="alert" className="error">{error}</p>}
-      {student && problems && <StudentHome session={session} courseId={courseId} problems={coding} />}
-      {session.role === "instructor" && <CourseSettings session={session} courseId={courseId} />}
-      <Announcements session={session} courseId={courseId} />
-      <CourseContent session={session} courseId={courseId} />
-      {student && <StudentAssignments session={session} courseId={courseId} />}
-      {student && <StudentQuizzes session={session} courseId={courseId} />}
-      {student && <RatingsSection session={session} courseId={courseId} />}
-      {problems === null && !error && <p className="empty">Loading problems…</p>}
-      {problems && coding.length === 0 && <p className="empty">This course has no coding problems yet.</p>}
+      {tab === "stream" && (
+        <>
+          {session.role === "instructor" && <CourseSettings session={session} courseId={courseId} />}
+          {student && <UpcomingBox session={session} courseId={courseId} />}
+          <Announcements session={session} courseId={courseId} />
+          {student && problems && <StudentHome session={session} courseId={courseId} problems={coding} />}
+          {student && <RatingsSection session={session} courseId={courseId} />}
+        </>
+      )}
+      {tab === "classwork" && (
+        <>
+          {session.role === "instructor" && (
+            <p className="actions">
+              <a className="button" href={`#/course/${courseId}/content`}>
+                Lessons
+              </a>
+              <a className="button" href={`#/course/${courseId}/assignments`}>
+                Assignments
+              </a>
+              <a className="button" href={`#/course/${courseId}/quizzes`}>
+                Quizzes
+              </a>
+              <a className="button" href={`#/course/${courseId}/notes`}>
+                Course notes
+              </a>
+            </p>
+          )}
+          {student && <StudentAssignments session={session} courseId={courseId} />}
+          {student && <StudentQuizzes session={session} courseId={courseId} />}
+          <CourseContent session={session} courseId={courseId} />
+          {problems === null && !error && <p className="empty">Loading problems…</p>}
+          {problems && coding.length === 0 && <p className="empty">This course has no coding problems yet.</p>}
+        </>
+      )}
 
-      {student ? (
+      {tab === "classwork" && (student ? (
         groupByConcept(coding).map(([concept, items]) => (
           <section key={concept} className="group">
             <h2>{concept}</h2>
@@ -236,8 +265,8 @@ export function CoursePage({
             </li>
           ))}
         </ul>
-      )}
-      {student && (
+      ))}
+      {tab === "stream" && student && (
         <p className="quiet-actions">
           <button className="link" onClick={leave}>
             Leave this course
