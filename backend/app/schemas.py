@@ -1534,3 +1534,69 @@ class OverrideIn(BaseModel):
         if not self.reason.strip():
             raise ValueError("give a reason the student can read")
         return self
+
+
+class AtRiskFactor(BaseModel):
+    kind: Literal["missing_work", "low_scores", "falling_scores", "low_mastery", "inactive"]
+    summary: str
+    evidence: list[str]
+
+
+class AtRiskStudent(BaseModel):
+    student_id: int
+    label: str
+    synthetic: bool
+    factors: list[AtRiskFactor]
+
+
+class AtRiskReport(BaseModel):
+    checked: int
+    thresholds: dict[str, float]
+    students: list[AtRiskStudent]
+
+
+class QuestionReport(BaseModel):
+    question_id: int
+    prompt: str
+    kind: Literal["single", "multiple", "short"]
+    options: list[str]
+    answered: int
+    right: int
+    percent_right: float | None
+    chosen_counts: list[int]
+    right_choices: list[int]
+    class_missed: bool
+
+
+class QuizReport(BaseModel):
+    quiz_id: int
+    title: str
+    students: int = Field(description="students who took it; each one's latest attempt is used")
+    attempts: int
+    average_percent: float | None
+    questions: list[QuestionReport]
+
+
+class Comparison(BaseModel):
+    n_with: int
+    n_without: int
+    average_with: float | None
+    average_without: float | None
+    difference: float | None = Field(description="null until both groups are big enough to compare")
+
+
+class ContentItemReport(BaseModel):
+    item_id: int
+    title: str
+    module: str
+    kind: str
+    completed: int
+    not_completed: int
+    scores: Comparison
+    mastery: Comparison
+
+
+class ContentReport(BaseModel):
+    students: int
+    min_group: int
+    items: list[ContentItemReport]

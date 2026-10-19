@@ -27,6 +27,7 @@ from app.routers import (
     feedback,
     grading,
     health,
+    insight,
     instructor,
     lti,
     me,
@@ -90,7 +91,7 @@ app.include_router(health.router, prefix="/api/v1")
 for module in (
     accounts, courses, documents, problems, submissions, feedback, diagnostic, students, chat, instructor, export,
     consent, erasure, lti, assignments, announcements, me, admin, student_work, dashboards, content, quizzes, work,
-    notifications, planner, people, grading,
+    notifications, planner, people, grading, insight,
 ):
     app.include_router(module.router, prefix="/api/v1")
 app.include_router(work.queue_router, prefix="/api/v1")
