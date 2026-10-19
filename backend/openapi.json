@@ -544,6 +544,99 @@
         "title": "AssignmentQuizOut",
         "type": "object"
       },
+      "AtRiskFactor": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "missing_work",
+              "low_scores",
+              "falling_scores",
+              "low_mastery",
+              "inactive"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "summary",
+          "evidence"
+        ],
+        "title": "AtRiskFactor",
+        "type": "object"
+      },
+      "AtRiskReport": {
+        "properties": {
+          "checked": {
+            "title": "Checked",
+            "type": "integer"
+          },
+          "students": {
+            "items": {
+              "$ref": "#/components/schemas/AtRiskStudent"
+            },
+            "title": "Students",
+            "type": "array"
+          },
+          "thresholds": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Thresholds",
+            "type": "object"
+          }
+        },
+        "required": [
+          "checked",
+          "thresholds",
+          "students"
+        ],
+        "title": "AtRiskReport",
+        "type": "object"
+      },
+      "AtRiskStudent": {
+        "properties": {
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/AtRiskFactor"
+            },
+            "title": "Factors",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "student_id": {
+            "title": "Student Id",
+            "type": "integer"
+          },
+          "synthetic": {
+            "title": "Synthetic",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "student_id",
+          "label",
+          "synthetic",
+          "factors"
+        ],
+        "title": "AtRiskStudent",
+        "type": "object"
+      },
       "AttemptIn": {
         "properties": {
           "answers": {
@@ -1037,6 +1130,61 @@
         "title": "CommentOut",
         "type": "object"
       },
+      "Comparison": {
+        "properties": {
+          "average_with": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average With"
+          },
+          "average_without": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Without"
+          },
+          "difference": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null until both groups are big enough to compare",
+            "title": "Difference"
+          },
+          "n_with": {
+            "title": "N With",
+            "type": "integer"
+          },
+          "n_without": {
+            "title": "N Without",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "n_with",
+          "n_without",
+          "average_with",
+          "average_without",
+          "difference"
+        ],
+        "title": "Comparison",
+        "type": "object"
+      },
       "ConceptCreate": {
         "properties": {
           "name": {
@@ -1239,6 +1387,52 @@
         "title": "ConsentStatus",
         "type": "object"
       },
+      "ContentItemReport": {
+        "properties": {
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "item_id": {
+            "title": "Item Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "mastery": {
+            "$ref": "#/components/schemas/Comparison"
+          },
+          "module": {
+            "title": "Module",
+            "type": "string"
+          },
+          "not_completed": {
+            "title": "Not Completed",
+            "type": "integer"
+          },
+          "scores": {
+            "$ref": "#/components/schemas/Comparison"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "title",
+          "module",
+          "kind",
+          "completed",
+          "not_completed",
+          "scores",
+          "mastery"
+        ],
+        "title": "ContentItemReport",
+        "type": "object"
+      },
       "ContentOut": {
         "properties": {
           "completed": {
@@ -1269,6 +1463,32 @@
           "total"
         ],
         "title": "ContentOut",
+        "type": "object"
+      },
+      "ContentReport": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ContentItemReport"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "min_group": {
+            "title": "Min Group",
+            "type": "integer"
+          },
+          "students": {
+            "title": "Students",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "students",
+          "min_group",
+          "items"
+        ],
+        "title": "ContentReport",
         "type": "object"
       },
       "Course": {
@@ -4901,6 +5121,85 @@
         "title": "QuestionOut",
         "type": "object"
       },
+      "QuestionReport": {
+        "properties": {
+          "answered": {
+            "title": "Answered",
+            "type": "integer"
+          },
+          "chosen_counts": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Chosen Counts",
+            "type": "array"
+          },
+          "class_missed": {
+            "title": "Class Missed",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "single",
+              "multiple",
+              "short"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "percent_right": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent Right"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "question_id": {
+            "title": "Question Id",
+            "type": "integer"
+          },
+          "right": {
+            "title": "Right",
+            "type": "integer"
+          },
+          "right_choices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Right Choices",
+            "type": "array"
+          }
+        },
+        "required": [
+          "question_id",
+          "prompt",
+          "kind",
+          "options",
+          "answered",
+          "right",
+          "percent_right",
+          "chosen_counts",
+          "right_choices",
+          "class_missed"
+        ],
+        "title": "QuestionReport",
+        "type": "object"
+      },
       "QuizIn": {
         "properties": {
           "max_attempts": {
@@ -5015,6 +5314,55 @@
           "question_list"
         ],
         "title": "QuizOut",
+        "type": "object"
+      },
+      "QuizReport": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "average_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Percent"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionReport"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "quiz_id": {
+            "title": "Quiz Id",
+            "type": "integer"
+          },
+          "students": {
+            "description": "students who took it; each one's latest attempt is used",
+            "title": "Students",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quiz_id",
+          "title",
+          "students",
+          "attempts",
+          "average_percent",
+          "questions"
+        ],
+        "title": "QuizReport",
         "type": "object"
       },
       "QuizSummary": {
@@ -9256,6 +9604,54 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/at-risk": {
+      "get": {
+        "description": "Students with at least one warning sign, each with the facts that raised it, most signs first.",
+        "operationId": "at_risk_api_v1_courses__course_id__at_risk_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtRiskReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "At Risk",
+        "tags": [
+          "insight"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/categories": {
       "get": {
         "operationId": "list_categories_api_v1_courses__course_id__categories_get",
@@ -9810,6 +10206,54 @@
         "summary": "Read Content",
         "tags": [
           "content"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/content-report": {
+      "get": {
+        "description": "For each lesson item: how many students finished it and how those who did compare with those who did not. It is\nan association, not proof that the item made the difference.",
+        "operationId": "content_report_api_v1_courses__course_id__content_report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Content Report",
+        "tags": [
+          "insight"
         ]
       }
     },
@@ -11607,6 +12051,62 @@
         "summary": "My Attempts",
         "tags": [
           "quizzes"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/quizzes/{quiz_id}/report": {
+      "get": {
+        "operationId": "quiz_report_api_v1_courses__course_id__quizzes__quiz_id__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "title": "Quiz Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Quiz Report",
+        "tags": [
+          "insight"
         ]
       }
     },
