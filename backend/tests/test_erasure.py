@@ -100,6 +100,11 @@ def fill(owner, user_id: int, course, lms: bool = False) -> int:
             {"a": assignment, "u": user_id},
         )
         conn.execute(
+            text("INSERT INTO score_overrides (assignment_id, user_id, score, reason, set_by)"
+                 " VALUES (:a, :u, 1, 'r', (SELECT instructor_id FROM courses WHERE id = :c))"),
+            {"a": assignment, "u": user_id, "c": course["id"]},
+        )
+        conn.execute(
             text("INSERT INTO notifications (user_id, kind, title, link) VALUES (:u, 'announcement', 'x', '#/dashboard')"),
             {"u": user_id},
         )

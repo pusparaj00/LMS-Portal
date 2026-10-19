@@ -212,6 +212,18 @@
       },
       "AssignmentIn": {
         "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the grade category it counts in",
+            "title": "Category Id"
+          },
           "due_at": {
             "format": "date-time",
             "title": "Due At",
@@ -287,6 +299,17 @@
       },
       "AssignmentOut": {
         "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
           "course_id": {
             "title": "Course Id",
             "type": "integer"
@@ -674,6 +697,62 @@
           "has_work"
         ],
         "title": "CalendarItem",
+        "type": "object"
+      },
+      "CategoryIn": {
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "weight": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "weight"
+        ],
+        "title": "CategoryIn",
+        "type": "object"
+      },
+      "CategoryOut": {
+        "properties": {
+          "assignments": {
+            "title": "Assignments",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share": {
+            "description": "its share of the total weight, in percent",
+            "title": "Share",
+            "type": "number"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "weight",
+          "share",
+          "assignments"
+        ],
+        "title": "CategoryOut",
         "type": "object"
       },
       "ChatRequest": {
@@ -1385,6 +1464,16 @@
           "course_id": {
             "title": "Course Id",
             "type": "integer"
+          },
+          "overall": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Overall"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "percent": {
             "anyOf": [
@@ -2321,6 +2410,7 @@
         "type": "object"
       },
       "GradeIn": {
+        "description": "A score, or, for work with a rubric, the level chosen for each criterion (the score is then their sum).",
         "properties": {
           "feedback": {
             "anyOf": [
@@ -2334,16 +2424,35 @@
             ],
             "title": "Feedback"
           },
+          "levels": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "criterion id to level id",
+            "title": "Levels"
+          },
           "score": {
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Score",
-            "type": "number"
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
           }
         },
-        "required": [
-          "score"
-        ],
         "title": "GradeIn",
         "type": "object"
       },
@@ -2357,6 +2466,18 @@
             "format": "date-time",
             "title": "Due At",
             "type": "string"
+          },
+          "override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "set when the instructor adjusted this score",
+            "title": "Override Reason"
           },
           "possible": {
             "title": "Possible",
@@ -2527,6 +2648,18 @@
             "title": "Assignment Id",
             "type": "integer"
           },
+          "override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "set when the instructor adjusted this score",
+            "title": "Override Reason"
+          },
           "score": {
             "title": "Score",
             "type": "number"
@@ -2568,6 +2701,16 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "overall": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Overall"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "possible": {
             "default": 0,
@@ -3631,6 +3774,16 @@
             ],
             "title": "Returned At"
           },
+          "rubric": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RubricOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "score": {
             "anyOf": [
               {
@@ -3778,6 +3931,99 @@
           "text"
         ],
         "title": "OptionOut",
+        "type": "object"
+      },
+      "Overall": {
+        "description": "The weighted grade. `percent` is null when nothing in a category was given yet. `uncategorised` counts the\nassignments that have no category and so are not part of it.",
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/OverallPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          },
+          "uncategorised": {
+            "title": "Uncategorised",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "percent",
+          "parts",
+          "uncategorised"
+        ],
+        "title": "Overall",
+        "type": "object"
+      },
+      "OverallPart": {
+        "properties": {
+          "category_id": {
+            "title": "Category Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "number"
+          },
+          "possible": {
+            "title": "Possible",
+            "type": "number"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "weight",
+          "score",
+          "possible",
+          "percent"
+        ],
+        "title": "OverallPart",
+        "type": "object"
+      },
+      "OverrideIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "score": {
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "reason"
+        ],
+        "title": "OverrideIn",
         "type": "object"
       },
       "PasswordChange": {
@@ -5234,6 +5480,199 @@
         "title": "RouterInfo",
         "type": "object"
       },
+      "RubricCriterionIn": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/RubricLevelIn"
+            },
+            "maxItems": 8,
+            "minItems": 2,
+            "title": "Levels",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "levels"
+        ],
+        "title": "RubricCriterionIn",
+        "type": "object"
+      },
+      "RubricCriterionOut": {
+        "properties": {
+          "chosen_level_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chosen Level Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/RubricLevelOut"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "levels"
+        ],
+        "title": "RubricCriterionOut",
+        "type": "object"
+      },
+      "RubricIn": {
+        "properties": {
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/RubricCriterionIn"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Criteria",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "criteria"
+        ],
+        "title": "RubricIn",
+        "type": "object"
+      },
+      "RubricLevelIn": {
+        "properties": {
+          "label": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Points",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "points"
+        ],
+        "title": "RubricLevelIn",
+        "type": "object"
+      },
+      "RubricLevelOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "points"
+        ],
+        "title": "RubricLevelOut",
+        "type": "object"
+      },
+      "RubricOut": {
+        "properties": {
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/RubricCriterionOut"
+            },
+            "title": "Criteria",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "max_points": {
+            "title": "Max Points",
+            "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "used_by": {
+            "default": 0,
+            "description": "assignments that use it",
+            "title": "Used By",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "max_points",
+          "criteria"
+        ],
+        "title": "RubricOut",
+        "type": "object"
+      },
       "ScoreBucket": {
         "properties": {
           "label": {
@@ -5948,6 +6387,16 @@
             ],
             "title": "Returned At"
           },
+          "rubric": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RubricOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "score": {
             "anyOf": [
               {
@@ -6368,6 +6817,18 @@
             "maximum": 100.0,
             "title": "Points",
             "type": "number"
+          },
+          "rubric_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a rubric of this course; its top score must equal the points",
+            "title": "Rubric Id"
           }
         },
         "required": [
@@ -7860,6 +8321,131 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/assignments/{assignment_id}/students/{student_id}/override": {
+      "delete": {
+        "operationId": "remove_override_api_v1_courses__course_id__assignments__assignment_id__students__student_id__override_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "title": "Assignment Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "student_id",
+            "required": true,
+            "schema": {
+              "title": "Student Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Override",
+        "tags": [
+          "grading"
+        ]
+      },
+      "put": {
+        "description": "Replaces the student's score for this assignment, on time and with late work alike, until it is removed.",
+        "operationId": "set_override_api_v1_courses__course_id__assignments__assignment_id__students__student_id__override_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "title": "Assignment Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "student_id",
+            "required": true,
+            "schema": {
+              "title": "Student Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Override",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/assignments/{assignment_id}/work": {
       "get": {
         "operationId": "read_my_work_api_v1_courses__course_id__assignments__assignment_id__work_get",
@@ -8667,6 +9253,245 @@
         "summary": "Unsubmit",
         "tags": [
           "work"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/categories": {
+      "get": {
+        "operationId": "list_categories_api_v1_courses__course_id__categories_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryOut"
+                  },
+                  "title": "Response List Categories Api V1 Courses  Course Id  Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Categories",
+        "tags": [
+          "grading"
+        ]
+      },
+      "post": {
+        "operationId": "add_category_api_v1_courses__course_id__categories_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryOut"
+                  },
+                  "title": "Response Add Category Api V1 Courses  Course Id  Categories Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Category",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/categories/{category_id}": {
+      "delete": {
+        "description": "Its assignments stay and become uncategorised, so they stop counting in the weighted grade.",
+        "operationId": "remove_category_api_v1_courses__course_id__categories__category_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryOut"
+                  },
+                  "title": "Response Remove Category Api V1 Courses  Course Id  Categories  Category Id  Delete",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Category",
+        "tags": [
+          "grading"
+        ]
+      },
+      "put": {
+        "operationId": "change_category_api_v1_courses__course_id__categories__category_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryOut"
+                  },
+                  "title": "Response Change Category Api V1 Courses  Course Id  Categories  Category Id  Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Category",
+        "tags": [
+          "grading"
         ]
       }
     },
@@ -10932,6 +11757,226 @@
         "summary": "Restore Course",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/rubrics": {
+      "get": {
+        "operationId": "list_rubrics_api_v1_courses__course_id__rubrics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RubricOut"
+                  },
+                  "title": "Response List Rubrics Api V1 Courses  Course Id  Rubrics Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Rubrics",
+        "tags": [
+          "grading"
+        ]
+      },
+      "post": {
+        "operationId": "create_rubric_api_v1_courses__course_id__rubrics_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RubricIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Rubric",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/rubrics/{rubric_id}": {
+      "delete": {
+        "operationId": "delete_rubric_api_v1_courses__course_id__rubrics__rubric_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rubric_id",
+            "required": true,
+            "schema": {
+              "title": "Rubric Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Rubric",
+        "tags": [
+          "grading"
+        ]
+      },
+      "put": {
+        "description": "A rubric that has been used to grade work is locked, because every stored choice refers to its levels.",
+        "operationId": "change_rubric_api_v1_courses__course_id__rubrics__rubric_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rubric_id",
+            "required": true,
+            "schema": {
+              "title": "Rubric Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RubricIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Rubric",
+        "tags": [
+          "grading"
         ]
       }
     },
