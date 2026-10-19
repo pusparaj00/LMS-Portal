@@ -36,6 +36,12 @@ export function DashboardPage({ session, courseId }: { session: Session; courseI
           <a href={`#/placement/${courseId}`}>Take the placement test</a>
         </p>
       )}
+      {data.recheck_due && (
+        <p className="notice">
+          A quick re-check is due: four questions on {data.recheck_concepts.join(", ")}.{" "}
+          <a href={`#/recheck/${courseId}`}>Start the re-check</a>
+        </p>
+      )}
       <MasteryBars concepts={data.concepts} courseId={courseId} />
       <small>Select a concept to see why it changed.</small>
 

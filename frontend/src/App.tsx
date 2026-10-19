@@ -72,7 +72,7 @@ export function App() {
   const [menuPref, setMenuPref] = useState<boolean | null>(null);
   const menuOpen = menuPref ?? !hash.startsWith("#/problem/");
   // The course menu stays on screen while a problem of that course is open, since a problem's address has no course id.
-  const hashCourse = hash.match(/^#\/(?:course|class|mastery|placement)\/(\d+)/);
+  const hashCourse = hash.match(/^#\/(?:course|class|mastery|placement|recheck)\/(\d+)/);
   useEffect(() => {
     if (hashCourse) setLastCourse(Number(hashCourse[1]));
     else if (!hash.startsWith("#/problem/")) setLastCourse(null);
@@ -189,7 +189,7 @@ export function App() {
   const studentWork = hash.match(/^#\/class\/(\d+)\/student\/(\d+)$/);
   const studentSubmission = hash.match(/^#\/class\/(\d+)\/student\/(\d+)\/submission\/(\d+)$/);
   const studentConcept = hash.match(/^#\/class\/(\d+)\/student\/(\d+)\/concept\/(\d+)$/);
-  const placement = hash.match(/^#\/placement\/(\d+)$/);
+  const placement = hash.match(/^#\/(placement|recheck)\/(\d+)$/);
   const mastery = hash.match(/^#\/mastery\/(\d+)$/);
   const why = hash.match(/^#\/mastery\/(\d+)\/concept\/(\d+)$/);
 
@@ -338,7 +338,7 @@ export function App() {
           ) : mastery ? (
             <DashboardPage session={session} courseId={Number(mastery[1])} />
           ) : placement ? (
-            <PlacementPage session={session} courseId={Number(placement[1])} />
+            <PlacementPage session={session} courseId={Number(placement[2])} recheck={placement[1] === "recheck"} />
           ) : problem ? (
             <ProblemPage session={session} problemId={Number(problem[1])} />
           ) : course ? (

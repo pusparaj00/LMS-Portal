@@ -20,7 +20,7 @@ const CONFIDENCES = [
   { value: "sure", label: "Sure" },
 ] as const;
 
-export function PlacementPage({ session, courseId }: { session: Session; courseId: number }) {
+export function PlacementPage({ session, courseId, recheck = false }: { session: Session; courseId: number; recheck?: boolean }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [item, setItem] = useState<DiagnosticItem | null>(null);
   const [number, setNumber] = useState(1);
@@ -51,7 +51,9 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
 
   async function start() {
     const started = await call(() =>
-      api<DiagnosticStart>("/diagnostic/start", session, { body: { course_id: courseId, background } }),
+      api<DiagnosticStart>("/diagnostic/start", session, {
+        body: { course_id: courseId, background: recheck ? null : background, mode: recheck ? "recheck" : "placement" },
+      }),
     );
     if (!started) return;
     setSessionId(started.session_id);
@@ -85,9 +87,9 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
   if (result) {
     return (
       <>
-        <h1>Your starting point</h1>
+        <h1>{recheck ? "Your re-check" : "Your starting point"}</h1>
         <p>
-          This is where you start, not a grade. Each concept shows how sure the system is: a concept the test did
+          {recheck ? "These answers were added to what the system already knows about you. " : ""}This is where you start, not a grade. Each concept shows how sure the system is: a concept the test did
           not ask about is only an estimate from your overall level, and it changes as soon as you answer real questions.
         </p>
         <h2>Mastery by concept</h2>
@@ -109,12 +111,14 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
         <p>
           <a href={`#/course/${courseId}`}>Back to problems</a>
         </p>
-        <h1>Placement test</h1>
+        <h1>{recheck ? "Quick re-check" : "Placement test"}</h1>
         <p>
-          About 16 to 20 questions, 10 to 20 minutes: mostly tracing questions, then a few short coding tasks. Some are
-          easier and some harder, and they adapt to your answers. The result sets your starting mastery for each
-          concept. Saying "I don't know" is fine and helps the test more than a guess.
+          {recheck
+            ? "Four short questions on the concepts you have not been asked about for a while. Your answers are added to your progress."
+            : "About 16 to 20 questions, 10 to 20 minutes: mostly tracing questions, then a few short coding tasks. Some are easier and some harder, and they adapt to your answers. The result sets your starting mastery for each concept."}{" "}
+          Saying "I don't know" is fine and helps more than a guess.
         </p>
+        {!recheck && (
         <fieldset className="options">
           <legend>How much do you know about this course already? (optional)</legend>
           {BACKGROUNDS.map((b) => (
@@ -131,13 +135,14 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
             </label>
           ))}
         </fieldset>
+        )}
         {error && (
           <p role="alert" className="error">
             {error}
           </p>
         )}
         <button className="primary" onClick={start} disabled={busy}>
-          Start the test
+          {recheck ? "Start the re-check" : "Start the test"}
         </button>
       </>
     );

@@ -159,7 +159,7 @@ export function CourseSettings({ session, courseId }: { session: Session; course
           </form>
           <div>
             <h3>Concepts</h3>
-            <small>Renaming keeps every tag and all mastery history. A concept can be deleted only while nothing uses it.</small>
+            <small>Renaming keeps every tag and all mastery history. A concept can be deleted only while nothing uses it. "Builds on" names the concepts a student should know first: a weak one is revised before this concept.</small>
             <ul className="rows">
               {concepts.map((c) => (
                 <li key={c.concept_id}>
@@ -183,6 +183,34 @@ export function CourseSettings({ session, courseId }: { session: Session; course
                   ) : (
                     <>
                       <span className="grow">{pretty(c.name)}</span>
+                      <details className="prerequisites">
+                        <summary>
+                          Builds on {c.prerequisite_ids?.length ? `(${c.prerequisite_ids.length})` : "(nothing)"}
+                        </summary>
+                        {concepts
+                          .filter((other) => other.concept_id !== c.concept_id)
+                          .map((other) => (
+                            <label key={other.concept_id} className="inline">
+                              <input
+                                type="checkbox"
+                                checked={c.prerequisite_ids?.includes(other.concept_id) ?? false}
+                                onChange={(e) => {
+                                  const current = c.prerequisite_ids ?? [];
+                                  const next = e.target.checked
+                                    ? [...current, other.concept_id]
+                                    : current.filter((id) => id !== other.concept_id);
+                                  run(() =>
+                                    api(`/courses/${courseId}/concepts/${c.concept_id}/prerequisites`, session, {
+                                      method: "PUT",
+                                      body: { prerequisite_ids: next },
+                                    }),
+                                  );
+                                }}
+                              />{" "}
+                              {pretty(other.name)}
+                            </label>
+                          ))}
+                      </details>
                       <button
                         aria-label={`Rename ${pretty(c.name)}`}
                         onClick={() => {

@@ -54,6 +54,8 @@ export type Dashboard = {
   recommended: { problem_id: number; title: string; reason: string } | null;
   placement_completed: boolean;
   placement_available: boolean;
+  recheck_due: boolean;
+  recheck_concepts: string[];
 };
 
 export type LedgerEntry = {

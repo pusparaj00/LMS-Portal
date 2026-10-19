@@ -39,6 +39,14 @@ function StudentHome({ session, courseId, problems }: { session: Session; course
               Take the placement test
             </a>
           </>
+        ) : data?.recheck_due ? (
+          <>
+            <h2>A quick re-check is due</h2>
+            <p>Four questions on {data.recheck_concepts.join(", ")}; your answers are added to your progress.</p>
+            <a className="button primary" href={`#/recheck/${courseId}`}>
+              Start the re-check
+            </a>
+          </>
         ) : data?.recommended ? (
           <>
             <h2>{data.recommended.title}</h2>

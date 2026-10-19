@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
 
-export type Concept = { concept_id: number; name: string };
+export type Concept = { concept_id: number; name: string; prerequisite_ids?: number[] };
 
 /** F-02: add a concept to a course without leaving the page. The new concept is reported back so it can be picked. */
 export function ConceptAdder({
