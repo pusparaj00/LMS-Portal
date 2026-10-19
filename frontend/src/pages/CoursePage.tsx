@@ -31,10 +31,10 @@ function StudentHome({ session, courseId, problems }: { session: Session; course
     <section className="home-grid" aria-label="Your progress">
       <div className="panel continue">
         <p className="eyebrow">Continue</p>
-        {data && !data.placement_completed ? (
+        {data && data.placement_available && !data.placement_completed ? (
           <>
             <h2>Start with the placement test</h2>
-            <p>About ten short questions show which concepts you already know, so the next problems fit you.</p>
+            <p>About 16 to 20 questions (10 to 20 minutes) show which concepts you already know, so the next problems fit you.</p>
             <a className="button primary" href={`#/placement/${courseId}`}>
               Take the placement test
             </a>

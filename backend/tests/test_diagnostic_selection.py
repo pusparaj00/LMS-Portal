@@ -148,3 +148,22 @@ def test_probabilities_are_valid():
     for theta in (-4, 0, 4):
         assert 0 < selection.prob_correct(theta, 1.2, 0.3) < 1
         assert math.isfinite(selection.observed_probability(theta, 1.2, 0.3, "mcq"))
+
+
+def test_the_learner_record_tells_assessed_estimated_and_not_assessed_apart():
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.routers.diagnostic import _learner_record
+
+    def row(n, n_eff, inferred):
+        last = datetime(2026, 10, 19, tzinfo=UTC) if n else None
+        return SimpleNamespace(id=1, name="loops", p=0.6, n=n, n_eff=n_eff, last=last, inferred=inferred)
+
+    assessed = _learner_record(row(4, 3.5, None))
+    estimated = _learner_record(row(None, None, True))
+    none = _learner_record(row(None, None, None))
+    assert (assessed.status, assessed.evidence_count, assessed.confidence) == ("assessed", 4, "moderate")
+    assert assessed.last_assessed.startswith("2026-10-19")
+    assert (estimated.status, estimated.evidence_count, estimated.confidence) == ("estimated", 0, None)
+    assert (none.status, none.confidence, none.last_assessed) == ("not assessed", None, None)

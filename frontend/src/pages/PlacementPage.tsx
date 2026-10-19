@@ -7,6 +7,18 @@ import { MasteryBars, Misconceptions } from "./MasteryBars";
 
 const STARTER = "# Read from input(), print the answer.\n";
 
+const BACKGROUNDS = [
+  { value: "new", label: "New to this", hint: "I have not studied it before" },
+  { value: "some", label: "Some experience", hint: "I know some of it" },
+  { value: "comfortable", label: "Comfortable", hint: "I have used it a fair amount" },
+] as const;
+
+const CONFIDENCES = [
+  { value: "guessing", label: "Guessing" },
+  { value: "fairly", label: "Fairly sure" },
+  { value: "sure", label: "Sure" },
+] as const;
+
 export function PlacementPage({ session, courseId }: { session: Session; courseId: number }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [item, setItem] = useState<DiagnosticItem | null>(null);
@@ -15,6 +27,8 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
   const [option, setOption] = useState<number | null>(null);
   const [code, setCode] = useState(STARTER);
   const [result, setResult] = useState<DiagnosticResult | null>(null);
+  const [background, setBackground] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +50,7 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
 
   async function start() {
     const started = await call(() =>
-      api<DiagnosticStart>("/diagnostic/start", session, { body: { course_id: courseId } }),
+      api<DiagnosticStart>("/diagnostic/start", session, { body: { course_id: courseId, background } }),
     );
     if (!started) return;
     setSessionId(started.session_id);
@@ -45,15 +59,18 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
     setMax(started.max_items);
   }
 
-  async function submit() {
+  async function submit(dontKnow = false) {
     if (!item || !sessionId) return;
-    const body =
-      item.kind === "mcq"
-        ? { session_id: sessionId, problem_id: item.problem_id, option_id: option }
-        : { session_id: sessionId, problem_id: item.problem_id, code };
+    const base = { session_id: sessionId, problem_id: item.problem_id };
+    const body = dontKnow
+      ? { ...base, dont_know: true }
+      : item.kind === "mcq"
+        ? { ...base, option_id: option, confidence }
+        : { ...base, code };
     const step = await call(() => api<DiagnosticStep>("/diagnostic/answer", session, { body, onBusy }));
     if (!step) return;
     setOption(null);
+    setConfidence(null);
     setCode(STARTER);
     setNumber(step.item_number);
     if (step.done) {
@@ -68,6 +85,10 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
     return (
       <>
         <h1>Your starting point</h1>
+        <p>
+          This is where you start, not a grade. Each concept shows how sure the system is: a concept the test did
+          not ask about is only an estimate from your overall level, and it changes as soon as you answer real questions.
+        </p>
         <h2>Mastery by concept</h2>
         <MasteryBars concepts={result.mastery} courseId={courseId} />
         <h2>Misconceptions to look at</h2>
@@ -89,9 +110,26 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
         </p>
         <h1>Placement test</h1>
         <p>
-          About ten questions: tracing questions first, then two short coding tasks. The questions adapt to your
-          answers, and the result sets your starting mastery for each concept.
+          About 16 to 20 questions, 10 to 20 minutes: mostly tracing questions, then a few short coding tasks. Some are
+          easier and some harder, and they adapt to your answers. The result sets your starting mastery for each
+          concept. Saying "I don't know" is fine and helps the test more than a guess.
         </p>
+        <fieldset className="options">
+          <legend>How much do you know about this course already? (optional)</legend>
+          {BACKGROUNDS.map((b) => (
+            <label key={b.value} className="option">
+              <input
+                type="radio"
+                name="background"
+                checked={background === b.value}
+                onChange={() => setBackground(b.value)}
+              />
+              <span>
+                {b.label}: {b.hint}
+              </span>
+            </label>
+          ))}
+        </fieldset>
         {error && (
           <p role="alert" className="error">
             {error}
@@ -134,14 +172,33 @@ export function PlacementPage({ session, courseId }: { session: Session; courseI
           />
         </div>
       )}
+      {item.kind === "mcq" && (
+        <fieldset className="options confidence">
+          <legend>How sure are you? (optional)</legend>
+          {CONFIDENCES.map((c) => (
+            <label key={c.value} className="inline">
+              <input
+                type="radio"
+                name="confidence"
+                checked={confidence === c.value}
+                onChange={() => setConfidence(c.value)}
+              />{" "}
+              {c.label}
+            </label>
+          ))}
+        </fieldset>
+      )}
       {error && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
       <p>
-        <button className="primary" onClick={submit} disabled={busy || !ready}>
+        <button className="primary" onClick={() => submit()} disabled={busy || !ready}>
           {busy ? "Checking…" : "Next question"}
+        </button>{" "}
+        <button onClick={() => submit(true)} disabled={busy}>
+          I don't know
         </button>{" "}
         {notice && <span role="status">{notice}</span>}
       </p>

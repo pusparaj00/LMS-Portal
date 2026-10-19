@@ -1034,3 +1034,22 @@ a.evidence {
   align-items: center;
   gap: 0.4rem;
 }
+
+.evidence-note {
+  grid-column: 1 / -1;
+  color: var(--slate);
+  font-size: 0.82rem;
+}
+
+.options.confidence {
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 40rem) {
+  .options.confidence {
+    grid-auto-flow: row;
+  }
+}

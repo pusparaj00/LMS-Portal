@@ -75,13 +75,30 @@ def _items(conn: Connection, course_id: int) -> list[selection.Item]:
 def _mastery_vector(conn: Connection, user_id: int, course_id: int) -> list[ConceptMastery]:
     rows = conn.execute(
         text(
-            "SELECT c.id, c.name, COALESCE(m.p_known, c.prior) FROM concepts c"
-            " LEFT JOIN mastery m ON m.concept_id = c.id AND m.user_id = :u"
+            "SELECT c.id, c.name, COALESCE(m.p_known, c.prior) AS p, e.n, e.n_eff, e.last, e.inferred"
+            " FROM concepts c LEFT JOIN mastery m ON m.concept_id = c.id AND m.user_id = :u"
+            " LEFT JOIN (SELECT concept_id,"
+            "   count(*) FILTER (WHERE rule_id = 'bayes_update') AS n,"
+            "   COALESCE(sum(weight) FILTER (WHERE rule_id = 'bayes_update'), 0) AS n_eff,"
+            "   max(created_at) FILTER (WHERE rule_id = 'bayes_update') AS last,"
+            "   bool_or(rule_id = 'ability_inference') AS inferred"
+            "  FROM mastery_events WHERE user_id = :u GROUP BY concept_id) e ON e.concept_id = c.id"
             " WHERE c.course_id = :c ORDER BY c.id"
         ),
         {"u": user_id, "c": course_id},
     )
-    return [ConceptMastery(concept_id=r[0], name=r[1], p_known=r[2]) for r in rows]
+    return [_learner_record(r) for r in rows]
+
+
+def _learner_record(r) -> ConceptMastery:
+    """TR-M-16: one concept of the learner model, computed from the ledger."""
+    count = r.n or 0
+    status = "assessed" if count else "estimated" if r.inferred else "not assessed"
+    return ConceptMastery(
+        concept_id=r.id, name=r.name, p_known=r.p, status=status, evidence_count=count,
+        confidence=core.confidence_label(float(r.n_eff or 0)) if count else None,
+        last_assessed=r.last.isoformat() if r.last else None,
+    )
 
 
 def top_misconceptions(conn: Connection, user_id: int, course_id: int) -> list[SuspectedMisconception]:

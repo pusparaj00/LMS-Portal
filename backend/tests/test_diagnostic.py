@@ -199,7 +199,9 @@ def test_dashboard_and_the_why_view_read_from_the_ledger(client, make_user, plac
     run_whole_test(client, headers, course_id, wrong_for)
 
     dashboard = client.get(f"{API}/students/me/mastery", headers=headers, params={"course_id": course_id}).json()
-    assert dashboard["placement_completed"] is True
+    assert dashboard["placement_completed"] is True and dashboard["placement_available"] is True
+    assert all(c["status"] == "assessed" and c["evidence_count"] > 0 and c["confidence"] for c in dashboard["concepts"])
+    assert all(c["last_assessed"] for c in dashboard["concepts"])
     assert len(dashboard["concepts"]) == 3 and dashboard["misconceptions"]
     assert dashboard["recommended"] is None or dashboard["recommended"]["problem_id"]
 

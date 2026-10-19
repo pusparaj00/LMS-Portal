@@ -1209,6 +1209,44 @@
             "title": "Concept Id",
             "type": "integer"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "moderate",
+                  "higher"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "evidence_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Count"
+          },
+          "last_assessed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Assessed"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -1216,6 +1254,22 @@
           "p_known": {
             "title": "P Known",
             "type": "number"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "assessed",
+                  "estimated",
+                  "not assessed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
           }
         },
         "required": [
@@ -1958,6 +2012,10 @@
             "title": "Misconceptions",
             "type": "array"
           },
+          "placement_available": {
+            "title": "Placement Available",
+            "type": "boolean"
+          },
           "placement_completed": {
             "title": "Placement Completed",
             "type": "boolean"
@@ -1985,7 +2043,8 @@
           "misconceptions",
           "recent_submissions",
           "recommended",
-          "placement_completed"
+          "placement_completed",
+          "placement_available"
         ],
         "title": "Dashboard",
         "type": "object"

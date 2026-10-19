@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, text
 
 from app.auth import Conn, CurrentUser, can_access_course, require_role
-from app.routers.diagnostic import _mastery_vector, top_misconceptions
+from app.routers.diagnostic import _items, _mastery_vector, top_misconceptions
 from app.schemas import Dashboard, LedgerEntry, RecentSubmission, RecommendedProblem
 
 router = APIRouter(prefix="/students/me", tags=["students"])
@@ -60,6 +60,7 @@ def dashboard(course_id: int, user: Student, conn: Conn):
         ],
         recommended=_recommend(conn, user.id, course_id, concepts),
         placement_completed=completed is not None,
+        placement_available=bool(_items(conn, course_id)),
     )
 
 

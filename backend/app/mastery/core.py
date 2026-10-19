@@ -46,6 +46,20 @@ INFERENCE_SHRINK = 0.6  # how far the value is allowed to leave 0.5, because no 
 INFERENCE_LIMITS = (0.05, 0.95)
 
 
+# TR-M-16: how sure the system is about a concept, from the effective amount of real evidence behind it.
+CONFIDENCE_CUTS = (0.25, 0.17)  # uncertainty above the first is "low", above the second "moderate", else "higher"
+
+
+def uncertainty(effective_evidence: float) -> float:
+    """Largest possible standard error of a probability estimated from this much evidence."""
+    return 0.5 / math.sqrt(effective_evidence + 2.0)
+
+
+def confidence_label(effective_evidence: float) -> str:
+    u = uncertainty(effective_evidence)
+    return "low" if u > CONFIDENCE_CUTS[0] else "moderate" if u > CONFIDENCE_CUTS[1] else "higher"
+
+
 def answer_evidence_type(base: str, dont_know: bool = False, confidence: str | None = None) -> str:
     """The evidence type of a placement answer once "I don't know" and the confidence rating are taken into account."""
     if dont_know:

@@ -6,7 +6,15 @@ export type DiagnosticItem = {
   options: { id: number; text: string }[];
 };
 
-export type ConceptMastery = { concept_id: number; name: string; p_known: number };
+export type ConceptMastery = {
+  concept_id: number;
+  name: string;
+  p_known: number;
+  status?: "assessed" | "estimated" | "not assessed" | null;
+  confidence?: "low" | "moderate" | "higher" | null;
+  evidence_count?: number | null;
+  last_assessed?: string | null;
+};
 
 export type Misconception = { name: string; description: string; probability: number };
 
@@ -45,6 +53,7 @@ export type Dashboard = {
   }[];
   recommended: { problem_id: number; title: string; reason: string } | null;
   placement_completed: boolean;
+  placement_available: boolean;
 };
 
 export type LedgerEntry = {

@@ -152,3 +152,9 @@ def test_replay_applies_an_ability_inference_row():
     priors = {1: 0.5}
     event = core.Event(1, 1, core.RULE_INFERENCE, "diagnostic_inferred", core.INFERENCE_WEIGHT, None, 0.5, 0.58, None, 0.77)
     assert core.replay(priors, [event], {})[1] == pytest.approx(core.inferred_update(0.5, 0.77))
+
+
+def test_confidence_grows_with_the_amount_of_real_evidence():
+    labels = [core.confidence_label(n) for n in (0.3, 1.0, 3.0, 8.0)]
+    assert labels == ["low", "low", "moderate", "higher"]
+    assert core.uncertainty(0) > core.uncertainty(4) > core.uncertainty(20)

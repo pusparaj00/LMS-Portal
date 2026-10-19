@@ -99,7 +99,7 @@ export function StudentDashboard({
                 const weakest = [...(mastery[c.course_id]?.concepts ?? [])]
                   .sort((a, b) => a.p_known - b.p_known)
                   .slice(0, WEAKEST_SHOWN);
-                const placed = mastery[c.course_id]?.placement_completed;
+                const placed = mastery[c.course_id]?.placement_available ? mastery[c.course_id]?.placement_completed : undefined;
                 return (
                   <li key={c.course_id} className="course-card">
                     <h3>{c.title}</h3>

@@ -3,6 +3,16 @@ import { ConceptMastery, Misconception } from "../types";
 
 const pretty = (name: string) => name.replace(/_/g, " ");
 
+/** F-28: what the number rests on, in words. */
+function evidenceNote(c: ConceptMastery): string | null {
+  if (c.status === "not assessed") return "Not assessed yet";
+  if (c.status === "estimated") return "Estimated from your overall level, not asked about yet";
+  if (c.status !== "assessed") return null;
+  const n = c.evidence_count ?? 0;
+  const when = c.last_assessed ? `, last ${new Date(c.last_assessed).toLocaleDateString()}` : "";
+  return `${c.confidence} confidence, from ${n} ${n === 1 ? "answer" : "answers"}${when}`;
+}
+
 export function MasteryBars({
   concepts,
   courseId,
@@ -26,6 +36,7 @@ export function MasteryBars({
             }
             value={c.p_known}
           />
+          {evidenceNote(c) && <small className="evidence-note">{evidenceNote(c)}</small>}
         </li>
       ))}
     </ul>

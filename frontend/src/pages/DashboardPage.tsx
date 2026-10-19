@@ -30,7 +30,7 @@ export function DashboardPage({ session, courseId }: { session: Session; courseI
         <a href={`#/course/${courseId}`}>Back to problems</a>
       </p>
       <h1>My mastery</h1>
-      {!data.placement_completed && (
+      {data.placement_available && !data.placement_completed && (
         <p className="notice">
           You have not taken the placement test yet, so every concept sits at its starting value.{" "}
           <a href={`#/placement/${courseId}`}>Take the placement test</a>

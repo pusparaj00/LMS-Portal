@@ -637,6 +637,10 @@ class ConceptMastery(BaseModel):
     concept_id: int
     name: str
     p_known: float
+    status: Literal["assessed", "estimated", "not assessed"] | None = None
+    confidence: Literal["low", "moderate", "higher"] | None = None
+    evidence_count: int | None = None
+    last_assessed: str | None = None
 
 
 class SuspectedMisconception(BaseModel):
@@ -752,6 +756,7 @@ class Dashboard(BaseModel):
     recent_submissions: list[RecentSubmission]
     recommended: RecommendedProblem | None
     placement_completed: bool
+    placement_available: bool
 
 
 class SourceOut(BaseModel):
