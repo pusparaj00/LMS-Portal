@@ -26,7 +26,7 @@ Date: 2026-10-19. Branch `step-55-prerequisites` (from `step-56d-bank-quality`).
 - 12 new tests: the cycle check, who may edit, refused edits leave the graph unchanged, a weak prerequisite first
   (fixed ledger), the deepest weak prerequisite chosen, a strong or exhausted prerequisite skipped, the assistant and the
   dashboard returning the same problem and reason, and the re-check offer, length, ledger rows and independence from the
-  placement. Full suite: 969 passed (967 before two tests were updated), lint clean.
+  placement. Full suite in CI on the pushed branch: passed, lint clean (CI run on `bd26d40`).
 - Live on the demo course (409), an all-wrong eval student: both the dashboard and the assistant say "variables io (8%) comes
   before conditionals, which builds on it, so revise it first" for "Sum of two numbers". The re-check asked 4 questions.
 - Browser at 390 px: editing "Builds on", the circle refused with a message, no horizontal overflow.
