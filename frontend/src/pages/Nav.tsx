@@ -40,8 +40,9 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
       : [
           { href: "#/dashboard", label: "Dashboard" },
           { href: "#/courses", label: "My courses" },
-          ...(role === "student" ? [{ href: "#/grades", label: "Grades" }] : []),
+          ...(role === "student" ? [{ href: "#/todo", label: "To-do" }, { href: "#/grades", label: "Grades" }] : []),
           ...(role === "instructor" ? [{ href: "#/review", label: "To review" }] : []),
+          { href: "#/calendar", label: "Calendar" },
         ];
   return [
     { items: top },

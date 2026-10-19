@@ -5,6 +5,9 @@ import { AccountPage, Me } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { QuizPage } from "./pages/QuizPage";
+import { CalendarPage } from "./pages/CalendarPage";
+import { Bell, NotificationsPage } from "./pages/NotificationsPage";
+import { ToDoPage } from "./pages/ToDoPage";
 import { ToReviewPage } from "./pages/ToReviewPage";
 import { WorkPage } from "./pages/WorkPage";
 import { WorkReviewPage } from "./pages/WorkReviewPage";
@@ -198,6 +201,7 @@ export function App() {
           <span className={`role role-${session.role}`}>{session.role}</span>
         </span>
         {/* the privacy notice and several messages tell people to find these two in the top bar */}
+        {session.role !== "admin" && <Bell session={session} current={hash === "#/notifications"} />}
         <a href="#/account" aria-current={hash === "#/account" ? "page" : undefined}>
           Account
         </a>
@@ -256,6 +260,12 @@ export function App() {
             <WorkPage key={handIn[2]} session={session} courseId={Number(handIn[1])} assignmentId={Number(handIn[2])} />
           ) : reviewWork && session.role === "instructor" ? (
             <WorkReviewPage key={reviewWork[2]} session={session} courseId={Number(reviewWork[1])} assignmentId={Number(reviewWork[2])} />
+          ) : hash === "#/todo" && session.role === "student" ? (
+            <ToDoPage session={session} />
+          ) : hash === "#/calendar" && session.role !== "admin" ? (
+            <CalendarPage session={session} />
+          ) : hash === "#/notifications" && session.role !== "admin" ? (
+            <NotificationsPage session={session} />
           ) : hash === "#/review" && session.role === "instructor" ? (
             <ToReviewPage session={session} />
           ) : quizzes && session.role === "instructor" ? (
