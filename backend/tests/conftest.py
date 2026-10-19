@@ -30,6 +30,17 @@ def fresh_rate_limits():
         r.delete(*keys)
 
 
+@pytest.fixture
+def clock(monkeypatch):
+    """The rate limiter's own clock, frozen inside one window: limits use fixed minutes, so a minute boundary between
+    two requests would reset the count and make these tests fail at random. Move it with clock["now"] += seconds."""
+    from app import ratelimit
+
+    state = {"now": ratelimit.time.time()}
+    monkeypatch.setattr(ratelimit, "time", type("Clock", (), {"time": staticmethod(lambda: state["now"])}))
+    return state
+
+
 @pytest.fixture(scope="session")
 def owner():
     return create_engine(os.environ["OWNER_DATABASE_URL"])

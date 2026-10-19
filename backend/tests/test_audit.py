@@ -66,7 +66,7 @@ def test_refused_requests_are_recorded_with_who_and_where(client, make_user, own
 
 
 def test_the_report_finds_password_guessing_and_a_student_reading_others_submissions(
-    client, make_user, owner, course, since
+    client, make_user, owner, course, since, clock
 ):
     for _ in range(12):  # the first ten are refused, the rest are throttled
         client.post(f"{API}/auth/login", json={"email": "victim@test.local", "password": "guess-123456"})

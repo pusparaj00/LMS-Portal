@@ -15,15 +15,6 @@ def wrong_login(client, email="nobody@limits.test", **kw):
     return client.post(f"{API}/auth/login", json={"email": email, "password": "wrong-password"}, **kw)
 
 
-@pytest.fixture
-def clock(monkeypatch):
-    """The rate limiter's own clock, frozen inside one window: limits use fixed minutes, so a minute boundary between
-    two requests would reset the count and make these tests fail at random. Move it with clock["now"] += seconds."""
-    state = {"now": ratelimit.time.time()}
-    monkeypatch.setattr(ratelimit, "time", type("Clock", (), {"time": staticmethod(lambda: state["now"])}))
-    return state
-
-
 def test_repeated_wrong_passwords_for_one_account_are_stopped(client, monkeypatch, clock):
     monkeypatch.setitem(ratelimit.RULES, "login_email", Rule(3, 60))
     assert [wrong_login(client).status_code for _ in range(3)] == [401, 401, 401]
