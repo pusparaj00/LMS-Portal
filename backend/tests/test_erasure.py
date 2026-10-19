@@ -87,6 +87,18 @@ def fill(owner, user_id: int, course, lms: bool = False) -> int:
             ),
             {"q": quiz, "u": user_id},
         )
+        assignment = conn.execute(
+            text("INSERT INTO assignments (course_id, title, due_at) VALUES (:c, 'w', now()) RETURNING id"),
+            {"c": course["id"]},
+        ).scalar_one()
+        work = conn.execute(
+            text("INSERT INTO work_submissions (assignment_id, user_id, body) VALUES (:a, :u, 'x') RETURNING id"),
+            {"a": assignment, "u": user_id},
+        ).scalar_one()
+        conn.execute(
+            text("INSERT INTO work_comments (submission_id, author_id, body) VALUES (:w, :u, 'hello')"),
+            {"w": work, "u": user_id},
+        )
         conn.execute(
             text("INSERT INTO mastery (user_id, concept_id, p_known) VALUES (:u, :c, 0.4)"), {"u": user_id, "c": concept}
         )
