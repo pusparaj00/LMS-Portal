@@ -1589,3 +1589,13 @@ blockquote {
     min-height: 3.5rem;
   }
 }
+
+.join-code {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+}
+
+.course-row {
+  padding-left: 0.75rem;
+}

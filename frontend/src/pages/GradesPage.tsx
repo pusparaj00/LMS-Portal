@@ -22,7 +22,7 @@ export function GradesPage({ session }: { session: Session }) {
       {!courses && !error && <p className="empty">Loading your grades…</p>}
       {courses?.length === 0 && (
         <p className="empty">
-          You are not enrolled in a course yet. <a href="#/courses">Browse courses</a>.
+          You have not joined a class yet. <a href="#/courses">Join one with a class code</a>.
         </p>
       )}
       {courses?.map((c) => (

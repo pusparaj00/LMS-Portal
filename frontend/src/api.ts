@@ -2,7 +2,16 @@ export type Role = "student" | "instructor" | "admin";
 
 export type Session = { token: string; role: Role };
 
-export type Course = { id: number; title: string; instructor_id: number; enrolled: boolean; archived?: boolean };
+export type Course = {
+  id: number;
+  title: string;
+  instructor_id: number;
+  enrolled: boolean;
+  archived?: boolean;
+  section?: string | null;
+  subject?: string | null;
+  color?: string | null;
+};
 
 export type ConceptTag = { concept_id: number; name: string; weight: number };
 

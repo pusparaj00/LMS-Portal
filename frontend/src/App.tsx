@@ -6,6 +6,8 @@ import { AdminPage } from "./pages/AdminPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { QuizPage } from "./pages/QuizPage";
 import { CalendarPage } from "./pages/CalendarPage";
+import { JoinPage } from "./pages/JoinPage";
+import { PeoplePage } from "./pages/PeoplePage";
 import { Bell, NotificationsPage } from "./pages/NotificationsPage";
 import { ToDoPage } from "./pages/ToDoPage";
 import { ToReviewPage } from "./pages/ToReviewPage";
@@ -60,6 +62,7 @@ export function App() {
   const [erasure, setErasure] = useState<ErasureState | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesTick, setCoursesTick] = useState(0);
   const [lastCourse, setLastCourse] = useState<number | null>(null);
   const hash = useHash();
   const returnTo = useRef<string | null>(null);
@@ -114,12 +117,19 @@ export function App() {
       .catch(() => setErasure(null));
   }, [session?.token, me?.must_change_password]);
 
+  // a page that changes a course (its details, or a join by code) says so, and the menu and headers follow
+  useEffect(() => {
+    const again = () => setCoursesTick((n) => n + 1);
+    window.addEventListener("lms:courses", again);
+    return () => window.removeEventListener("lms:courses", again);
+  }, []);
+
   useEffect(() => {
     if (!session || !me || me.must_change_password) return;
     api<Course[]>("/courses", session)
       .then(setCourses)
       .catch(() => setCourses([]));
-  }, [session?.token, me?.must_change_password, lastCourse]);
+  }, [session?.token, me?.must_change_password, lastCourse, coursesTick]);
 
   const ltiCode = hash.match(/^#\/lti\/([\w-]+)$/);
   if (ltiCode)
@@ -164,6 +174,8 @@ export function App() {
   const takeQuiz = hash.match(/^#\/course\/(\d+)\/quiz\/(\d+)$/);
   const handIn = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)$/);
   const reviewWork = hash.match(/^#\/course\/(\d+)\/assignment\/(\d+)\/review$/);
+  const joinLink = hash.match(/^#\/join\/([0-9A-Za-z-]+)$/);
+  const people = hash.match(/^#\/course\/(\d+)\/people$/);
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
   const contentEditor = hash.match(/^#\/course\/(\d+)\/content$/);
   const analytics = hash.match(/^#\/course\/(\d+)\/analytics$/);
@@ -260,6 +272,10 @@ export function App() {
             <WorkPage key={handIn[2]} session={session} courseId={Number(handIn[1])} assignmentId={Number(handIn[2])} />
           ) : reviewWork && session.role === "instructor" ? (
             <WorkReviewPage key={reviewWork[2]} session={session} courseId={Number(reviewWork[1])} assignmentId={Number(reviewWork[2])} />
+          ) : joinLink ? (
+            <JoinPage key={joinLink[1]} session={session} code={joinLink[1]} />
+          ) : people && session.role !== "admin" ? (
+            <PeoplePage key={people[1]} session={session} courseId={Number(people[1])} />
           ) : hash === "#/todo" && session.role === "student" ? (
             <ToDoPage session={session} />
           ) : hash === "#/calendar" && session.role !== "admin" ? (
@@ -312,6 +328,7 @@ export function App() {
               session={session}
               courseId={Number(course[1])}
               title={courses.find((c) => c.id === Number(course[1]))?.title}
+              details={courses.find((c) => c.id === Number(course[1]))}
             />
           ) : hash === "#/dashboard" ? (
             <RoleDashboard session={session} me={me} courses={courses} />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { ApiError, Problem, Session, api } from "../api";
+import { ApiError, Course, Problem, Session, api } from "../api";
 import { Dashboard } from "../types";
 import { Announcements } from "./Announcements";
 import { StudentAssignments } from "./AssignmentsPage";
@@ -92,7 +92,17 @@ function groupByConcept(problems: Problem[]): [string, Problem[]][] {
   return [...groups];
 }
 
-export function CoursePage({ session, courseId, title }: { session: Session; courseId: number; title?: string }) {
+export function CoursePage({
+  session,
+  courseId,
+  title,
+  details,
+}: {
+  session: Session;
+  courseId: number;
+  title?: string;
+  details?: Course;
+}) {
   const [problems, setProblems] = useState<Problem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -132,8 +142,12 @@ export function CoursePage({ session, courseId, title }: { session: Session; cou
     <>
       <div className="page-head">
         <div>
-          <p className="eyebrow">{student ? "Course" : "Course problems"}</p>
-          <h1>{title ?? "Course"}</h1>
+          <p className="eyebrow">
+            {[details?.section, details?.subject].filter(Boolean).join(" · ") || (student ? "Course" : "Course problems")}
+          </p>
+          <h1 style={details?.color ? { borderLeft: `6px solid ${details.color}`, paddingLeft: "0.6rem" } : undefined}>
+            {title ?? "Course"}
+          </h1>
         </div>
         {session.role === "instructor" && (
           <a className="button primary" href={`#/course/${courseId}/problem/new`}>

@@ -5,6 +5,9 @@ import { Concept } from "./ConceptAdder";
 
 const pretty = (name: string) => name.replace(/_/g, " ");
 
+type JoinCode = { code: string; enabled: boolean; link: string };
+export const COLORS = ["#1a73e8", "#188038", "#e8710a", "#a142f4", "#d93025", "#12b5cb", "#5f6368"];
+
 /** F-02: the teacher renames or archives the course and renames or deletes its concepts. Nothing here loses history. */
 export function CourseSettings({ session, courseId }: { session: Session; courseId: number }) {
   const [course, setCourse] = useState<Course | null>(null);
@@ -14,6 +17,11 @@ export function CourseSettings({ session, courseId }: { session: Session; course
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [join, setJoin] = useState<JoinCode | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [section, setSection] = useState("");
+  const [subject, setSubject] = useState("");
+  const [color, setColor] = useState("");
 
   const load = () =>
     Promise.all([api<Course[]>("/courses", session), api<Concept[]>(`/courses/${courseId}/concepts`, session)])
@@ -21,12 +29,18 @@ export function CourseSettings({ session, courseId }: { session: Session; course
         const found = all.find((c) => c.id === courseId) ?? null;
         setCourse(found);
         setTitle(found?.title ?? "");
+        setSection(found?.section ?? "");
+        setSubject(found?.subject ?? "");
+        setColor(found?.color ?? "");
         setConcepts(list);
       })
       .catch((e: Error) => setError(e.message));
 
   useEffect(() => {
     load();
+    api<JoinCode>(`/courses/${courseId}/join-code`, session)
+      .then(setJoin)
+      .catch(() => setJoin(null));
   }, [courseId]);
 
   async function run(call: () => Promise<unknown>) {
@@ -35,6 +49,7 @@ export function CourseSettings({ session, courseId }: { session: Session; course
       await call();
       setRenaming(null);
       await load();
+      window.dispatchEvent(new Event("lms:courses"));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "The change could not be saved.");
     }
@@ -44,6 +59,31 @@ export function CourseSettings({ session, courseId }: { session: Session; course
     event.preventDefault();
     run(() => api(`/courses/${courseId}`, session, { method: "PATCH", body: { title } }));
   };
+
+  const saveDetails = (event: FormEvent) => {
+    event.preventDefault();
+    run(() =>
+      api(`/courses/${courseId}`, session, {
+        method: "PATCH",
+        body: { section: section.trim() || null, subject: subject.trim() || null, color: color || null },
+      }),
+    );
+  };
+
+  const link = join ? `${window.location.origin}/${join.link}` : "";
+  const copy = async (what: string) => {
+    try {
+      await navigator.clipboard.writeText(what);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Could not copy; select the text and copy it.");
+    }
+  };
+  const changeCode = (call: () => Promise<JoinCode>) =>
+    call()
+      .then(setJoin)
+      .catch((e) => setError(e instanceof ApiError ? e.message : "The class code could not be changed."));
 
   if (!course) return null;
   return (
@@ -66,6 +106,56 @@ export function CourseSettings({ session, courseId }: { session: Session; course
               <input value={title} maxLength={200} required onChange={(e) => setTitle(e.target.value)} />
             </label>
             <button type="submit">Rename course</button>
+          </form>
+          {join && (
+            <div>
+              <h3>Class code</h3>
+              <p>
+                Students join with this code. <strong className="join-code">{join.code}</strong>{" "}
+                <button onClick={() => copy(join.code)}>Copy code</button>{" "}
+                <button onClick={() => copy(link)}>Copy invite link</button> {copied && <small role="status">Copied</small>}
+              </p>
+              <p>
+                {join.enabled ? "New students can join." : "The class is closed: nobody new can join."}{" "}
+                <button
+                  onClick={() =>
+                    changeCode(() => api<JoinCode>(`/courses/${courseId}/join-code`, session, { method: "PUT", body: { enabled: !join.enabled } }))
+                  }
+                >
+                  {join.enabled ? "Close the class to new students" : "Open the class again"}
+                </button>{" "}
+                <button
+                  onClick={() => {
+                    if (window.confirm("Make a new code? The old code and invite link stop working. Students already in the class stay."))
+                      changeCode(() => api<JoinCode>(`/courses/${courseId}/join-code/reset`, session, { method: "POST" }));
+                  }}
+                >
+                  Reset the code
+                </button>
+              </p>
+            </div>
+          )}
+          <form className="inline-form" onSubmit={saveDetails}>
+            <label>
+              Section
+              <input value={section} maxLength={100} placeholder="for example Period 3" onChange={(e) => setSection(e.target.value)} />
+            </label>
+            <label>
+              Subject
+              <input value={subject} maxLength={100} placeholder="for example Python" onChange={(e) => setSubject(e.target.value)} />
+            </label>
+            <label>
+              Colour
+              <select value={color} onChange={(e) => setColor(e.target.value)}>
+                <option value="">None</option>
+                {COLORS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit">Save details</button>
           </form>
           <div>
             <h3>Concepts</h3>

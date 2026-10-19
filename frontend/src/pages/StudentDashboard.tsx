@@ -91,7 +91,7 @@ export function StudentDashboard({
           <h2>Your courses ({stats.courses.length})</h2>
           {stats.courses.length === 0 ? (
             <p className="empty">
-              You are not enrolled in a course yet. <a href="#/courses">Browse courses</a>.
+              You have not joined a class yet. <a href="#/courses">Join one with a class code</a>.
             </p>
           ) : (
             <ul className="course-cards">

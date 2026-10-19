@@ -7,6 +7,7 @@ export function CoursesPage({ session }: { session: Session }) {
   const [error, setError] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [filter, setFilter] = useState("");
+  const [code, setCode] = useState("");
 
   const load = () =>
     api<Course[]>("/courses", session)
@@ -28,12 +29,14 @@ export function CoursesPage({ session }: { session: Session }) {
     }
   }
 
-  async function enroll(id: number) {
+  async function join(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
     try {
-      await api(`/courses/${id}/enroll`, session, { method: "POST" });
-      await load();
+      const course = await api<Course>("/courses/join", session, { body: { code } });
+      window.location.hash = `#/course/${course.id}`;
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not enrol.");
+      setError(e instanceof ApiError ? e.message : "Could not join the class.");
     }
   }
 
@@ -52,6 +55,17 @@ export function CoursesPage({ session }: { session: Session }) {
         </div>
       </div>
       {error && <p role="alert" className="error">{error}</p>}
+      {session.role === "student" && (
+        <form className="inline-form" onSubmit={join}>
+          <label>
+            Class code
+            <input value={code} maxLength={40} required autoComplete="off" onChange={(e) => setCode(e.target.value)} />
+          </label>
+          <button className="primary" type="submit">
+            Join class
+          </button>
+        </form>
+      )}
       {session.role === "instructor" && (
         <form className="inline-form" onSubmit={create}>
           <label>
@@ -65,7 +79,7 @@ export function CoursesPage({ session }: { session: Session }) {
       )}
       {courses && courses.length === 0 && (
         <p className="empty">
-          {session.role === "instructor" ? "No courses yet. Create the first one above." : "No courses yet. An instructor needs to create one."}
+          {session.role === "instructor" ? "No courses yet. Create the first one above." : "You have not joined a class yet. Ask your instructor for the class code and enter it above."}
         </p>
       )}
       {courses && courses.length > 6 && (
@@ -77,20 +91,20 @@ export function CoursesPage({ session }: { session: Session }) {
       {courses && courses.length > 0 && shown.length === 0 && <p className="empty">No course title matches.</p>}
       <ul className="rows">
         {shown.map((c) => (
-          <li key={c.id}>
+          <li key={c.id} className="course-row" style={c.color ? { borderLeft: `6px solid ${c.color}` } : undefined}>
             <span className="grow">
               <strong>{c.title}</strong> {c.archived && <span className="flag">archived</span>}
+              {(c.section || c.subject) && (
+                <>
+                  <br />
+                  <small>{[c.section, c.subject].filter(Boolean).join(" · ")}</small>
+                </>
+              )}
             </span>
             {session.role === "student" && c.enrolled && <span className="state state-solved">Enrolled</span>}
-            {session.role === "student" && !c.enrolled ? (
-              <button className="primary" onClick={() => enroll(c.id)}>
-                Enrol
-              </button>
-            ) : (
-              <a className="button" href={`#/course/${c.id}`}>
-                Open
-              </a>
-            )}
+            <a className="button" href={`#/course/${c.id}`}>
+              Open
+            </a>
           </li>
         ))}
       </ul>
