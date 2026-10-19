@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, Problem, Session, api } from "../api";
+import { QuizSummary } from "./quizTypes";
 
 export type Status = "complete" | "in_progress" | "late" | "missing" | "not_started";
 export type Assignment = {
@@ -9,6 +10,7 @@ export type Assignment = {
   due_at: string;
   possible: number;
   problems: { problem_id: number; title: string; points: number }[];
+  quizzes: { quiz_id: number; title: string; points: number }[];
   mine: { score: number; with_late: number; possible: number; status: Status } | null;
 };
 
@@ -52,8 +54,14 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
               <strong>{a.title}</strong>
               <br />
               <small>
-                Due {when(a.due_at)} · {a.problems.map((p) => p.title).join(", ")}
+                Due {when(a.due_at)} · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`)].join(", ")}
               </small>
+              {a.quizzes.map((q) => (
+                <small key={q.quiz_id}>
+                  {" "}
+                  <a href={`#/course/${courseId}/quiz/${q.quiz_id}`}>Take {q.title}</a>
+                </small>
+              ))}
             </span>
             {a.mine && (
               <span className={`status status-${a.mine.status}`}>
@@ -69,13 +77,14 @@ export function StudentAssignments({ session, courseId }: { session: Session; co
   );
 }
 
-type Draft = { id: number | null; title: string; due: string; picked: Record<number, number> };
-const EMPTY: Draft = { id: null, title: "", due: "", picked: {} };
+type Draft = { id: number | null; title: string; due: string; picked: Record<number, number>; quizzes: Record<number, number> };
+const EMPTY: Draft = { id: null, title: "", due: "", picked: {}, quizzes: {} };
 
 /** F-04: the instructor creates, edits and deletes the course's assignments. */
 export function AssignmentsPage({ session, courseId }: { session: Session; courseId: number }) {
   const [items, setItems] = useState<Assignment[] | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,6 +99,9 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
     api<{ problems: Problem[] }>(`/problems?course_id=${courseId}`, session)
       .then((r) => setProblems(r.problems.filter((p) => p.kind === "code")))
       .catch((e: Error) => setError(e.message));
+    api<QuizSummary[]>(`/courses/${courseId}/quizzes`, session)
+      .then(setQuizzes)
+      .catch((e: Error) => setError(e.message));
   }, [courseId]);
 
   function edit(a: Assignment) {
@@ -98,6 +110,7 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       title: a.title,
       due: localInput(a.due_at),
       picked: Object.fromEntries(a.problems.map((p) => [p.problem_id, p.points])),
+      quizzes: Object.fromEntries(a.quizzes.map((q) => [q.quiz_id, q.points])),
     });
     window.scrollTo({ top: 0 });
   }
@@ -110,6 +123,7 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
       title: draft.title,
       due_at: new Date(draft.due).toISOString(),
       problems: Object.entries(draft.picked).map(([id, p]) => ({ problem_id: Number(id), points: p })),
+      quizzes: Object.entries(draft.quizzes).map(([id, p]) => ({ quiz_id: Number(id), points: p })),
     };
     try {
       const path = `/courses/${courseId}/assignments${draft.id ? `/${draft.id}` : ""}`;
@@ -182,10 +196,47 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               )}
             </div>
           ))}
+          <p>Quizzes and points</p>
+          {quizzes.length === 0 && (
+            <p className="empty">
+              This course has no quizzes yet. <a href={`#/course/${courseId}/quizzes`}>Create one</a>.
+            </p>
+          )}
+          {quizzes.map((q) => (
+            <div key={q.id} className="concept-pick">
+              <label className="inline">
+                <input
+                  type="checkbox"
+                  checked={q.id in draft.quizzes}
+                  onChange={(e) => {
+                    const next = { ...draft.quizzes };
+                    if (e.target.checked) next[q.id] = 1;
+                    else delete next[q.id];
+                    setDraft({ ...draft, quizzes: next });
+                  }}
+                />
+                {q.title}
+                {!q.published && " (draft: students cannot take it yet)"}
+              </label>
+              {q.id in draft.quizzes && (
+                <label className="inline">
+                  Points
+                  <input
+                    type="number"
+                    min={0.5}
+                    max={100}
+                    step={0.5}
+                    value={draft.quizzes[q.id]}
+                    onChange={(e) => setDraft({ ...draft, quizzes: { ...draft.quizzes, [q.id]: Number(e.target.value) } })}
+                  />
+                </label>
+              )}
+            </div>
+          ))}
           {draft.id && <small>Changing the problems or the due date changes every student's score straight away.</small>}
         </fieldset>
         <p className="actions">
-          <button className="primary" type="submit" disabled={busy || Object.keys(draft.picked).length === 0}>
+          <button className="primary" type="submit" disabled={busy || Object.keys(draft.picked).length + Object.keys(draft.quizzes).length === 0}>
             {draft.id ? "Save changes" : "Create assignment"}
           </button>
           {draft.id && (
@@ -205,7 +256,7 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
               <strong>{a.title}</strong>
               <br />
               <small>
-                Due {when(a.due_at)} · {points(a.possible)} points · {a.problems.map((p) => p.title).join(", ")}
+                Due {when(a.due_at)} · {points(a.possible)} points · {[...a.problems.map((p) => p.title), ...a.quizzes.map((q) => `Quiz: ${q.title}`)].join(", ")}
               </small>
             </span>
             <button onClick={() => edit(a)}>Edit</button>

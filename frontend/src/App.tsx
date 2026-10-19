@@ -4,6 +4,8 @@ import { ApiError, Course, Session, api, loadSession, saveSession } from "./api"
 import { AccountPage, Me } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
+import { QuizPage } from "./pages/QuizPage";
+import { QuizzesPage } from "./pages/QuizzesPage";
 import { ChatPanel } from "./pages/ChatPanel";
 import { CoursePage } from "./pages/CoursePage";
 import { CoursesPage } from "./pages/CoursesPage";
@@ -152,6 +154,8 @@ export function App() {
   const editProblem = hash.match(/^#\/course\/(\d+)\/problem\/(\d+)\/edit$/);
   const notes = hash.match(/^#\/course\/(\d+)\/notes$/);
   const assignments = hash.match(/^#\/course\/(\d+)\/assignments$/);
+  const quizzes = hash.match(/^#\/course\/(\d+)\/quizzes$/);
+  const takeQuiz = hash.match(/^#\/course\/(\d+)\/quiz\/(\d+)$/);
   const gradebook = hash.match(/^#\/course\/(\d+)\/gradebook$/);
   const contentEditor = hash.match(/^#\/course\/(\d+)\/content$/);
   const analytics = hash.match(/^#\/course\/(\d+)\/analytics$/);
@@ -243,6 +247,10 @@ export function App() {
             <NotesPage session={session} courseId={Number(notes[1])} />
           ) : assignments && session.role === "instructor" ? (
             <AssignmentsPage session={session} courseId={Number(assignments[1])} />
+          ) : quizzes && session.role === "instructor" ? (
+            <QuizzesPage session={session} courseId={Number(quizzes[1])} />
+          ) : takeQuiz && session.role === "student" ? (
+            <QuizPage key={takeQuiz[2]} session={session} courseId={Number(takeQuiz[1])} quizId={Number(takeQuiz[2])} />
           ) : gradebook && session.role !== "student" ? (
             <GradebookPage session={session} courseId={Number(gradebook[1])} />
           ) : contentEditor && session.role === "instructor" ? (
