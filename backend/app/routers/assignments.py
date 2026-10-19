@@ -35,9 +35,15 @@ def _assignments(conn: Connection, course_id: int, assignment_id: int | None = N
     which = {"c": course_id, "a": assignment_id}
     where = "a.course_id = :c AND (CAST(:a AS integer) IS NULL OR a.id = :a)"
     out = {
-        r.id: AssignmentOut(id=r.id, course_id=course_id, title=r.title, due_at=r.due_at, possible=0, problems=[])
+        r.id: AssignmentOut(
+            id=r.id, course_id=course_id, title=r.title, due_at=r.due_at, possible=0, problems=[], module_id=r.module_id
+        )
         for r in conn.execute(
-            text(f"SELECT a.id, a.title, a.due_at FROM assignments a WHERE {where} ORDER BY a.due_at, a.id"), which
+            text(
+                "SELECT a.id, a.title, a.due_at, a.module_id FROM assignments a"
+                f" WHERE {where} ORDER BY a.due_at, a.id"
+            ),
+            which,
         )
     }
     for r in conn.execute(
@@ -74,7 +80,41 @@ def _assignments(conn: Connection, course_id: int, assignment_id: int | None = N
             allow_text=r.allow_text,
         )
         out[r.id].possible += r.points
+    for r in conn.execute(
+        text(
+            "SELECT g.assignment_id, g.user_id FROM assignment_students g JOIN assignments a ON a.id = g.assignment_id"
+            f" WHERE {where} ORDER BY g.user_id"
+        ),
+        which,
+    ):
+        out[r.assignment_id].students = [*(out[r.assignment_id].students or []), r.user_id]
     return list(out.values())
+
+
+def _save_placement(conn: Connection, course_id: int, assignment_id: int, body: AssignmentIn) -> None:
+    """Files the assignment under a topic of this course and records which students it is given to."""
+    if body.module_id is not None and conn.execute(
+        text("SELECT 1 FROM modules WHERE id = :m AND course_id = :c"), {"m": body.module_id, "c": course_id}
+    ).first() is None:
+        raise HTTPException(422, "that topic is not part of this course")
+    wanted = sorted(set(body.students or []))
+    if wanted:
+        found = set(conn.execute(
+            text(
+                "SELECT e.user_id FROM enrollments e JOIN users u ON u.id = e.user_id"
+                " WHERE e.course_id = :c AND u.role = 'student' AND e.user_id = ANY(:ids)"
+            ),
+            {"c": course_id, "ids": wanted},
+        ).scalars())
+        if found != set(wanted):
+            raise HTTPException(422, "every chosen student must be in this course")
+    conn.execute(text("UPDATE assignments SET module_id = :m WHERE id = :a"), {"m": body.module_id, "a": assignment_id})
+    conn.execute(text("DELETE FROM assignment_students WHERE assignment_id = :a"), {"a": assignment_id})
+    for user_id in wanted:
+        conn.execute(
+            text("INSERT INTO assignment_students (assignment_id, user_id) VALUES (:a, :u)"),
+            {"a": assignment_id, "u": user_id},
+        )
 
 
 def _save_problems(conn: Connection, course_id: int, assignment_id: int, body: AssignmentIn) -> None:
@@ -152,6 +192,10 @@ def list_assignments(course_id: int, user: Member, conn: Conn):
     _check(conn, user, course_id)
     items = _assignments(conn, course_id)
     if user.role == "student":
+        # an assignment given to chosen students is invisible to the others, and nobody learns who was chosen
+        items = [i for i in items if i.students is None or user.id in i.students]
+        for item in items:
+            item.students = None
         mine = {s.assignment_id: s for s in grading_book.scores(conn, course_id, only_student=user.id)}
         for item in items:
             s = mine.get(item.id)
@@ -172,6 +216,7 @@ def create_assignment(course_id: int, body: AssignmentIn, user: Instructor, conn
     _save_problems(conn, course_id, assignment_id, body)
     _save_quizzes(conn, course_id, assignment_id, body)
     _save_work(conn, assignment_id, body)
+    _save_placement(conn, course_id, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
 
@@ -187,6 +232,7 @@ def update_assignment(course_id: int, assignment_id: int, body: AssignmentIn, us
     _save_problems(conn, course_id, assignment_id, body)
     _save_quizzes(conn, course_id, assignment_id, body)
     _save_work(conn, assignment_id, body)
+    _save_placement(conn, course_id, assignment_id, body)
     return _assignments(conn, course_id, assignment_id)[0]
 
 
@@ -215,8 +261,10 @@ def gradebook(conn: Connection, course_id: int) -> Gradebook:
         row.total = round(row.total + s.score, 4)
         row.total_with_late = round(row.total_with_late + s.with_late, 4)
     order = {a.id: n for n, a in enumerate(items)}  # the columns' order (by due date), not the id order of the query
+    possible = {a.id: a.possible for a in items}
     for row in rows.values():
         row.cells.sort(key=lambda c: order[c.assignment_id])
+        row.possible = sum(possible[c.assignment_id] for c in row.cells)
     return Gradebook(
         assignments=[GradebookAssignment(id=a.id, title=a.title, due_at=a.due_at, possible=a.possible) for a in items],
         students=list(rows.values()),

@@ -13,8 +13,14 @@ Member = Annotated[CurrentUser, Depends(current_user)]
 LIST_LIMIT = 40
 
 
+def _my_courses(conn, user: CurrentUser) -> list[int]:
+    table = "enrollments" if user.role == "student" else "course_teachers"
+    return list(conn.execute(text(f"SELECT course_id FROM {table} WHERE user_id = :u"), {"u": user.id}).scalars())
+
+
 @router.get("", response_model=NotificationList)
 def list_notifications(user: Member, conn: Conn):
+    notifications.publish_due_announcements(conn, _my_courses(conn, user))
     if user.role == "student":
         notifications.ensure_due_soon(conn, user.id)
     unread = conn.execute(

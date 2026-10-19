@@ -20,6 +20,8 @@ JOIN assignments a ON a.course_id = c.id
 LEFT JOIN assignment_work aw ON aw.assignment_id = a.id
 LEFT JOIN work_submissions ws ON ws.assignment_id = a.id AND ws.user_id = e.user_id
 WHERE e.user_id = :u AND (CAST(:course AS integer) IS NULL OR c.id = :course)
+  AND (NOT EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = a.id)
+       OR EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = a.id AND g.user_id = e.user_id))
 ORDER BY a.due_at, a.id
 """
 

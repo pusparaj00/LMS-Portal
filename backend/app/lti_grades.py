@@ -225,7 +225,9 @@ def send(conn: Connection, course_id: int, book) -> SendResult:
         for row in book.students:
             if row.student_id not in subs:
                 continue
-            cell = next(c for c in row.cells if c.assignment_id == assignment.id)
+            cell = next((c for c in row.cells if c.assignment_id == assignment.id), None)
+            if cell is None:  # the assignment was not given to this student
+                continue
             score = {"userId": subs[row.student_id], "scoreGiven": cell.score, "scoreMaximum": assignment.possible,
                      "activityProgress": PROGRESS[cell.status], "gradingProgress": "FullyGraded", "timestamp": stamp}
             try:

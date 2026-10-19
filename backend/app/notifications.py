@@ -22,16 +22,28 @@ def notify(
                                  "l": link})
 
 
-def notify_students(conn: Connection, course_id: int, kind: str, title: str, link: str) -> None:
-    """One notification for every student enrolled in the course."""
-    conn.execute(
+def publish_due_announcements(conn: Connection, course_ids: list[int]) -> None:
+    """Notifies each course's students, once, of every announcement that has become visible. Whoever asks first does
+    it: the update hands each announcement to exactly one caller, so a scheduled post is announced when its time has
+    come the next time anyone in the course looks, and never twice."""
+    due = conn.execute(
         text(
-            "INSERT INTO notifications (user_id, kind, course_id, title, link)"
-            " SELECT e.user_id, :k, :c, :t, :l FROM enrollments e JOIN users u ON u.id = e.user_id"
-            " WHERE e.course_id = :c AND u.role = 'student'"
+            "UPDATE announcements a SET notified_at = now() FROM courses c WHERE c.id = a.course_id"
+            " AND a.course_id = ANY(:ids) AND a.notified_at IS NULL AND NOT a.is_draft"
+            " AND COALESCE(a.publish_at, a.created_at) <= now() RETURNING a.course_id, a.title, c.title AS course"
         ),
-        {"k": kind, "c": course_id, "t": title[:300], "l": link},
-    )
+        {"ids": course_ids},
+    ).all()
+    for row in due:
+        conn.execute(
+            text(
+                "INSERT INTO notifications (user_id, kind, course_id, title, link)"
+                " SELECT e.user_id, 'announcement', :c, :t, :l FROM enrollments e JOIN users u ON u.id = e.user_id"
+                " WHERE e.course_id = :c AND u.role = 'student'"
+            ),
+            {"c": row.course_id, "t": f"New announcement in {row.course}: {row.title}"[:300],
+             "l": f"#/course/{row.course_id}"},
+        )
 
 
 def work_link(course_id: int, assignment_id: int, teacher: bool) -> str:

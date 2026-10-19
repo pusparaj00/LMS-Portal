@@ -186,7 +186,10 @@ def instructor_stats(user: Instructor, conn: Conn):
             text(
                 "SELECT a.id, a.course_id, c.title AS course_title, a.title, a.due_at,"
                 " (SELECT count(*) FROM enrollments e JOIN users u ON u.id = e.user_id"
-                "  WHERE e.course_id = a.course_id AND u.role = 'student') AS students,"
+                "  WHERE e.course_id = a.course_id AND u.role = 'student'"
+                "  AND (NOT EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = a.id)"
+                "   OR EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = a.id"
+                "    AND g.user_id = e.user_id))) AS students,"
                 " (SELECT count(*) FROM assignment_scores(a.course_id, NULL) s"
                 "  WHERE s.assignment_id = a.id AND s.score >= s.possible) AS done"
                 " FROM assignments a JOIN courses c ON c.id = a.course_id"

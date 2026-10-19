@@ -311,6 +311,10 @@ class AssignmentIn(BaseModel):
     problems: list[AssignmentProblemIn] = Field(default_factory=list, max_length=50)
     quizzes: list[AssignmentQuizIn] = Field(default_factory=list, max_length=50)
     work: WorkIn | None = None
+    module_id: int | None = Field(default=None, description="the topic (course module) it is filed under")
+    students: list[int] | None = Field(
+        default=None, max_length=2000, description="the students it is given to; null or empty means the whole class"
+    )
 
     @model_validator(mode="after")
     def _distinct(self):
@@ -355,6 +359,8 @@ class AssignmentOut(BaseModel):
     problems: list[AssignmentProblemOut]
     quizzes: list[AssignmentQuizOut] = Field(default_factory=list)
     work: WorkIn | None = None
+    module_id: int | None = None
+    students: list[int] | None = Field(default=None, description="staff only: null means the whole class")
     mine: MyScore | None = Field(default=None, description="the signed-in student's own score; absent for staff")
 
 
@@ -379,6 +385,7 @@ class GradebookRow(BaseModel):
     cells: list[GradebookCell]
     total: float
     total_with_late: float
+    possible: float = Field(default=0, description="the points of the assignments given to this student")
 
 
 class Gradebook(BaseModel):
@@ -404,13 +411,22 @@ class GradeSendResult(BaseModel):
 
 
 class AnnouncementIn(BaseModel):
+    """`mode` is publish (now), draft (teachers only) or schedule (visible at `publish_at`, which must be ahead)."""
+
     title: Text = Field(min_length=1, max_length=200)
     body: Text = Field(min_length=1, max_length=5000, description="plain text; line breaks are kept")
+    mode: Literal["publish", "draft", "schedule"] = "publish"
+    publish_at: Annotated[datetime, AfterValidator(_aware)] | None = None
 
     @model_validator(mode="after")
     def _not_blank(self):
         if not self.title.strip() or not self.body.strip():
             raise ValueError("an announcement needs a title and some text")
+        if self.mode == "schedule":
+            if self.publish_at is None or self.publish_at <= datetime.now(self.publish_at.tzinfo):
+                raise ValueError("a scheduled announcement needs a publish time in the future")
+        elif self.publish_at is not None:
+            raise ValueError("send a publish time only when scheduling")
         return self
 
 
@@ -421,6 +437,8 @@ class Announcement(BaseModel):
     body: str
     created_at: datetime
     edited_at: datetime | None
+    state: Literal["published", "draft", "scheduled"] = "published"
+    publish_at: datetime | None = None
 
 
 class ConceptCreate(BaseModel):

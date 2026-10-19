@@ -32,6 +32,7 @@ _DELETIONS = [
     " (SELECT id FROM work_submissions WHERE user_id = :u)",
     "DELETE FROM work_submissions WHERE user_id = :u",
     "DELETE FROM notifications WHERE user_id = :u",
+    "DELETE FROM assignment_students WHERE user_id = :u",
     "DELETE FROM ratings WHERE user_id = :u",
     "DELETE FROM enrollments WHERE user_id = :u",
     "DELETE FROM lti_users WHERE user_id = :u",

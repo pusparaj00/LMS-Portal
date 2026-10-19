@@ -163,9 +163,18 @@ def _notify_teachers(conn: Connection, course_id: int, assignment_id: int, kind:
         )
 
 
+_GIVEN = (
+    "(NOT EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = :a)"
+    " OR EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = :a AND g.user_id = :u))"
+)
+
+
 def _student_work(conn: Connection, course_id: int, assignment_id: int, user: CurrentUser):
     _check_course(conn, user, course_id)
-    return _work(conn, course_id, assignment_id)
+    work = _work(conn, course_id, assignment_id)
+    if not conn.execute(text(f"SELECT {_GIVEN}"), {"a": assignment_id, "u": user.id}).scalar_one():
+        raise HTTPException(404, "this assignment asks for no handed-in work")
+    return work
 
 
 @router.get("", response_model=MyWork)
@@ -311,7 +320,9 @@ def list_submissions(course_id: int, assignment_id: int, user: Teacher, conn: Co
             "SELECT u.id, u.email, u.display_name, ws.status, ws.turned_in_at, ws.score, ws.graded_at, ws.returned_at"
             " FROM enrollments e JOIN users u ON u.id = e.user_id AND u.role = 'student'"
             " LEFT JOIN work_submissions ws ON ws.assignment_id = :a AND ws.user_id = u.id"
-            " WHERE e.course_id = :c ORDER BY COALESCE(u.display_name, u.email)"
+            " WHERE e.course_id = :c AND (NOT EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = :a)"
+            " OR EXISTS (SELECT 1 FROM assignment_students g WHERE g.assignment_id = :a AND g.user_id = u.id))"
+            " ORDER BY COALESCE(u.display_name, u.email)"
         ),
         {"a": assignment_id, "c": course_id},
     ).all()
