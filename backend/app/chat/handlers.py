@@ -257,12 +257,34 @@ def _open_problem_reference(turn: Turn) -> str | None:
     return None if row is None else row.reference_solution or ""
 
 
-def _open_check(answer: str, reference: str | None) -> bool:
-    """With a problem open the strict leak check applies; otherwise short code examples are allowed."""
+def _copies_a_course_solution(turn: Turn, answer: str) -> bool:
+    """Whether code in the answer matches the reference solution of any problem in the student's live courses.
+
+    Without an open problem the answer is not compared with one solution, so closing the problem page must not be a way
+    to get a graded problem solved."""
+    blocks = re.findall(r"```[^\n]*\n(.*?)```", answer, re.S)
+    code = "\n".join([*blocks, *leak.code_like_text(re.sub(r"```.*?```", " ", answer, flags=re.S))[0]])
+    if len(leak.normalise_tokens(code)) < leak.MIN_TOKENS_TO_COMPARE:
+        return False
+    references = turn.conn.execute(
+        text(
+            "SELECT p.reference_solution FROM problems p JOIN enrollments e ON e.course_id = p.course_id"
+            " JOIN courses c ON c.id = p.course_id WHERE e.user_id = :u AND c.archived_at IS NULL"
+            " AND p.archived_at IS NULL AND p.kind = 'code' AND COALESCE(p.reference_solution, '') <> ''"
+        ),
+        {"u": turn.user_id},
+    ).scalars()
+    return any(leak.containment(code, ref) >= leak.SIMILARITY_THRESHOLD for ref in references)
+
+
+def _open_check(turn: Turn, answer: str, reference: str | None) -> bool:
+    """With a problem open the strict leak check applies; otherwise short code examples are allowed, unless they copy
+    a solution."""
     if reference is not None:
         return leak.check(answer, reference).passed
     blocks = re.findall(r"```.*?```", answer, re.S)
-    return all(block.count("\n") <= MAX_OPEN_CODE_LINES + 1 for block in blocks)
+    short = all(block.count("\n") <= MAX_OPEN_CODE_LINES + 1 for block in blocks)
+    return short and not _copies_a_course_solution(turn, answer)
 
 
 def open_answer(turn: Turn) -> Reply:
@@ -280,7 +302,7 @@ def open_answer(turn: Turn) -> Reply:
         return Reply(OPEN_UNAVAILABLE, ["open_answer", "model_unavailable"])
     if not answer:
         return Reply(OPEN_UNAVAILABLE, ["open_answer", "model_unavailable"])
-    if not _open_check(answer, reference):
+    if not _open_check(turn, answer, reference):
         return Reply(OPEN_WITHHELD, ["open_answer", "solution_withheld"])
     if len(answer) > MAX_OPEN_ANSWER_CHARS:  # cut at a paragraph end so no code block or sentence is left half open
         answer = answer[:MAX_OPEN_ANSWER_CHARS].rsplit("\n\n", 1)[0].rstrip()

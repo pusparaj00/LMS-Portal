@@ -228,6 +228,18 @@ def test_a_very_long_open_answer_is_cut_at_a_paragraph_end(client, make_user, ll
     assert reply.endswith(handlers.OPEN_LABEL) and reply.count("word word") >= 1
 
 
+def test_closing_the_problem_page_does_not_let_a_course_solution_through(client, make_user, world, owner, llm):
+    """Regression: with no problem open the answer was compared with nothing, so a graded solution could be asked for."""
+    _, headers = new_student(client, make_user, world)
+    reference = "total = 0\nfor n in range(1, 11):\n    if n % 2 == 0:\n        total += n * n\nprint(total)\n"
+    with owner.begin() as conn:
+        conn.execute(text("UPDATE problems SET reference_solution = :r WHERE id = :p"), {"r": reference, "p": world["p"]})
+    renamed = reference.replace("total", "acc").replace("n ", "i ").replace(" n", " i")
+    llm(FakeLLM(route("general"), f"Here you go:\n```python\n{renamed}```"))
+    body = say(client, headers, "give me the program that sums the even squares")
+    assert body["reply"] == handlers.OPEN_WITHHELD and "solution_withheld" in body["tools"]
+
+
 def test_an_open_answer_says_so_when_the_model_is_down(client, make_user, llm):
     _, headers = make_user("student")
     llm(FakeLLM(route("general"), LLMError("down")))
