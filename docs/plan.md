@@ -144,6 +144,10 @@ The final-year timeline after 21 Oct is not fixed yet, so these phases use weeks
 
 **Step 47, submissions and grading (F-73, F-74, F-75, F-76, F-77).** Hand-in work for an assignment (file, link or text), turn in and unsubmit, one review page with score, feedback, private comments and Return, and a to-review queue. Gate: files are checked by content and never opened or run, a student sees a score only after the return, an instructor reaches only their own course's work, every grade, return and view is audited, returned scores reach the gradebook by the late rule, erasure removes the work and comments.
 
+**Step 54, the placement test and the learner model (F-20, F-22, F-24 to F-28, TR-M-13 to TR-M-16).** A longer, shuffled, three-band placement test built from the course's own questions, "I don't know" and confidence, estimates for concepts not asked about, and a learner model with uncertainty and evidence counts. Gate: concept coverage, three bands, different order per student, a stronger student above a weaker one, the test runs in a teacher-created course, and the simulation numbers are reported as measured.
+
+**Step 55, the first path and the re-check (F-29, TR-M-17).** Teachers edit prerequisites, the recommendation puts a weak prerequisite first and says why, and a short re-check is offered. Gate: a fixed ledger gives the prerequisite first, the dashboard and the assistant agree, a cycle is refused.
+
 **Step 48, to-do, calendar and notifications (F-78, F-79, F-80).** Pages built from data that already exists, plus an in-app notification list. Gate: each person sees only their own items, no email is sent, unread counts are correct.
 
 **Step 49, class access and people (F-81, F-82, F-83).** Class code, invite link, People page with co-teachers and muting, course section, subject and colour. Gate: no course can be joined without its code, a reset code stops the old one, a student sees no classmate's name.

@@ -1,7 +1,9 @@
 # Cold-start diagnostic: implementation plan
 
-Written 2026-10-19 on branch `step-54-placement-core`. This plan changes requirements F-20 and F-22 and adds F-25 to F-29
-and TR-M-12 to TR-M-16 (section 9). Nothing in it is built yet; the build is steps 54 and 55 (section 7), started on your "go".
+Written 2026-10-19 on branch `step-54-placement-core`. This plan changes requirements F-20, F-22 and F-24 and adds F-25 to F-29
+and TR-M-13 to TR-M-17 (section 9). One correction after reading the mastery code: the concept graph already exists
+(`concepts.parent_ids`, filled for the demo course, and the mastery service already passes sharp drops on to prerequisites),
+so no prerequisite table is added; step 55 only adds teacher editing and the prerequisite-aware recommendation. Nothing in it is built yet; the build is steps 54 and 55 (section 7), started on your "go".
 
 ## 1. The problem and what "solved" means
 
@@ -33,7 +35,7 @@ numeric target; results are reported as measured, against the old test and the b
 | Part (from the cold-start model) | What exists | Gap |
 | --- | --- | --- |
 | 1. Student context | Display name, academic history and interests on the account (step 40); the course the student joined | No structured background or goal; nothing sets the starting difficulty |
-| 2. Curriculum and knowledge map | Concepts per course; each problem tagged to concepts with a weight; difficulty `b` and discrimination `a` per problem with a source flag (prior or estimated, F-23); misconceptions linked to wrong options | **No prerequisite graph** (F-33 is not built) |
+| 2. Curriculum and knowledge map | Concepts per course; each problem tagged to concepts with a weight; difficulty `b` and discrimination `a` per problem with a source flag (prior or estimated, F-23); misconceptions linked to wrong options; **a prerequisite graph in `concepts.parent_ids`** (variables, conditionals, loops, lists, then dictionaries, tuples and comprehensions; functions, then recursion, exceptions and classes) and propagation of sharp drops to prerequisites (F-33) | Teachers cannot edit prerequisites; the recommendation ignores them |
 | 3. Diagnostic engine | Cold-start test in Redis sessions; 2PL maths; ability estimate with a prior; selection by expected information gain over concept entropy; 8 multiple-choice then 2 coding items (`MAX_ITEMS = 10`) | Only 2 of 50 courses can run it, because placement questions exist only in the imported banks; the first 7 questions were identical for a strong and a weak student in a live run (2026-10-19); no "I don't know", no confidence; fixed shape |
 | 4. Learner model | One `p_known` per concept and student, a `mastery_events` ledger with weights, suspected misconceptions | No uncertainty, evidence count or last-assessed shown; concepts not asked about stay at the flat 0.5 and look assessed |
 | 5. Recommendation | "Next problem" picks the weakest concept's easiest unsolved problem (a SQL function); the assistant says the same | Not prerequisite-aware; no re-check |
@@ -84,7 +86,7 @@ Assignment problems are excluded from the pool so the test never gives away grad
 
 - Length: at least 16 questions, at most 20; stop at 16 only if every concept has evidence and the three most uncertain
   concepts are well determined (the existing uncertainty rule, applied after the minimum).
-- Type limits: at most 12 multiple-choice and at most 6 coding tasks, at most 2 hard coding tasks. A course with no
+- Type limits: at most 14 multiple-choice and at most 6 coding tasks, at most 2 hard coding tasks. A course with no
   multiple-choice questions runs on coding tasks alone, with fewer questions (the limit is what the pool supports).
 - **Start** at the difficulty set by the background answer: ability prior mean -0.7 (new), 0 (some), +0.5 (comfortable), standard
   deviation unchanged. Evidence quickly outweighs it.
@@ -133,10 +135,8 @@ Nothing new is stored on the `mastery` table: the extra fields are computed from
 
 ### 5.6 Prerequisites and the first path (step 55)
 
-- A `concept_prerequisites` table (a concept and the concepts it needs), edited by the course's teachers, with a check that the
-  graph has no cycle. For the demo course the starting graph follows the order the bank already uses (variables and input,
-  conditionals, loops, then lists, strings and functions, then dictionaries, tuples and sets, comprehensions, exceptions,
-  recursion and classes); **you confirm it before it is used** (section 10).
+- The existing `concepts.parent_ids` is the graph. Step 55 lets the course's teachers edit it, with a check that it has no cycle.
+  The demo course already has one (see section 2), so the decision in section 10 is only whether you want it changed.
 - **Propagation (F-33):** strong evidence on an advanced concept nudges its prerequisites up a little; weak evidence on a
   prerequisite marks the concepts that need it as "not ready" without lowering their mastery.
 - **Recommendation:** choose the concept to work on as the not-ready-free concept with the lowest mastery or the highest
@@ -147,7 +147,8 @@ Nothing new is stored on the `mastery` table: the extra fields are computed from
 
 ### 5.7 Data and interface changes
 
-- Migration: `enrollments.background` (new, some, comfortable; null until answered). Step 55 adds `concept_prerequisites`.
+- Migration: `enrollments.background` (new, some, comfortable; null until answered) and `mastery_events.evidence_value` (the value an
+  ability-based estimate moves a concept towards, so the row can be replayed).
 - API: `POST /diagnostic/start` takes the background; `POST /diagnostic/answer` takes `dont_know` and an optional `confidence`
   (`guessing`, `fairly`, `sure`); the result carries the per-concept record above and the first recommendation; a re-check mode.
 - Mastery service: the answer endpoint takes confidence and the "don't know" flag; a new endpoint writes the inferred evidence.
@@ -170,7 +171,7 @@ limits, the verifier and explanation rules, the hint ladder and the quiz and ass
 
 ## 7. Build order
 
-**Step 54: the placement test and the learner model** (F-20, F-22, F-25 to F-28, TR-M-12 to TR-M-15)
+**Step 54: the placement test and the learner model** (F-20, F-22, F-24 to F-28, TR-M-13 to TR-M-16)
 
 | Part | Work | Done when |
 | --- | --- | --- |
@@ -186,7 +187,7 @@ Gate: tests pass; a strong student's final ability is above a weak student's in 
 runs in a teacher-created course with only coding problems; the numbers of 54g are reported as measured, including if a target is
 still not met.
 
-**Step 55: prerequisites, the first path and the re-check** (F-29, F-33, TR-M-16): migration, teacher editing of prerequisites,
+**Step 55: prerequisites, the first path and the re-check** (F-29, F-33, TR-M-17): teacher editing of prerequisites,
 propagation, the prerequisite-aware recommendation shared by the dashboard and the assistant, and the re-check mode.
 Gate: the recommendation puts a weak prerequisite before the concept that needs it, in a test with a fixed ledger; the assistant
 and the dashboard return the same recommendation; a cycle is refused.
@@ -208,7 +209,7 @@ or prerequisites. Everything after that follows in order.
 
 ## 9. Requirements to add
 
-PRD (F-20 and F-22 revised, F-25 to F-29 new):
+PRD (F-20, F-22 and F-24 revised, F-25 to F-29 new):
 
 - F-20: a new student gets an adaptive placement test of 16 to 20 questions of three difficulty levels.
 - F-22: the test ends at 20 questions, or from 16 when every concept has evidence and the remaining uncertainty is low.
@@ -219,16 +220,16 @@ PRD (F-20 and F-22 revised, F-25 to F-29 new):
   evidence are estimated from the overall level and marked as estimates.
 - F-29: teachers set concept prerequisites; the first recommendation revises a weak prerequisite first; a short re-check follows learning.
 
-TRD (new): TR-M-12 selection (coverage, information, gain, seeded exposure control, type limits); TR-M-13 the answer rules
-of 5.3 as constants in one place; TR-M-14 inferred evidence and its marking; TR-M-15 the learner-model record and its cut points
-computed from the ledger; TR-M-16 prerequisites without cycles and prerequisite-aware recommendation.
+TRD (TR-M-03 revised, TR-M-13 to TR-M-17 new; TR-M-12 was already taken): TR-M-13 selection (coverage, information, gain, seeded exposure
+control, type limits); TR-M-14 the answer rules of 5.3 as constants in one place; TR-M-15 inferred evidence and its marking; TR-M-16
+the learner-model record and its cut points computed from the ledger; TR-M-17 prerequisite-aware recommendation.
 
 ## 10. Decisions for you
 
 1. Test length: 16 to 20 questions (15 to 20 minutes).
 2. Up to 6 coding tasks inside the test (needed because the bank has one easy multiple-choice question).
 3. The optional "how sure are you?" step.
-4. The starting prerequisite graph for the Python course (section 5.6), which you confirm before it is used.
+4. The Python course's prerequisite graph already exists (section 2); say if you want any link changed.
 5. Whether to show the correct answers after the test (I recommend not, because the questions are reused).
 6. Whether this goes ahead before the review or after it (section 7).
 

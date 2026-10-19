@@ -70,11 +70,16 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-13 | Every problem is tagged with one or more concepts and test cases | P0 |
 | F-14 | A Run button runs the code once on input the user types and shows the output and any error; nothing is stored or graded and no test case is revealed | P1 |
 | **Cold-start diagnostic** |  |  |
-| F-20 | A new student gets an adaptive placement test of 8 to 10 items | P0 |
+| F-20 | A new student gets an adaptive placement test of 16 to 20 questions of three difficulty levels (easy, medium, hard) | P0 |
 | F-21 | Item selection maximizes information about the mastery vector, starting from a population prior | P0 |
-| F-22 | The test ends at a fixed length or when concept uncertainty is low enough | P1 |
+| F-22 | The test ends at 20 questions, or from 16 questions when every concept has evidence and the remaining uncertainty is low | P1 |
 | F-23 | Newly added or generated items get initial difficulty estimates from text and concept tags | P2 |
-| F-24 | The placement test mixes code-tracing multiple-choice items, whose wrong options map to named misconceptions, with 2 short coding tasks | P0 |
+| F-24 | The placement test mixes code-tracing multiple-choice items, whose wrong options map to named misconceptions, with short coding tasks (at most 6, at most 2 of them hard) | P0 |
+| F-25 | Placement is built from the course's own tagged questions, the same questions for every student in a different order for each, so any course with tagged problems can run it | P0 |
+| F-26 | A short background answer (new, some experience, comfortable) sets the starting difficulty only; the answers override it | P1 |
+| F-27 | Every placement question allows "I don't know", and a multiple-choice question an optional confidence (guessing, fairly sure, sure); both change how the answer counts | P1 |
+| F-28 | The learner model shows, for each concept, mastery, how sure the system is, how many questions it rests on, when it was last assessed, and "not assessed yet"; concepts without evidence are estimated from the student's overall level and marked as estimates | P0 |
+| F-29 | Teachers can edit concept prerequisites; the first recommendation revises a weak prerequisite first and says why; a short re-check is offered after learning | P1 |
 | **Mastery model** |  |  |
 | F-30 | One mastery probability per concept per student, in the range 0 to 1 | P0 |
 | F-31 | Updated after every submission, with weight depending on evidence type | P0 |
