@@ -26,6 +26,7 @@ RULES: dict[str, Rule] = {
     "login_email": Rule(10, 60),
     "login_ip": Rule(60, 60),
     "register_ip": Rule(100, 3600),  # a whole lab class often shares one campus address
+    "join": Rule(10, 60),  # class codes must not be guessable by trying them
     "run": Rule(60, 60),
     "run_custom": Rule(60, 60),
     "submit": Rule(30, 60),

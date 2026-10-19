@@ -1,25 +1,43 @@
 import re
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import text
 
+from app import audit, ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
-from app.schemas import ConceptCreate, Course, CourseConcept, CourseCreate, CourseRename
+from app.schemas import (
+    ConceptCreate,
+    Course,
+    CourseConcept,
+    CourseCreate,
+    CourseUpdate,
+    JoinCode,
+    JoinCodeEnabled,
+    JoinIn,
+)
 
 router = APIRouter(prefix="/courses", tags=["courses"])
+Instructor = Annotated[CurrentUser, Depends(require_role("instructor"))]
+
+
+_COURSE = "c.id, c.title, c.instructor_id, c.section, c.subject, c.color, c.archived_at IS NOT NULL AS archived"
+_ENROLLED = "EXISTS (SELECT 1 FROM enrollments e WHERE e.course_id = c.id AND e.user_id = :u)"
 
 
 @router.get("", response_model=list[Course])
 def list_courses(user: Annotated[CurrentUser, Depends(current_user)], conn: Conn):
-    """Archived courses are listed only for their own teacher, who can restore them."""
+    """A student sees the courses they have joined, a teacher the courses they teach (archived ones too, so they can be
+    restored), an admin every live course. Nobody can browse courses they have no part in: joining takes a code."""
+    if user.role == "student":
+        where = f"{_ENROLLED} AND c.archived_at IS NULL"
+    elif user.role == "instructor":
+        where = "EXISTS (SELECT 1 FROM course_teachers t WHERE t.course_id = c.id AND t.user_id = :u)"
+    else:
+        where = "c.archived_at IS NULL"
     rows = conn.execute(
-        text(
-            "SELECT c.id, c.title, c.instructor_id,"
-            " EXISTS (SELECT 1 FROM enrollments e WHERE e.course_id = c.id AND e.user_id = :u) AS enrolled,"
-            " c.archived_at IS NOT NULL AS archived"
-            " FROM courses c WHERE c.archived_at IS NULL OR c.instructor_id = :u ORDER BY c.id"
-        ),
+        text(f"SELECT {_COURSE}, {_ENROLLED} AS enrolled FROM courses c WHERE {where} ORDER BY c.id"),
         {"u": user.id},
     ).mappings()
     return [dict(r) for r in rows]
@@ -34,25 +52,76 @@ def create_course(
     row = conn.execute(
         text(
             "INSERT INTO courses (title, instructor_id) VALUES (:t, :u)"
-            " RETURNING id, title, instructor_id"
+            " RETURNING id, title, instructor_id, section, subject, color, false AS archived"
         ),
         {"t": body.title, "u": user.id},
     ).mappings().one()
     return {**row, "enrolled": False}
 
 
-@router.post("/{course_id}/enroll", status_code=204)
-def enroll(
-    course_id: int, user: Annotated[CurrentUser, Depends(require_role("student"))], conn: Conn
-):
-    if conn.execute(
-        text("SELECT 1 FROM courses WHERE id = :c AND archived_at IS NULL"), {"c": course_id}
-    ).first() is None:
-        raise HTTPException(404, "course not found")
+def _normal_code(raw: str) -> str:
+    return re.sub(r"[^0-9A-Za-z]", "", raw).upper()
+
+
+@router.post("/join", response_model=Course)
+def join_course(body: JoinIn, user: Annotated[CurrentUser, Depends(require_role("student"))], conn: Conn):
+    """Joins the course that has this class code. An unknown, disabled or archived code all get the same answer, and
+    the number of tries is limited, so codes cannot be guessed."""
+    ratelimit.check("join", user.id)
+    row = conn.execute(
+        text(
+            f"SELECT {_COURSE} FROM courses c WHERE c.join_code = :code AND c.join_enabled AND c.archived_at IS NULL"
+        ),
+        {"code": _normal_code(body.code)},
+    ).mappings().first()
+    if row is None:
+        audit.record("course.join_refused", user_id=user.id, status=404)
+        raise HTTPException(404, "that class code does not match a course that is open to new students")
     conn.execute(
         text("INSERT INTO enrollments (user_id, course_id) VALUES (:u, :c) ON CONFLICT DO NOTHING"),
-        {"u": user.id, "c": course_id},
+        {"u": user.id, "c": row["id"]},
     )
+    audit.record("course.joined", user_id=user.id, status=200, detail={"course_id": row["id"]}, conn=conn)
+    return {**row, "enrolled": True}
+
+
+def _code_out(conn, course_id: int) -> JoinCode:
+    row = conn.execute(
+        text("SELECT join_code, join_enabled FROM courses WHERE id = :c"), {"c": course_id}
+    ).first()
+    if row is None:
+        raise HTTPException(404, "course not found")
+    return JoinCode(code=row.join_code, enabled=row.join_enabled, link=f"#/join/{row.join_code}")
+
+
+@router.get("/{course_id}/join-code", response_model=JoinCode)
+def read_join_code(
+    course_id: int, user: Annotated[CurrentUser, Depends(require_role("instructor", "admin"))], conn: Conn
+):
+    _own(conn, user, course_id)
+    return _code_out(conn, course_id)
+
+
+@router.post("/{course_id}/join-code/reset", response_model=JoinCode)
+def reset_join_code(course_id: int, user: Instructor, conn: Conn):
+    """A new code at once; the old one and any link made from it stop working. Students already in stay in."""
+    _own(conn, user, course_id)
+    conn.execute(
+        text("UPDATE courses SET join_code = :code WHERE id = :c"),
+        {"code": secrets.token_hex(5).upper(), "c": course_id},
+    )
+    audit.record("course.join_code_reset", user_id=user.id, status=200, detail={"course_id": course_id}, conn=conn)
+    return _code_out(conn, course_id)
+
+
+@router.put("/{course_id}/join-code", response_model=JoinCode)
+def set_join_code_enabled(course_id: int, body: JoinCodeEnabled, user: Instructor, conn: Conn):
+    """Closing a class to new students without losing the code."""
+    _own(conn, user, course_id)
+    conn.execute(text("UPDATE courses SET join_enabled = :e WHERE id = :c"), {"e": body.enabled, "c": course_id})
+    audit.record("course.join_code_enabled", user_id=user.id, status=200, conn=conn,
+                 detail={"course_id": course_id, "enabled": body.enabled})
+    return _code_out(conn, course_id)
 
 
 @router.get("/{course_id}/concepts", response_model=list[CourseConcept])
@@ -99,43 +168,48 @@ def create_concept(
     return dict(row)
 
 
-Instructor = Annotated[CurrentUser, Depends(require_role("instructor"))]
-
 
 def _own(conn, user: CurrentUser, course_id: int) -> None:
     if not can_access_course(conn, user, course_id):
         raise HTTPException(403, "not your course")
 
 
+def _owner(conn, user: CurrentUser, course_id: int) -> None:
+    """Archiving a course is for the teacher who owns it, not for a co-teacher."""
+    if conn.execute(
+        text("SELECT 1 FROM courses WHERE id = :c AND instructor_id = :u"), {"c": course_id, "u": user.id}
+    ).first() is None:
+        raise HTTPException(403, "only the course's owner can do that")
+
+
 def _course(conn, user: CurrentUser, course_id: int) -> Course:
     row = conn.execute(
-        text(
-            "SELECT id, title, instructor_id, false AS enrolled, archived_at IS NOT NULL AS archived"
-            " FROM courses WHERE id = :c"
-        ),
-        {"c": course_id},
+        text(f"SELECT {_COURSE}, false AS enrolled FROM courses c WHERE c.id = :c"), {"c": course_id}
     ).mappings().one()
     return Course(**row)
 
 
 @router.patch("/{course_id}", response_model=Course)
-def rename_course(course_id: int, body: CourseRename, user: Instructor, conn: Conn):
+def update_course(course_id: int, body: CourseUpdate, user: Instructor, conn: Conn):
+    """Rename the course or set its section, subject and colour (F-83)."""
     _own(conn, user, course_id)
-    conn.execute(text("UPDATE courses SET title = :t WHERE id = :c"), {"t": body.title, "c": course_id})
+    changes = {name: getattr(body, name) for name in body.model_fields_set}
+    sets = ", ".join(f"{name} = :{name}" for name in changes)
+    conn.execute(text(f"UPDATE courses SET {sets} WHERE id = :c"), {**changes, "c": course_id})
     return _course(conn, user, course_id)
 
 
 @router.post("/{course_id}/archive", response_model=Course)
 def archive_course(course_id: int, user: Instructor, conn: Conn):
     """Hidden from the course list and closed to new students; everything in it is kept and can be restored."""
-    _own(conn, user, course_id)
+    _owner(conn, user, course_id)
     conn.execute(text("UPDATE courses SET archived_at = COALESCE(archived_at, now()) WHERE id = :c"), {"c": course_id})
     return _course(conn, user, course_id)
 
 
 @router.post("/{course_id}/restore", response_model=Course)
 def restore_course(course_id: int, user: Instructor, conn: Conn):
-    _own(conn, user, course_id)
+    _owner(conn, user, course_id)
     conn.execute(text("UPDATE courses SET archived_at = NULL WHERE id = :c"), {"c": course_id})
     return _course(conn, user, course_id)
 

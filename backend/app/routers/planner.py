@@ -43,7 +43,8 @@ def calendar(
             "SELECT a.id, a.course_id, c.title AS course_title, a.title, a.due_at,"
             " EXISTS (SELECT 1 FROM assignment_work w WHERE w.assignment_id = a.id) AS has_work"
             " FROM assignments a JOIN courses c ON c.id = a.course_id"
-            " WHERE c.instructor_id = :u AND c.archived_at IS NULL AND a.due_at >= :s AND a.due_at < :e"
+            " WHERE EXISTS (SELECT 1 FROM course_teachers t WHERE t.course_id = c.id AND t.user_id = :u)"
+            " AND c.archived_at IS NULL AND a.due_at >= :s AND a.due_at < :e"
             " AND (CAST(:c AS integer) IS NULL OR c.id = :c) ORDER BY a.due_at, a.id"
         ),
         {"u": user.id, "s": start, "e": end, "c": course_id},

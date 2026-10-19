@@ -144,10 +144,82 @@ class Course(BaseModel):
     instructor_id: int
     enrolled: bool
     archived: bool = False
+    section: str | None = None
+    subject: str | None = None
+    color: str | None = None
 
 
-class CourseRename(BaseModel):
-    title: Text = Field(min_length=1, max_length=200)
+COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+class CourseUpdate(BaseModel):
+    """Only the fields sent change; null clears a section, subject or colour."""
+
+    title: Text | None = Field(default=None, min_length=1, max_length=200)
+    section: Text | None = Field(default=None, max_length=100)
+    subject: Text | None = Field(default=None, max_length=100)
+    color: str | None = None
+
+    @model_validator(mode="after")
+    def _checked(self):
+        if not self.model_fields_set:
+            raise ValueError("send a title, section, subject or color")
+        if "title" in self.model_fields_set and (self.title is None or not self.title.strip()):
+            raise ValueError("a course needs a title")
+        for name in ("section", "subject"):
+            value = getattr(self, name)
+            if value is not None and not value.strip():
+                setattr(self, name, None)
+        if self.color is not None:
+            if not COLOR_PATTERN.match(self.color):
+                raise ValueError("a color looks like #1a2b3c")
+            self.color = self.color.lower()
+        return self
+
+
+class JoinIn(BaseModel):
+    code: str = Field(min_length=1, max_length=40)
+
+
+class JoinCode(BaseModel):
+    code: str
+    enabled: bool
+    link: str
+
+
+class JoinCodeEnabled(BaseModel):
+    enabled: bool
+
+
+class Person(BaseModel):
+    user_id: int
+    label: str
+
+
+class Teacher(Person):
+    owner: bool
+
+
+class Classmate(Person):
+    muted: bool
+    joined_at: datetime
+
+
+class People(BaseModel):
+    """Staff get every student; a student gets the teachers and only the number of classmates."""
+
+    teachers: list[Teacher]
+    student_count: int
+    students: list[Classmate] | None = None
+    can_manage_teachers: bool = False
+
+
+class CoTeacherIn(BaseModel):
+    email: Text = Field(min_length=3, max_length=254)
+
+
+class MuteIn(BaseModel):
+    muted: bool
 
 
 class CourseConcept(BaseModel):

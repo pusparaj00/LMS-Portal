@@ -16,6 +16,7 @@ from sqlalchemy import Connection, text
 from app import audit, notifications, ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.grading_book import label
+from app.routers.people import teacher_ids
 from app.schemas import (
     CommentIn,
     CommentOut,
@@ -154,8 +155,12 @@ def _download(name: str, data: bytes) -> Response:
     )
 
 
-def _teacher_id(conn: Connection, course_id: int) -> int:
-    return conn.execute(text("SELECT instructor_id FROM courses WHERE id = :c"), {"c": course_id}).scalar_one()
+def _notify_teachers(conn: Connection, course_id: int, assignment_id: int, kind: str, title: str) -> None:
+    for teacher in teacher_ids(conn, course_id):
+        notifications.notify(
+            conn, teacher, kind, title, notifications.work_link(course_id, assignment_id, True), course_id,
+            assignment_id,
+        )
 
 
 def _student_work(conn: Connection, course_id: int, assignment_id: int, user: CurrentUser):
@@ -206,10 +211,7 @@ def turn_in(course_id: int, assignment_id: int, user: Student, conn: Conn):
              " WHERE assignment_id = :a AND user_id = :u"),
         {"a": assignment_id, "u": user.id},
     )
-    notifications.notify(
-        conn, _teacher_id(conn, course_id), "work_turned_in", f"Work turned in: {work.title}",
-        notifications.work_link(course_id, assignment_id, True), course_id, assignment_id,
-    )
+    _notify_teachers(conn, course_id, assignment_id, "work_turned_in", f"Work turned in: {work.title}")
     return _my_view(conn, work, user.id)
 
 
@@ -245,15 +247,17 @@ def my_file(course_id: int, assignment_id: int, user: Student, conn: Conn):
 def comment_as_student(course_id: int, assignment_id: int, body: CommentIn, user: Student, conn: Conn):
     ratelimit.check("work_comment", user.id)
     work = _student_work(conn, course_id, assignment_id, user)
+    if conn.execute(
+        text("SELECT comments_muted FROM enrollments WHERE course_id = :c AND user_id = :u"),
+        {"c": course_id, "u": user.id},
+    ).scalar():
+        raise HTTPException(403, "your instructor has turned off private comments for you in this course")
     sub = _ensure(conn, assignment_id, user.id)
     conn.execute(
         text("INSERT INTO work_comments (submission_id, author_id, body) VALUES (:s, :u, :b)"),
         {"s": sub.id, "u": user.id, "b": body.body.strip()},
     )
-    notifications.notify(
-        conn, _teacher_id(conn, course_id), "comment", f"New private comment on {work.title}",
-        notifications.work_link(course_id, assignment_id, True), course_id, assignment_id,
-    )
+    _notify_teachers(conn, course_id, assignment_id, "comment", f"New private comment on {work.title}")
     return _my_view(conn, work, user.id)
 
 
@@ -450,7 +454,8 @@ def to_review(user: Teacher, conn: Conn):
             " JOIN assignment_work aw ON aw.assignment_id = a.id"
             " LEFT JOIN work_submissions ws ON ws.assignment_id = a.id"
             " AND ws.user_id IN (SELECT user_id FROM enrollments WHERE course_id = c.id)"
-            " WHERE c.instructor_id = :u AND c.archived_at IS NULL"
+            " WHERE c.archived_at IS NULL AND EXISTS ("
+            "  SELECT 1 FROM course_teachers t WHERE t.course_id = c.id AND t.user_id = :u)"
             " GROUP BY c.id, a.id"
             " ORDER BY (count(*) FILTER (WHERE ws.status = 'turned_in' AND ws.graded_at IS NULL)) DESC,"
             " a.due_at DESC, a.id"

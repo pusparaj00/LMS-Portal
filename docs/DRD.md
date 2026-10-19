@@ -124,8 +124,10 @@ All endpoints are under /api/v1, use JWT bearer tokens, and check the caller's r
 | Method and path | Purpose | Role |
 | --- | --- | --- |
 | POST /auth/register, POST /auth/login | Create account, return a JWT | Public |
-| GET /courses, POST /courses | List or create courses | Student read, instructor write |
-| POST /courses/{id}/enroll | Enroll the current student | Student |
+| GET /courses, POST /courses | List the courses a person is in or teaches, or create one | Student read, instructor write |
+| POST /courses/join | Join the course that has this class code (F-81); there is no open enrolment | Student |
+| GET, PUT /courses/{id}/join-code, POST /courses/{id}/join-code/reset | Show, close or open, and reset the class code | Teacher (admin reads) |
+| GET /courses/{id}/people, POST and DELETE /courses/{id}/teachers, PUT /courses/{id}/students/{id}/mute | Teachers, students, co-teachers and muting (F-82) | Course members |
 | POST /courses/{id}/documents | Upload course notes, then chunk and embed them | Instructor |
 | GET /problems?course\_id= | List problems and their concept tags | Any |
 | POST /problems | Create a problem with concepts and test cases | Instructor |

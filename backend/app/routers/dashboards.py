@@ -32,6 +32,7 @@ Member = Annotated[CurrentUser, Depends(current_user)]
 UPCOMING_LIMIT = 5
 REVIEW_LIMIT = 50
 BUCKETS = ["0-19%", "20-39%", "40-59%", "60-79%", "80-100%"]
+TEACHES = "EXISTS (SELECT 1 FROM course_teachers t WHERE t.course_id = c.id AND t.user_id = :u)"
 STUDENTS = (
     "SELECT count(*) FROM enrollments e JOIN users u ON u.id = e.user_id"
     " WHERE e.course_id = :c AND u.role = 'student'"
@@ -159,7 +160,10 @@ def _submissions(conn: Connection, course_id: int) -> tuple[int, int]:
 def instructor_stats(user: Instructor, conn: Conn):
     """F-64: totals over the instructor's own live courses and their next assignments."""
     courses = conn.execute(
-        text("SELECT id, title FROM courses WHERE instructor_id = :u AND archived_at IS NULL ORDER BY title, id"),
+        text(
+            "SELECT c.id, c.title FROM courses c WHERE " + TEACHES + " AND c.archived_at IS NULL"
+            " ORDER BY c.title, c.id"
+        ),
         {"u": user.id},
     ).all()
     stats = []
@@ -186,7 +190,7 @@ def instructor_stats(user: Instructor, conn: Conn):
                 " (SELECT count(*) FROM assignment_scores(a.course_id, NULL) s"
                 "  WHERE s.assignment_id = a.id AND s.score >= s.possible) AS done"
                 " FROM assignments a JOIN courses c ON c.id = a.course_id"
-                " WHERE c.instructor_id = :u AND c.archived_at IS NULL AND a.due_at > now()"
+                " WHERE " + TEACHES + " AND c.archived_at IS NULL AND a.due_at > now()"
                 " ORDER BY a.due_at, a.id"
             ),
             {"u": user.id},
@@ -196,7 +200,7 @@ def instructor_stats(user: Instructor, conn: Conn):
         text(
             "SELECT count(DISTINCT e.user_id) FROM enrollments e JOIN courses c ON c.id = e.course_id"
             " JOIN users u ON u.id = e.user_id"
-            " WHERE c.instructor_id = :u AND c.archived_at IS NULL AND u.role = 'student'"
+            " WHERE " + TEACHES + " AND c.archived_at IS NULL AND u.role = 'student'"
         ),
         {"u": user.id},
     ).scalar_one()
