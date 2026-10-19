@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import Connection, text
 
-from app import audit, ratelimit
+from app import audit, notifications, ratelimit
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.grading_book import label
 from app.schemas import (
@@ -154,6 +154,10 @@ def _download(name: str, data: bytes) -> Response:
     )
 
 
+def _teacher_id(conn: Connection, course_id: int) -> int:
+    return conn.execute(text("SELECT instructor_id FROM courses WHERE id = :c"), {"c": course_id}).scalar_one()
+
+
 def _student_work(conn: Connection, course_id: int, assignment_id: int, user: CurrentUser):
     _check_course(conn, user, course_id)
     return _work(conn, course_id, assignment_id)
@@ -202,6 +206,10 @@ def turn_in(course_id: int, assignment_id: int, user: Student, conn: Conn):
              " WHERE assignment_id = :a AND user_id = :u"),
         {"a": assignment_id, "u": user.id},
     )
+    notifications.notify(
+        conn, _teacher_id(conn, course_id), "work_turned_in", f"Work turned in: {work.title}",
+        notifications.work_link(course_id, assignment_id, True), course_id, assignment_id,
+    )
     return _my_view(conn, work, user.id)
 
 
@@ -241,6 +249,10 @@ def comment_as_student(course_id: int, assignment_id: int, body: CommentIn, user
     conn.execute(
         text("INSERT INTO work_comments (submission_id, author_id, body) VALUES (:s, :u, :b)"),
         {"s": sub.id, "u": user.id, "b": body.body.strip()},
+    )
+    notifications.notify(
+        conn, _teacher_id(conn, course_id), "comment", f"New private comment on {work.title}",
+        notifications.work_link(course_id, assignment_id, True), course_id, assignment_id,
     )
     return _my_view(conn, work, user.id)
 
@@ -374,20 +386,31 @@ def return_work(course_id: int, assignment_id: int, student_id: int, user: Teach
         )
         audit.record("work.returned", user_id=user.id, status=200, conn=conn,
                      detail={"course_id": course_id, "assignment_id": assignment_id, "student_id": student_id})
+        notifications.notify(
+            conn, student_id, "work_returned", f"Your work was returned: {work.title}",
+            notifications.work_link(course_id, assignment_id, False), course_id, assignment_id,
+        )
     return _their_view(conn, work, student, user.id)
 
 
 @router.post("/return-all", response_model=ResultCount)
 def return_all(course_id: int, assignment_id: int, user: Teacher, conn: Conn):
     """Returns every graded piece of work that has not been returned yet."""
-    _teacher_work(conn, course_id, assignment_id, user)
-    count = conn.execute(
+    work = _teacher_work(conn, course_id, assignment_id, user)
+    returned = conn.execute(
         text(
             "UPDATE work_submissions SET returned_at = now() WHERE assignment_id = :a AND graded_at IS NOT NULL"
             " AND returned_at IS NULL AND user_id IN (SELECT user_id FROM enrollments WHERE course_id = :c)"
+            " RETURNING user_id"
         ),
         {"a": assignment_id, "c": course_id},
-    ).rowcount
+    ).scalars().all()
+    count = len(returned)
+    for student_id in returned:
+        notifications.notify(
+            conn, student_id, "work_returned", f"Your work was returned: {work.title}",
+            notifications.work_link(course_id, assignment_id, False), course_id, assignment_id,
+        )
     if count:
         audit.record("work.returned_all", user_id=user.id, status=200, conn=conn,
                      detail={"course_id": course_id, "assignment_id": assignment_id, "count": count})
@@ -405,6 +428,10 @@ def comment_as_teacher(
     conn.execute(
         text("INSERT INTO work_comments (submission_id, author_id, body) VALUES (:s, :u, :b)"),
         {"s": sub.id, "u": user.id, "b": body.body.strip()},
+    )
+    notifications.notify(
+        conn, student_id, "comment", f"New private comment on {work.title}",
+        notifications.work_link(course_id, assignment_id, False), course_id, assignment_id,
     )
     return _their_view(conn, work, student, user.id)
 

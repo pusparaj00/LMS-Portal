@@ -1279,3 +1279,42 @@ class ReviewGroup(BaseModel):
     waiting: int
     graded: int
     not_returned: int
+
+
+class TodoOut(BaseModel):
+    assignment_id: int
+    course_id: int
+    course_title: str
+    title: str
+    due_at: datetime
+    state: Literal["assigned", "missing", "done"]
+    score: float
+    possible: float
+    has_work: bool
+
+
+class CalendarItem(BaseModel):
+    assignment_id: int
+    course_id: int
+    course_title: str
+    title: str
+    due_at: datetime
+    state: Literal["assigned", "missing", "done"] | None = Field(default=None, description="students only")
+    has_work: bool
+
+
+NotificationKind = Literal["announcement", "work_returned", "work_turned_in", "comment", "due_soon"]
+
+
+class NotificationOut(BaseModel):
+    id: int
+    kind: NotificationKind
+    title: str
+    link: str
+    created_at: datetime
+    read: bool
+
+
+class NotificationList(BaseModel):
+    unread: int
+    items: list[NotificationOut]

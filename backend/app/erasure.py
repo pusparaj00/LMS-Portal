@@ -31,6 +31,7 @@ _DELETIONS = [
     "DELETE FROM work_comments WHERE author_id = :u OR submission_id IN"
     " (SELECT id FROM work_submissions WHERE user_id = :u)",
     "DELETE FROM work_submissions WHERE user_id = :u",
+    "DELETE FROM notifications WHERE user_id = :u",
     "DELETE FROM ratings WHERE user_id = :u",
     "DELETE FROM enrollments WHERE user_id = :u",
     "DELETE FROM lti_users WHERE user_id = :u",

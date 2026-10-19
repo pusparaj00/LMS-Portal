@@ -111,7 +111,7 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-75 | Quiz scores and returned manual scores count in the gradebook, the grades page, the dashboards, the assistant's LMS answers and the LTI grade send, under the same late rule as coding problems | P1 |
 | F-76 | A to-review page lists, across the instructor's own courses, the work turned in and not yet graded, grouped by course and assignment with counts, and a second tab of reviewed work | P1 |
 | F-77 | A student and the course's instructor exchange private comments on one piece of handed-in work; nobody else can read them | P1 |
-| F-78 | A to-do page for students with Assigned, Missing and Done tabs, grouped by this week, next week, later and no due date | P1 |
+| F-78 | A to-do page for students with Assigned, Missing and Done tabs, grouped by earlier (past due), this week, next week and later (every assignment has a due date) | P1 |
 | F-79 | A calendar page shows the due dates of the signed-in user's own courses by week and month, and can be limited to one course | P2 |
 | F-80 | In-app notifications (a bell with an unread count) for new announcements, returned work, new work to review, new private comments and due dates coming up; each person sees only their own; no email is sent | P1 |
 | F-81 | A course has a class code and an invite link that students use to join; the instructor can reset or disable the code; a course can no longer be joined without it | P1 |

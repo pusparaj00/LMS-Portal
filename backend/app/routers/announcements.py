@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import Connection, text
 
+from app import notifications
 from app.auth import Conn, CurrentUser, can_access_course, current_user, require_role
 from app.schemas import Announcement, AnnouncementIn
 
@@ -47,6 +48,10 @@ def post_announcement(course_id: int, body: AnnouncementIn, user: Instructor, co
         text("INSERT INTO announcements (course_id, author_id, title, body) VALUES (:c, :u, :t, :b) RETURNING id"),
         {"c": course_id, "u": user.id, "t": body.title, "b": body.body},
     ).scalar_one()
+    course = conn.execute(text("SELECT title FROM courses WHERE id = :c"), {"c": course_id}).scalar_one()
+    notifications.notify_students(
+        conn, course_id, "announcement", f"New announcement in {course}: {body.title}", f"#/course/{course_id}"
+    )
     return _one(conn, course_id, announcement_id)
 
 
