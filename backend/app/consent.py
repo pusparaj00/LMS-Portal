@@ -15,7 +15,7 @@ from app.config import Settings, get_settings
 from app.llm.adapter import GEMINI_KEYS, LOCAL, OPENAI_COMPATIBLE
 from app.schemas import ConsentNotice, ConsentProvider, ConsentSection, ConsentStatus
 
-CONSENT_VERSION = "2026-10-v5"  # change it whenever the notice changes; everyone is then asked again
+CONSENT_VERSION = "2026-10-v6"  # change it whenever the notice changes; everyone is then asked again
 REQUIRED_MESSAGE = (
     "You have not agreed to the privacy notice, or you withdrew your agreement. "
     "Open Privacy in the top bar to read it."
@@ -67,7 +67,8 @@ def notice(settings: Settings) -> ConsentNotice:
             ]),
             ConsentSection(heading="What is collected", paragraphs=[
                 "The code you run or submit, and the results of running it.",
-                "Your answers in the placement test, in practice questions and in quizzes.",
+                "Your answers in the placement test, in practice questions and in quizzes, including how sure you "
+                "said you were and the answer you give about how much you already know a course.",
                 "The files, links and text you hand in for an assignment, and your private comments to your "
                 "instructor.",
                 "Your messages to the assistant.",

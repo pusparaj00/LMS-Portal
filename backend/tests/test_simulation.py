@@ -41,3 +41,17 @@ def test_auc_and_calibration_error_on_known_cases():
     assert run.auc(scores, labels) == 0.75
     assert run.auc(np.array([0.5, 0.5]), np.array([0, 1])) == 0.5
     assert abs(run.calibration_error(np.array([0.9, 0.9]), np.array([1, 1])) - 0.1) < 1e-9
+
+
+def test_a_strong_student_ends_above_a_weak_one_on_every_seed():
+    # Gate of step 54: same course, same bank, only the answers differ.
+    bank = model.load_bank(BANK)
+    n = len(bank.items)
+    for seed in range(10):
+        ends = {}
+        for name, answers in (("strong", np.ones(n)), ("weak", np.zeros(n))):
+            rng = np.random.default_rng(seed)
+            truth = np.full(len(bank.concepts), 0.5)
+            _, _, abilities, _ = run.run_student("adaptive", bank.items, answers, truth, rng, len(bank.concepts), f"s{seed}")
+            ends[name] = abilities[-1]
+        assert ends["strong"] > 1.0 > -1.0 > ends["weak"], (seed, ends)
