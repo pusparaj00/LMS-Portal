@@ -1,6 +1,6 @@
 # Step 40: Non-circular diagnostic eval with MiroFish synthetic students (TR-V-05, TR-V-06)
 
-Date: 2026-10-18. Branch `step-38-ux-foundation` (uncommitted working tree).
+Date: 2026-10-18. Committed on 2026-10-19 in `2a4d8b0` on branch `step-40-profiles-dashboard` (written while the changes were still uncommitted on `step-38-ux-foundation`).
 
 ## What was done
 

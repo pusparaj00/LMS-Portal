@@ -1,6 +1,6 @@
 # Step 39: Graphify audit and verifier fixes (TR-L-04, TR-L-06, F-43, F-44)
 
-Date: 2026-10-18. Branch `step-38-ux-foundation` (changes uncommitted in the working tree; no new branch yet).
+Date: 2026-10-18. Committed on 2026-10-19 in `2a4d8b0` on branch `step-40-profiles-dashboard` (written while the changes were still uncommitted on `step-38-ux-foundation`).
 
 ## What was audited
 
