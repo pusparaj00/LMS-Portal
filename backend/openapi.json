@@ -2004,6 +2004,27 @@
             ],
             "title": "Code"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "enum": [
+                  "guessing",
+                  "fairly",
+                  "sure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "dont_know": {
+            "default": false,
+            "title": "Dont Know",
+            "type": "boolean"
+          },
           "option_id": {
             "anyOf": [
               {
@@ -2147,6 +2168,22 @@
       },
       "DiagnosticStartRequest": {
         "properties": {
+          "background": {
+            "anyOf": [
+              {
+                "enum": [
+                  "new",
+                  "some",
+                  "comfortable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background"
+          },
           "course_id": {
             "title": "Course Id",
             "type": "integer"

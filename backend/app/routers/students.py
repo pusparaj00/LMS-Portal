@@ -76,9 +76,17 @@ def _explain(row, titles: dict[int, str]) -> str:
         if row.failed_categories:
             parts.append("failed tests in: " + ", ".join(row.failed_categories))
         return f"Submission #{row.submission_id} to '{title}' " + (" and ".join(parts) or "failed") + "."
+    if row.rule_id == "ability_inference":
+        return "Not asked about in the placement test: an estimate from your overall level that real answers replace."
     title = titles.get(row.diagnostic_problem_id)
     outcome = "correct" if row.correct else "incorrect"
-    return f"Placement answer to '{title or 'an item'}' was {outcome}."
+    note = {
+        "diagnostic_mcq_dontknow": " (you said you did not know)",
+        "diagnostic_code_dontknow": " (you said you did not know)",
+        "diagnostic_mcq_guess": " (you said you were guessing)",
+        "diagnostic_mcq_sure": " (you said you were sure)",
+    }.get(row.evidence_type, "")
+    return f"Placement answer to '{title or 'an item'}' was {outcome}{note}."
 
 
 @router.get("/mastery/{concept_id}/history", response_model=list[LedgerEntry])

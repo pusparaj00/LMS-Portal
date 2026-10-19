@@ -1,6 +1,7 @@
-"""Cold-start placement test (F-20 to F-24, TR-A-05). Sessions live in Redis, not in process memory."""
+"""Cold-start placement test (F-20 to F-27, TR-A-05, TR-M-13 to TR-M-15). Sessions live in Redis, not in memory."""
 import json
 import random
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +15,7 @@ from app.diagnostic import selection
 from app.errors import sandbox_error
 from app.grading import TestSpec, grade
 from app.mastery import client as mastery
+from app.mastery import core
 from app.sandbox import SandboxUnavailable
 from app.schemas import (
     ConceptMastery,
@@ -56,7 +58,8 @@ def _items(conn: Connection, course_id: int) -> list[selection.Item]:
         text(
             "SELECT p.id, p.kind, p.discrimination_a, p.difficulty_b, pc.concept_id, pc.weight"
             " FROM problems p JOIN problem_concepts pc ON pc.problem_id = p.id"
-            " WHERE p.course_id = :c AND p.archived_at IS NULL ORDER BY p.id"
+            " WHERE p.course_id = :c AND p.archived_at IS NULL"
+            " AND NOT EXISTS (SELECT 1 FROM assignment_problems ap WHERE ap.problem_id = p.id) ORDER BY p.id"
         ),
         {"c": course_id},
     )
@@ -113,27 +116,51 @@ def _item_out(conn: Connection, problem_id: int, session_id: str) -> DiagnosticI
     )
 
 
-def _next_item(conn: Connection, state: dict, user_id: int) -> selection.Item | None:
-    if len(state["asked"]) >= selection.MAX_ITEMS:
-        return None
-    vector = {c.concept_id: c.p_known for c in _mastery_vector(conn, user_id, state["course_id"])}
-    if selection.uncertain_enough_to_stop(vector, len(state["asked"])):
-        return None
-    theta = selection.eap_theta([(r["a"], r["b"], r["correct"], r["kind"]) for r in state["responses"]])
-    # a problem whose worked solution the student has seen measures nothing, so it is treated as already asked
+def _theta(state: dict) -> float:
+    return selection.eap_theta(
+        [(r["a"], r["b"], r["correct"], r["evidence"]) for r in state["responses"]],
+        prior_mean=selection.BACKGROUND_PRIOR_MEAN.get(state["background"], 0.0),
+    )
+
+
+def _usable_items(conn: Connection, state: dict, user_id: int) -> list[selection.Item]:
+    # a problem whose worked solution the student has seen measures nothing, so it is left out of the pool
     seen = set(
         conn.execute(
             text("SELECT problem_id FROM worked_examples_seen WHERE user_id = :u"), {"u": user_id}
         ).scalars()
     )
-    return selection.select_next(_items(conn, state["course_id"]), set(state["asked"]) | seen, vector, theta)
+    return [i for i in _items(conn, state["course_id"]) if i.id not in seen or i.id in state["asked"]]
+
+
+def _next_item(conn: Connection, state: dict, user_id: int) -> selection.Item | None:
+    items = _usable_items(conn, state, user_id)
+    tested = {c for i in items for c in i.concepts}
+    vector = {
+        c.concept_id: c.p_known for c in _mastery_vector(conn, user_id, state["course_id"]) if c.concept_id in tested
+    }
+    if selection.should_stop(items, state["asked"], vector):
+        return None
+    return selection.select_next(items, state["asked"], vector, _theta(state), state["seed"])
 
 
 @router.post("/start", response_model=DiagnosticStartResponse)
 def start(body: DiagnosticStartRequest, user: Student, conn: Conn):
     if not can_access_course(conn, user, body.course_id):
         raise HTTPException(403, "you have no access to this course")
-    state = {"user_id": user.id, "course_id": body.course_id, "asked": [], "responses": [], "current": None}
+    if body.background is not None:
+        conn.execute(
+            text("UPDATE enrollments SET background = :b WHERE user_id = :u AND course_id = :c"),
+            {"b": body.background, "u": user.id, "c": body.course_id},
+        )
+    background = body.background or conn.execute(
+        text("SELECT background FROM enrollments WHERE user_id = :u AND course_id = :c"),
+        {"u": user.id, "c": body.course_id},
+    ).scalar()
+    state = {
+        "user_id": user.id, "course_id": body.course_id, "asked": [], "responses": [], "current": None,
+        "background": background, "seed": secrets.token_hex(8),
+    }
     session_pk = conn.execute(
         text(
             "INSERT INTO diagnostic_sessions (user_id, state_json, status)"
@@ -148,12 +175,14 @@ def start(body: DiagnosticStartRequest, user: Student, conn: Conn):
     state["current"] = first.id
     _save_state(session_id, state)
     return DiagnosticStartResponse(
-        session_id=session_id, item_number=1, max_items=selection.MAX_ITEMS,
+        session_id=session_id, item_number=1, max_items=selection.max_questions(_usable_items(conn, state, user.id)),
         item=_item_out(conn, first.id, session_id),
     )
 
 
 def _grade_answer(conn: Connection, body: DiagnosticAnswerRequest, kind: str) -> tuple[bool, int | None]:
+    if body.dont_know:
+        return False, None
     if kind == "mcq":
         if body.option_id is None:
             raise HTTPException(422, "choose one of the options")
@@ -198,19 +227,22 @@ def _answer(body: DiagnosticAnswerRequest, user: CurrentUser, conn: Connection) 
         raise HTTPException(409, "this is not the current placement item")
     item = next(i for i in _items(conn, state["course_id"]) if i.id == body.problem_id)
     correct, option_id = _grade_answer(conn, body, item.kind)
+    confidence = body.confidence if item.kind == "mcq" and not body.dont_know else None
+    evidence = core.answer_evidence_type(selection.EVIDENCE_TYPE[item.kind], body.dont_know, confidence)
 
     try:
         mastery.record_answer(
             user_id=user.id, problem_id=item.id, correct=correct,
             evidence_type=selection.EVIDENCE_TYPE[item.kind],
             evidence_ref=f"diagnostic:{body.session_id}:{item.id}", option_id=option_id,
+            dont_know=body.dont_know, confidence=confidence,
         )
     except mastery.MasteryUnavailable:
         raise HTTPException(503, "mastery service unavailable, try again shortly") from None
 
     state["asked"].append(item.id)
     state["responses"].append(
-        {"problem_id": item.id, "kind": item.kind, "a": item.a, "b": item.b, "correct": correct}
+        {"problem_id": item.id, "kind": item.kind, "a": item.a, "b": item.b, "correct": correct, "evidence": evidence}
     )
     upcoming = _next_item(conn, state, user.id)
 
@@ -222,7 +254,13 @@ def _answer(body: DiagnosticAnswerRequest, user: CurrentUser, conn: Connection) 
             next_item=_item_out(conn, upcoming.id, body.session_id), result=None,
         )
 
-    theta = selection.eap_theta([(r["a"], r["b"], r["correct"], r["kind"]) for r in state["responses"]])
+    theta = _theta(state)
+    try:
+        mastery.record_ability(
+            user_id=user.id, course_id=state["course_id"], ability=theta, evidence_ref=f"diagnostic:{body.session_id}"
+        )
+    except mastery.MasteryUnavailable:
+        raise HTTPException(503, "mastery service unavailable, try again shortly") from None
     result = DiagnosticResult(
         mastery=_mastery_vector(conn, user.id, state["course_id"]),
         misconceptions=top_misconceptions(conn, user.id, state["course_id"]),

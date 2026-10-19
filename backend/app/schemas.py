@@ -630,6 +630,7 @@ class DiagnosticItem(BaseModel):
 
 class DiagnosticStartRequest(BaseModel):
     course_id: int
+    background: Literal["new", "some", "comfortable"] | None = None
 
 
 class ConceptMastery(BaseModel):
@@ -662,6 +663,8 @@ class DiagnosticAnswerRequest(BaseModel):
     problem_id: int
     option_id: int | None = None
     code: Text | None = Field(default=None, max_length=50_000)
+    dont_know: bool = False
+    confidence: Literal["guessing", "fairly", "sure"] | None = None
 
 
 class DiagnosticAnswerResponse(BaseModel):

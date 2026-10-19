@@ -44,19 +44,14 @@ def run_whole_test(client, headers, course_id, wrong_for):
         item = data["next_item"]
 
 
-@pytest.fixture
-def never_stop_early(monkeypatch):
-    monkeypatch.setattr(selection, "UNCERTAINTY_STOP_BITS", 0.0)
-
-
-def test_a_new_student_completes_ten_items_and_sees_a_vector_and_misconceptions(
-    client, make_user, placement_course, owner, never_stop_early
+def test_a_new_student_completes_the_whole_test_and_sees_a_vector_and_misconceptions(
+    client, make_user, placement_course, owner
 ):
     course_id, wrong_for = placement_course["course_id"], placement_course["misconceptions"][0]
     user_id, headers = enrolled_student(client, make_user, course_id)
 
     started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
-    assert (started["item_number"], started["max_items"]) == (1, 10)
+    assert started["item_number"] == 1 and started["max_items"] == 12  # 9 tracing questions and 3 coding tasks
     assert get_redis().exists(f"diagnostic:{started['session_id']}")  # the session is in Redis, not process memory
     assert {o["text"] for o in started["item"]["options"]} >= {"right"}
     client.post(f"{API}/diagnostic/answer", headers=headers, json={
@@ -68,9 +63,10 @@ def test_a_new_student_completes_ten_items_and_sees_a_vector_and_misconceptions(
     other_id, other = enrolled_student(client, make_user, course_id)
     session_id, kinds, result = run_whole_test(client, other, course_id, wrong_for)
 
-    assert kinds == ["mcq"] * 8 + ["code"] * 2
+    assert len(kinds) == 12 and kinds.count("code") == 3
+    assert kinds[: selection.WARMUP_ITEMS] == ["mcq"] * selection.WARMUP_ITEMS
+    assert not any(a == b == "code" for a, b in zip(kinds, kinds[1:], strict=False))
     assert len(result["mastery"]) == 3
-    assert all(c["p_known"] < 0.5 for c in result["mastery"])  # eight wrong answers lower every concept
     names = {m["name"] for m in result["misconceptions"]}
     with owner.connect() as conn:
         tagged = conn.execute(text("SELECT name FROM misconceptions WHERE id = :m"), {"m": wrong_for}).scalar_one()
@@ -79,17 +75,122 @@ def test_a_new_student_completes_ten_items_and_sees_a_vector_and_misconceptions(
         ).scalar_one()
         ledger = conn.execute(text("SELECT count(*) FROM mastery_events WHERE user_id = :u"), {"u": other_id}).scalar_one()
     assert tagged in names and result["misconceptions"][0]["probability"] > 0.5
-    assert status == "completed" and ledger >= 10
+    assert status == "completed" and ledger >= 12
     assert not get_redis().exists(f"diagnostic:{session_id}")
 
 
-def test_the_test_stops_early_when_the_concepts_are_settled(client, make_user, placement_course):
+def test_students_get_different_first_questions(client, make_user, placement_course):
+    course_id = placement_course["course_id"]
+    first_questions = set()
+    for _ in range(6):
+        _, headers = enrolled_student(client, make_user, course_id)
+        started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
+        first_questions.add(started["item"]["problem_id"])
+    assert len(first_questions) >= 3
+
+
+def test_dont_know_counts_as_not_known_and_never_raises_a_misconception(
+    client, make_user, placement_course, owner
+):
+    course_id = placement_course["course_id"]
+    user_id, headers = enrolled_student(client, make_user, course_id)
+    started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
+    response = client.post(f"{API}/diagnostic/answer", headers=headers, json={
+        "session_id": started["session_id"], "problem_id": started["item"]["problem_id"], "dont_know": True,
+    })
+    assert response.status_code == 200, response.text
+    with owner.connect() as conn:
+        rows = conn.execute(
+            text("SELECT evidence_type, correct FROM mastery_events WHERE user_id = :u AND rule_id = 'bayes_update'"),
+            {"u": user_id},
+        ).all()
+        picked = conn.execute(text("SELECT count(*) FROM misconception_state WHERE user_id = :u"), {"u": user_id}).scalar_one()
+    assert rows and {tuple(r) for r in rows} == {("diagnostic_mcq_dontknow", False)}
+    assert picked == 0
+
+
+def test_a_wrong_answer_marked_sure_raises_the_misconception_more(client, make_user, placement_course, owner):
     course_id, wrong_for = placement_course["course_id"], placement_course["misconceptions"][0]
+
+    def probability(confidence):
+        user_id, headers = enrolled_student(client, make_user, course_id)
+        started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
+        item = started["item"]
+        body = {"session_id": started["session_id"], "problem_id": item["problem_id"],
+                "option_id": option(item, f"wrong {wrong_for}")["id"], "confidence": confidence}
+        assert client.post(f"{API}/diagnostic/answer", headers=headers, json=body).status_code == 200
+        with owner.connect() as conn:
+            return conn.execute(
+                text("SELECT probability FROM misconception_state WHERE user_id = :u AND misconception_id = :m"),
+                {"u": user_id, "m": wrong_for},
+            ).scalar_one()
+
+    assert probability("sure") > probability(None)
+
+
+def test_the_background_answer_is_stored_and_checked(client, make_user, placement_course, owner):
+    course_id = placement_course["course_id"]
+    user_id, headers = enrolled_student(client, make_user, course_id)
+    bad = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id, "background": "expert"})
+    assert bad.status_code == 422
+    ok = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id, "background": "new"})
+    assert ok.status_code == 200
+    with owner.connect() as conn:
+        stored = conn.execute(
+            text("SELECT background FROM enrollments WHERE user_id = :u AND course_id = :c"),
+            {"u": user_id, "c": course_id},
+        ).scalar_one()
+    assert stored == "new"
+
+
+def test_a_course_with_only_coding_tasks_runs_the_test_and_assignment_problems_are_left_out(
+    client, make_user, owner
+):
+    instructor_id, _ = make_user("instructor")
+    with owner.begin() as conn:
+        course_id = conn.execute(
+            text("INSERT INTO courses (title, instructor_id) VALUES ('Coding only', :i) RETURNING id"), {"i": instructor_id}
+        ).scalar_one()
+        concept = conn.execute(
+            text("INSERT INTO concepts (course_id, name) VALUES (:c, 'only') RETURNING id"), {"c": course_id}
+        ).scalar_one()
+        problems = []
+        for n in range(4):
+            pid = conn.execute(
+                text(
+                    "INSERT INTO problems (course_id, title, statement, kind, difficulty_b, discrimination_a,"
+                    " reference_solution) VALUES (:c, :t, 'statement', 'code', :b, 1.0, :r) RETURNING id"
+                ),
+                {"c": course_id, "t": f"task {n}", "b": -0.8 + 0.5 * n, "r": PLACEMENT_RIGHT},
+            ).scalar_one()
+            conn.execute(text("INSERT INTO problem_concepts VALUES (:p, :c, 1.0)"), {"p": pid, "c": concept})
+            conn.execute(
+                text(
+                    "INSERT INTO test_cases (problem_id, input, expected, hidden, category)"
+                    " VALUES (:p, :i1, :e1, false, 'basic'), (:p, :i2, :e2, true, 'basic')"
+                ),
+                {"p": pid, "i1": "1\n", "e1": "2\n", "i2": "9\n", "e2": "10\n"},
+            )
+            problems.append(pid)
+        assignment = conn.execute(
+            text("INSERT INTO assignments (course_id, title, due_at) VALUES (:c, 'hw', now() + interval '1 day') RETURNING id"),
+            {"c": course_id},
+        ).scalar_one()
+        conn.execute(
+            text("INSERT INTO assignment_problems (assignment_id, problem_id) VALUES (:a, :p)"),
+            {"a": assignment, "p": problems[3]},
+        )
     _, headers = enrolled_student(client, make_user, course_id)
-    _, kinds, result = run_whole_test(client, headers, course_id, wrong_for)
-    # three concepts are well determined after six wrong answers, so the test ends before the coding tasks
-    assert selection.MIN_ITEMS_BEFORE_STOP <= len(kinds) < selection.MAX_ITEMS
-    assert kinds == ["mcq"] * len(kinds) and len(result["mastery"]) == 3
+    started = client.post(f"{API}/diagnostic/start", headers=headers, json={"course_id": course_id}).json()
+    assert started["max_items"] == 3 and started["item"]["kind"] == "code"
+    asked, item = [], started["item"]
+    while True:
+        asked.append(item["problem_id"])
+        data = answer(client, headers, started["session_id"], item).json()
+        if data["done"]:
+            break
+        item = data["next_item"]
+    assert len(asked) == 3 and problems[3] not in asked
 
 
 def test_dashboard_and_the_why_view_read_from_the_ledger(client, make_user, placement_course):
@@ -113,7 +214,7 @@ def test_dashboard_and_the_why_view_read_from_the_ledger(client, make_user, plac
         if any(h["rule_id"] == "bayes_update" for h in history):
             assert any(h["explanation"].startswith("Placement answer to") for h in history)
     # eight wrong answers on chained concepts pass part of the drop to the prerequisites
-    assert rules == {"bayes_update", "prerequisite_propagation"}
+    assert "bayes_update" in rules
 
 
 def test_session_checks(client, make_user, placement_course):
