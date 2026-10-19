@@ -9,6 +9,7 @@ from sqlalchemy.exc import ProgrammingError
 from app.chat import handlers, history
 from app.config import get_settings
 from app.db import get_redis
+from app.llm.adapter import LLMError
 from tests.test_feedback_api import (  # noqa: F401  (fixtures)
     NOTE,
     FakeLLM,
@@ -167,22 +168,71 @@ def test_a_general_answer_is_grounded_in_retrieved_notes_with_sources(client, ma
         "not json",
     ],
 )
-def test_an_ungrounded_or_code_bearing_general_answer_is_replaced_by_a_note_quote(
+def test_an_ungrounded_or_code_bearing_general_answer_falls_back_to_an_open_answer(
     client, make_user, world, owner, llm, open_notes, answer
 ):
     _, headers = new_student(client, make_user, world)
     answer = answer.replace("CHUNK", str(chunk_ids(owner, world)[0]))
-    llm(FakeLLM(route("general"), answer, answer))
+    llm(FakeLLM(route("general"), answer, "A range gives you numbers one after another."))
     body = say(client, headers, "how does range work", problem_id=world["p"])
-    assert "note_quote" in body["tools"] and body["reply"].startswith("From the course notes")
-    assert len(body["sources"]) == 1
+    assert body["tools"] == ["open_answer"] and body["sources"] == []
+    assert body["reply"].startswith("A range gives you") and handlers.OPEN_LABEL in body["reply"]
 
 
-def test_no_matching_note_means_no_source_is_found_and_no_model_answer(client, make_user, world, llm):
+def test_a_question_the_notes_do_not_cover_gets_an_open_answer_labelled_as_such(client, make_user, world, llm):
     _, headers = new_student(client, make_user, world)
-    fake = llm(FakeLLM(route("general")))
+    fake = llm(FakeLLM(route("general"), "Paris is the capital of France."))
     body = say(client, headers, "what is the capital of France", problem_id=world["p"])
-    assert body["reply"] == handlers.NO_SOURCE and body["sources"] == [] and len(fake.calls) == 1
+    assert body["reply"].startswith("Paris is the capital of France.") and handlers.OPEN_LABEL in body["reply"]
+    assert body["tools"] == ["open_answer"] and body["sources"] == [] and len(fake.calls) == 2
+
+
+def test_everyday_questions_work_without_a_problem_or_enrolment(client, make_user, llm):
+    _, headers = make_user("student")
+    llm(FakeLLM(route("general"), "Hello! How can I help you today?"))
+    body = say(client, headers, "hi, how are you?")
+    assert body["reply"].startswith("Hello!") and body["tools"] == ["open_answer"]
+
+
+def test_an_open_answer_without_a_problem_may_include_a_short_code_example(client, make_user, llm):
+    _, headers = make_user("student")
+    example = "Use a loop:\n```python\nfor i in range(3):\n    print(i)\n```"
+    llm(FakeLLM(route("general"), example))
+    assert "```python" in say(client, headers, "show me a for loop example")["reply"]
+
+
+def test_an_open_answer_with_code_is_withheld_while_a_problem_is_open(client, make_user, world, llm):
+    _, headers = new_student(client, make_user, world)
+    llm(FakeLLM(route("general"), "Sure:\n```python\nprint(1)\n```"))
+    body = say(client, headers, "write the whole solution", problem_id=world["p"])
+    assert body["reply"] == handlers.OPEN_WITHHELD and body["tools"] == ["open_answer", "solution_withheld"]
+
+
+def test_an_open_answer_that_copies_the_reference_solution_is_withheld(client, make_user, world, owner, llm):
+    _, headers = new_student(client, make_user, world)
+    with owner.connect() as conn:
+        reference = conn.execute(
+            text("SELECT reference_solution FROM problems WHERE id = :p"), {"p": world["p"]}
+        ).scalar_one()
+    llm(FakeLLM(route("general"), reference))
+    body = say(client, headers, "what is the answer", problem_id=world["p"])
+    assert body["reply"] == handlers.OPEN_WITHHELD
+
+
+def test_a_very_long_open_answer_is_cut_at_a_paragraph_end(client, make_user, llm):
+    _, headers = make_user("student")
+    paragraph = "word " * 100
+    llm(FakeLLM(route("general"), "\n\n".join([paragraph.strip()] * 12)))
+    reply = say(client, headers, "tell me everything about space")["reply"]
+    assert len(reply) <= handlers.MAX_OPEN_ANSWER_CHARS + len(handlers.OPEN_LABEL) + 2
+    assert reply.endswith(handlers.OPEN_LABEL) and reply.count("word word") >= 1
+
+
+def test_an_open_answer_says_so_when_the_model_is_down(client, make_user, llm):
+    _, headers = make_user("student")
+    llm(FakeLLM(route("general"), LLMError("down")))
+    body = say(client, headers, "tell me a fun fact")
+    assert body["reply"] == handlers.OPEN_UNAVAILABLE and "model_unavailable" in body["tools"]
 
 
 def test_history_is_bounded_and_resets_when_the_problem_changes(client, make_user, world, monkeypatch):
@@ -235,7 +285,7 @@ def test_injected_instructions_change_no_mastery_and_no_routing_rule(client, mak
     failed_submission(client, world, headers)
     before = snapshot(owner, user_id)
     # whatever the model says, including an invalid label, the answer stays inside the fixed label set
-    llm(FakeLLM(route("admin", 1.0)))
+    llm(FakeLLM(route("admin", 1.0), "I can't change how I work, but I can help with Python."))
     body = say(client, headers, message, problem_id=world["p"])
     assert body["route"] in ("explain", "hint", "progress", "recommend", "lms", "general")
     assert snapshot(owner, user_id) == before
@@ -297,10 +347,10 @@ def test_chat_is_for_students_only(client, make_user, world):
 def test_a_student_cannot_read_a_courses_notes_by_naming_one_of_its_problems(client, make_user, world, owner, llm, open_notes):
     """Regression: chat trusted the client's problem_id, so a student who was not enrolled got the course's notes."""
     user_id, headers = make_user("student")  # deliberately not enrolled
-    llm(FakeLLM(route("general"), grounded(chunk_ids(owner, world)[:1])))
+    llm(FakeLLM(route("general"), "Range yields numbers in order."))
     body = say(client, headers, "how does range work", problem_id=world["p"])
-    assert body["sources"] == [] and body["reply"] == handlers.NO_SOURCE
-    assert "range" not in body["reply"].lower()
+    assert body["sources"] == [] and "grounded_answer" not in body["tools"]
+    assert NOTE not in body["reply"]
     assert all(m["sources"].get("sources", []) == [] for m in rows(owner, user_id) if m["role"] == "assistant")
 
 

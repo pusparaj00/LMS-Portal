@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
+import { ReplyText } from "./ReplyText";
 
 type Route = "explain" | "hint" | "progress" | "recommend" | "lms" | "general";
 type Source = { chunk_id: number; title: string; section: string };
@@ -99,7 +100,7 @@ export function ChatPanel({ session, problemId }: { session: Session; problemId:
                       <strong>{ROUTE_LABELS[entry.reply.route]}</strong>{" "}
                       <small>({HOW_LABELS[entry.reply.router.how]})</small>
                     </p>
-                    <p className="reply">{entry.reply.reply}</p>
+                    <ReplyText text={entry.reply.reply} />
                     {entry.reply.sources.length > 0 && (
                       <small>
                         From the course notes: {entry.reply.sources.map((s) => `${s.title} > ${s.section}`).join("; ")}

@@ -1101,7 +1101,24 @@ code {
 
 .exchange .reply {
   margin: 0.2rem 0;
-  white-space: pre-wrap;
+}
+
+.exchange .reply p,
+.exchange .reply ul {
+  margin: 0.3rem 0;
+}
+
+.exchange .reply ul {
+  padding-left: 1.2rem;
+}
+
+.exchange .reply .reply-code {
+  margin: 0.4rem 0;
+  padding: 0.5rem 0.7rem;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.15));
+  font-size: 0.85rem;
 }
 
 .chat .correct {
