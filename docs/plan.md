@@ -140,6 +140,10 @@ The final-year timeline after 21 Oct is not fixed yet, so these phases use weeks
 
 **Step 43, course content structure (F-66, F-67, F-68).** Modules and lesson items (text, link, video link, PDF) with publishing, completion tracking and an authoring page. Gate: visibility, ownership and URL/PDF checks are tested, no content type can run script, and both roles are checked in the browser. Next LMS steps: quizzes and manual grading, discussion and notifications, admin tools.
 
+**Step 46, quizzes (F-71, F-72, part of F-75).** Quizzes with auto-graded questions, attached to assignments with points, scored by the shared `assignment_scores` function. Gate: correct answers never reach a student before submission, scores match a hand calculation, the attempt limit and the late rule hold, existing scores do not change, erasure removes attempts.
+
+**Step 47, uploads and manual grading (F-73, F-74, rest of F-75).** File-upload assignments and instructor scores with comments, feeding the same gradebook. Gate: uploads are checked by content and never opened or run, an instructor reaches only their own course's work, every grade change is audited, erasure removes uploads.
+
 **Order matters.** Phase 6 comes before Phase 8, because the extensions are only worth building if the core claims hold on real data.
 
 ## 9. Cut lines and working agreements

@@ -104,6 +104,11 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-66 | A course has ordered modules that hold ordered lesson items; only the course's instructor edits them, and each module and item can be published or kept hidden from students | P1 |
 | F-67 | Lesson items are text, a link, a video link or a PDF file; text is shown as text, links must start with http:// or https://, a PDF is checked for real PDF content and downloaded as an attachment | P1 |
 | F-68 | A student marks lesson items complete and sees progress per module and per course; the instructor sees a completion rate per module; erasure removes a student's completions | P1 |
+| F-71 | An instructor builds a quiz of single-choice, multiple-choice and short-answer questions with an attempt limit, and publishes it; a quiz is graded automatically, a question is all-or-nothing, and the questions of a quiz that has attempts cannot be changed | P1 |
+| F-72 | A student takes a published quiz of a course they are enrolled in; correct answers are never sent to the student before they submit, and afterwards only when the instructor turned review on and every assignment holding the quiz is past due | P1 |
+| F-73 | An assignment can hold a file upload: a student uploads a PDF, text, Python or zip file of at most 4.5 MB, checked by content, stored in the database, downloaded as an attachment and never opened or run | P1 |
+| F-74 | An instructor scores each upload and writes a comment; the student sees their own score and comment, every change is audited, and an instructor reaches only their own course's uploads | P1 |
+| F-75 | Quiz scores and manual scores count in the gradebook, the grades page, the dashboards, the assistant's LMS answers and the LTI grade send, under the same late rule as coding problems | P1 |
 | F-70 | Launch from Moodle or Canvas through LTI 1.3 so the system fits an existing LMS | P2 |
 
 ## 5. Non-functional requirements
