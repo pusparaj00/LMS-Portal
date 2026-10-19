@@ -60,7 +60,7 @@ def build_matrices(data: dict, items: list[selection.Item], concepts: list[str],
 
 def simulate_noncircular(outcomes: np.ndarray, truth: np.ndarray, items: list[selection.Item], k: int) -> dict:
     students = len(outcomes)
-    curves = {p: np.zeros((students, selection.MAX_ITEMS)) for p in run.POLICIES}
+    curves = {p: np.zeros((students, selection.max_questions(items))) for p in run.POLICIES}
     coverage = {p: [] for p in run.POLICIES}
     correlation = {p: [] for p in run.POLICIES}
     held_scores = {p: [] for p in (*run.POLICIES, "prior_only")}
@@ -73,7 +73,7 @@ def simulate_noncircular(outcomes: np.ndarray, truth: np.ndarray, items: list[se
         for policy in run.POLICIES:
             run_rng = np.random.default_rng([s])
             errors, mastery, abilities, asked = run.run_student(
-                policy, items, outcomes[s], truth[s], run_rng, k
+                policy, items, outcomes[s], truth[s], run_rng, k, f"noncircular:{s}"
             )
             curves[policy][s] = errors
             asked_by_policy[policy] = (mastery, abilities[-1], asked)
@@ -116,29 +116,30 @@ def report(result: dict, n_students: int, n_items: int) -> str:
     curves = result["curves"]
     threshold = float(curves["random"][-1])
     adaptive_items = run.items_to_reach(curves["adaptive"], threshold)
-    fewer = (selection.MAX_ITEMS - adaptive_items) / selection.MAX_ITEMS * 100 if adaptive_items else None
+    length = len(curves["random"])
+    fewer = (length - adaptive_items) / length * 100 if adaptive_items else None
     lines = [
         "# Non-circular diagnostic simulation (MiroFish synthetic students)",
         "",
-        f"- Students: {n_students}, items: {n_items}, test length: {selection.MAX_ITEMS}",
+        f"- Students: {n_students}, items: {n_items}, test length: {length}",
         "",
         "## Error of the mastery vector (MAE against the persona's stated mastery)",
         "",
         "| Items asked | adaptive | random |",
         "| --- | --- | --- |",
     ]
-    for n in (1, 3, 5, 8, 10):
+    for n in sorted({1, 3, 5, 8, 10, 16, length}):
         lines.append(f"| {n} | {curves['adaptive'][n - 1]:.3f} | {curves['random'][n - 1]:.3f} |")
     lines += [
         "",
-        f"Threshold = random's error after {selection.MAX_ITEMS} items ({threshold:.3f}). "
+        f"Threshold = random's error after {length} items ({threshold:.3f}). "
         + (
             f"Adaptive reaches it after {adaptive_items} items ({fewer:.0f}% fewer; target 30%)."
             if adaptive_items
             else "Adaptive does not reach it."
         ),
         "",
-        "## Coverage and ranking after 10 items",
+        "## Coverage and ranking after the whole test",
         "",
         "| Policy | Concepts touched | Correlation with true mastery |",
         "| --- | --- | --- |",

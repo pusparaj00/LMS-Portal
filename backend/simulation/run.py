@@ -26,19 +26,19 @@ def predict_from_mastery(item: selection.Item, mastery: dict[int, float]) -> flo
     return float(p @ weights)
 
 
-def run_student(policy: str, items, outcomes: np.ndarray, truth: np.ndarray, rng, concepts: int):
+def run_student(policy: str, items, outcomes: np.ndarray, truth: np.ndarray, rng, concepts: int, seed: str = ""):
     """One placement test. Returns (error after each item, mastery, ability after each item, asked ids)."""
     mastery = {c: 0.5 for c in range(concepts)}
     asked: list[int] = []
     responses: list[tuple[float, float, bool, str]] = []
     errors = []
     abilities = []
-    for _ in range(selection.MAX_ITEMS):
+    for _ in range(selection.max_questions(items)):
         theta = selection.eap_theta(responses)
         if policy == "adaptive":
-            item = selection.select_next(items, set(asked), mastery, theta)
+            item = selection.select_next(items, asked, mastery, theta, seed)
         else:
-            pool = selection.eligible(items, set(asked))
+            pool = selection.allowed(items, asked)
             item = pool[rng.integers(len(pool))]
         correct = bool(outcomes[item.id])
         asked.append(item.id)
@@ -98,7 +98,8 @@ def simulate(students: int, seed: int, bank: model.Bank) -> dict:
     probabilities = model.response_probabilities(theta, items, a_true, b_true)
     outcomes = (rng.random(probabilities.shape) < probabilities).astype(int)  # one fixed answer per student and item
 
-    curves = {p: np.zeros((students, selection.MAX_ITEMS)) for p in POLICIES}
+    length = selection.max_questions(items)
+    curves = {p: np.zeros((students, length)) for p in POLICIES}
     held_scores = {p: [] for p in (*POLICIES, "prior_only")}
     held_labels: list[int] = []
     coverage = {p: [] for p in POLICIES}
@@ -110,7 +111,7 @@ def simulate(students: int, seed: int, bank: model.Bank) -> dict:
         for policy in POLICIES:
             run_rng = np.random.default_rng([seed, s])
             errors, mastery, abilities, asked = run_student(
-                policy, items, outcomes[s], mastery_true[s], run_rng, k
+                policy, items, outcomes[s], mastery_true[s], run_rng, k, f"{seed}:{s}"
             )
             curves[policy][s] = errors
             asked_by_policy[policy] = (mastery, abilities[-1], asked)
@@ -162,26 +163,27 @@ def report(result: dict, args: argparse.Namespace) -> str:
     curves = result["curves"]
     threshold = float(curves["random"][-1])
     adaptive_items = items_to_reach(curves["adaptive"], threshold)
-    fewer = (selection.MAX_ITEMS - adaptive_items) / selection.MAX_ITEMS * 100 if adaptive_items else None
+    length = len(curves["random"])
+    fewer = (length - adaptive_items) / length * 100 if adaptive_items else None
     lines = [
         "# Diagnostic simulation results",
         "",
         f"- Command: `python -m simulation.run --students {args.students} --seed {args.seed}`",
         f"- Run at: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}",
-        f"- Simulated students: {args.students}, bank: {len(args.items)} items, test length: {selection.MAX_ITEMS}",
+        f"- Simulated students: {args.students}, bank: {len(args.items)} items, test length: {length}",
         "",
         "## Error of the mastery vector (mean absolute error against true mastery)",
         "",
         "| Items asked | adaptive | random | BKT (random order) |",
         "| --- | --- | --- | --- |",
     ]
-    for n in (1, 3, 5, 8, 10):
+    for n in sorted({1, 3, 5, 8, 10, 16, length}):
         lines.append(
             f"| {n} | {curves['adaptive'][n - 1]:.3f} | {curves['random'][n - 1]:.3f} | {curves['bkt'][n - 1]:.3f} |"
         )
     lines += [
         "",
-        f"Threshold = the error random selection reaches after {selection.MAX_ITEMS} items ({threshold:.3f}). "
+        f"Threshold = the error random selection reaches after {length} items ({threshold:.3f}). "
         + (
             f"Adaptive selection reaches it after {adaptive_items} items, {fewer:.0f}% fewer than random "
             f"(target in the PRD: at least 30% fewer)."
@@ -189,7 +191,7 @@ def report(result: dict, args: argparse.Namespace) -> str:
             else "Adaptive selection does not reach it within the test length."
         ),
         "",
-        "## Coverage and ranking after 10 items",
+        "## Coverage and ranking after the whole test",
         "",
         "| Policy | Concepts touched (of 12) | Correlation of estimate with true mastery |",
         "| --- | --- | --- |",
