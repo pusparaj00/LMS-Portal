@@ -21,6 +21,7 @@ function sections(role: Role, courseId: number | null): { title?: string; items:
       { href: `#/course/${id}/classwork`, label: "Classwork", prefix: `#/course/${id}/problem/` },
       { href: `#/class/${id}`, label: "Class overview", prefix: `#/class/${id}/` },
       { href: `#/course/${id}/analytics`, label: "Analytics" },
+      { href: `#/course/${id}/insight`, label: "Insight" },
       ...(role === "instructor" ? [{ href: `#/course/${id}/people`, label: "People" }] : []),
       { href: `#/course/${id}/gradebook`, label: "Gradebook" },
     ];
