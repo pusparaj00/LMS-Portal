@@ -74,3 +74,19 @@ def test_every_reference_solution_in_the_bank_is_caught_when_pasted_whole():
 def test_short_one_line_fragments_are_never_blocked_by_the_similarity_rule():
     for fragment in ("`for i in range(n):`", "`total += i`", "`return result`", "`print(total)`"):
         assert leak.check(f"Look at {fragment}", REFERENCE).passed, fragment
+
+
+TINY = "print(int(input()) + 1)\n"
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Just write `print(int(input()) + 1)` and you are done.", "The answer is\nprint(int(input()) + 1)"],
+)
+def test_a_solution_shorter_than_the_usual_minimum_is_still_a_leak_when_pasted_whole(text):
+    assert not leak.check(text, TINY).passed
+
+
+@pytest.mark.parametrize("text", ["Convert it with `int(input())` first.", "Then add one to the number you read."])
+def test_a_pointer_into_a_tiny_solution_still_passes(text):
+    assert leak.check(text, TINY).passed

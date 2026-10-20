@@ -265,7 +265,7 @@ def _copies_a_course_solution(turn: Turn, answer: str) -> bool:
     to get a graded problem solved."""
     blocks = re.findall(r"```[^\n]*\n(.*?)```", answer, re.S)
     code = "\n".join([*blocks, *leak.code_like_text(re.sub(r"```.*?```", " ", answer, flags=re.S))[0]])
-    if len(leak.normalise_tokens(code)) < leak.MIN_TOKENS_TO_COMPARE:
+    if len(leak.normalise_tokens(code)) < leak.MIN_TOKENS_FLOOR:
         return False
     references = turn.conn.execute(
         text(
@@ -275,7 +275,10 @@ def _copies_a_course_solution(turn: Turn, answer: str) -> bool:
         ),
         {"u": turn.user_id},
     ).scalars()
-    return any(leak.containment(code, ref) >= leak.SIMILARITY_THRESHOLD for ref in references)
+    return any(
+        leak.long_enough_to_compare(code, ref) and leak.containment(code, ref) >= leak.SIMILARITY_THRESHOLD
+        for ref in references
+    )
 
 
 def _open_check(turn: Turn, answer: str, reference: str | None) -> bool:

@@ -10,7 +10,8 @@ from dataclasses import dataclass
 
 MAX_CODE_LINES = 3
 MAX_INLINE_SNIPPET_CHARS = 60
-MIN_TOKENS_TO_COMPARE = 12  # shorter fragments (a single `range(1, n + 1)`) are not a solution
+MIN_TOKENS_TO_COMPARE = 12  # shorter fragments (a single `range(1, n + 1)`) are not a solution...
+MIN_TOKENS_FLOOR = 6  # ...unless the whole reference solution is shorter: then a copy of all of it is compared too
 SIMILARITY_THRESHOLD = 0.7  # chosen on the question bank, see evaluation/leak_threshold.py
 STRICTEST_THRESHOLD = 0.3  # a problem may only make the guard stricter (F-62), down to this
 NGRAM = 3
@@ -61,6 +62,12 @@ def containment(candidate: str, reference: str) -> float:
     return len(grams & _ngrams(normalise_tokens(reference))) / len(grams)
 
 
+def long_enough_to_compare(code: str, reference: str) -> bool:
+    """Short fragments are pointers, not solutions; but a reference shorter than the minimum is itself that short."""
+    needed = max(MIN_TOKENS_FLOOR, min(MIN_TOKENS_TO_COMPARE, len(normalise_tokens(reference))))
+    return len(normalise_tokens(code)) >= needed
+
+
 def looks_like_code(line: str) -> bool:
     stripped = line.strip()
     if not stripped:
@@ -95,7 +102,7 @@ def check(text: str, reference_solution: str, threshold: float = SIMILARITY_THRE
     if any(len(s) > MAX_INLINE_SNIPPET_CHARS for s in snippets):
         return LeakResult(False, "inline snippet longer than a short expression")
     combined = "\n".join([*lines, *snippets])
-    if len(normalise_tokens(combined)) >= MIN_TOKENS_TO_COMPARE:
+    if long_enough_to_compare(combined, reference_solution):
         similarity = containment(combined, reference_solution)
         if similarity >= threshold:
             return LeakResult(False, f"code matches the reference solution ({similarity:.0%})")

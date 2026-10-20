@@ -240,6 +240,17 @@ def test_closing_the_problem_page_does_not_let_a_course_solution_through(client,
     assert body["reply"] == handlers.OPEN_WITHHELD and "solution_withheld" in body["tools"]
 
 
+def test_a_very_short_course_solution_is_withheld_when_no_problem_is_open(client, make_user, world, owner, llm):
+    """The similarity rule once skipped code under 12 tokens, which let a one-line graded solution through."""
+    _, headers = new_student(client, make_user, world)
+    with owner.begin() as conn:
+        conn.execute(text("UPDATE problems SET reference_solution = :r WHERE id = :p"),
+                     {"r": "print(int(input()) + 1)\n", "p": world["p"]})
+    llm(FakeLLM(route("general"), "Easy:\n```python\nprint(int(input()) + 1)\n```"))
+    body = say(client, headers, "what is the one-liner for the add one exercise")
+    assert body["reply"] == handlers.OPEN_WITHHELD and "solution_withheld" in body["tools"]
+
+
 def test_an_open_answer_says_so_when_the_model_is_down(client, make_user, llm):
     _, headers = make_user("student")
     llm(FakeLLM(route("general"), LLMError("down")))
