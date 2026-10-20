@@ -15,13 +15,14 @@ export function setTheme(theme: Theme): void {
   }
 }
 
-/** Dark is the default on a first visit (ux-plan 1.1); a stored choice overrides it. */
+/** The first visit follows the system setting; a stored choice overrides it. */
 export function applyStoredTheme(): void {
-  let theme: Theme = "dark";
+  let theme: Theme = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   try {
-    if (localStorage.getItem(KEY) === "light") theme = "light";
+    const stored = localStorage.getItem(KEY);
+    if (stored === "light" || stored === "dark") theme = stored;
   } catch {
-    // keep the default
+    // keep the system setting
   }
   document.documentElement.dataset.theme = theme;
 }

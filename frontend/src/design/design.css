@@ -50,7 +50,8 @@
 }
 
 .strip-value {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
   text-align: right;
 }
@@ -61,7 +62,8 @@
 }
 
 .delta {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   padding: 0.05rem 0.45rem;
   border: 1px solid var(--line);
@@ -146,7 +148,8 @@ a.evidence {
 .worked > summary {
   cursor: pointer;
   padding: 0.4rem 0.75rem;
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
   color: var(--slate);
 }
@@ -168,7 +171,8 @@ a.evidence {
 }
 
 .verb {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   color: var(--signal);
 }
@@ -187,7 +191,8 @@ a.evidence {
   padding: 0.4rem 0.9rem;
   border-bottom: 1px solid var(--line);
   background: var(--surface-2);
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
   color: var(--slate);
 }
@@ -203,7 +208,8 @@ a.evidence {
 }
 
 .terminal-tag {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.75rem;
   color: var(--ink-3);
 }
@@ -234,7 +240,8 @@ a.evidence {
 }
 
 .pubbrand {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--ink);
   text-decoration: none;
@@ -298,7 +305,8 @@ a.evidence {
 .statusstrip {
   margin: 0;
   padding: 0.4rem 1.25rem;
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
   color: var(--slate);
   border-bottom: 1px solid var(--line);
@@ -311,14 +319,16 @@ a.evidence {
 
 .label {
   margin: 0 0 0.35rem;
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8125rem;
   color: var(--ink-3);
 }
 
 .pub h1,
 .pub h2 {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   text-transform: none;
   letter-spacing: -0.01em;
@@ -442,7 +452,8 @@ a.evidence {
 }
 
 .feature-no {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
   color: var(--ink-3);
   margin-right: 0.5rem;
@@ -484,7 +495,8 @@ a.evidence {
 }
 
 .walk-count {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
   color: var(--ink-3);
   margin: 0;
@@ -759,7 +771,8 @@ a.evidence {
 }
 
 .side-label {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
   font-weight: 400;
   letter-spacing: 0;
   color: var(--ink-3);

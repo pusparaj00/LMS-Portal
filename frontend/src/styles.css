@@ -1,55 +1,56 @@
-/* Tokens from docs/ux-plan.md section 1.1. The names are the ones the pages already use:
-   chalk = bg, panel = surface, slate = ink-2, line = rule. Dark is the default; light is a user toggle. */
+/* Tokens. The palette is the one dealt for the public site (rose grey ground, brown-black ink, one green accent);
+   the dark theme keeps the same warm hue. Names are the ones the pages already use: chalk = bg, panel = surface,
+   slate = ink-2, line = rule. The theme follows the system until the user picks one with the toggle. */
 :root {
-  --chalk: #050506;
-  --panel: #0c0c0e;
-  --surface-2: #141417;
-  --line: #26262b;
-  --ink: #ededef;
-  --slate: #a0a0a8;
-  --ink-3: #84848e;
-  --signal: #7c92ff;
-  --signal-soft: #151a38;
+  --chalk: #181513;
+  --panel: #1f1b19;
+  --surface-2: #2a2522;
+  --line: #3b3431;
+  --ink: #ebe5e3;
+  --slate: #b0a7a2;
+  --ink-3: #958c87;
+  --signal: #3fbf80;
+  --signal-soft: #1b2b23;
   --warn: #e0a05a;
-  --warn-bg: #2a1d0e;
+  --warn-bg: #2d2012;
   --pass: #4fc3bf;
-  --pass-bg: #0e2928;
+  --pass-bg: #12292a;
   --fail: #f08a8a;
-  --fail-bg: #2f1517;
+  --fail-bg: #331a1b;
   --shadow: 0 0 0 0 transparent;
-  --overlay-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --overlay-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
   --radius: 8px;
   --r0: #e0944a;
   --r1: #c58a3e;
-  --r2: #7a8794;
+  --r2: #8a8580;
   --r3: #3f9189;
   --r4: #4fc3bf;
-  --primary-ink: #050506;
-  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --primary-ink: #0c1d14;
+  --sans: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace; /* literal code only */
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --chalk: #f5f7f6;
-  --panel: #ffffff;
-  --surface-2: #edf0ee;
-  --line: #dce2e0;
-  --ink: #15202b;
-  --slate: #4a5866;
-  --ink-3: #5f6b78;
-  --signal: #2b47d6;
-  --signal-soft: #e8ebfb;
+  --chalk: #ebe5e3;
+  --panel: #f4f0ee;
+  --surface-2: #e1dad7;
+  --line: #cfc6c2;
+  --ink: #2b2622;
+  --slate: #50473f;
+  --ink-3: #6a615d;
+  --signal: #0f7d45;
+  --signal-soft: #dcebe2;
   --warn: #8a5a00;
-  --warn-bg: #fdf3dc;
+  --warn-bg: #f6e8cc;
   --pass: #0b6e6d;
-  --pass-bg: #e0f1f0;
-  --fail: #c23b3b;
-  --fail-bg: #fbeae9;
-  --overlay-shadow: 0 8px 28px rgba(21, 32, 43, 0.18);
+  --pass-bg: #d5e8e6;
+  --fail: #b83a3a;
+  --fail-bg: #f2dad8;
+  --overlay-shadow: 0 8px 28px rgba(43, 38, 34, 0.18);
   --r0: #b8620f;
   --r1: #a8731a;
-  --r2: #78858f;
+  --r2: #7b756f;
   --r3: #3a8a81;
   --r4: #0e7c7b;
   --primary-ink: #ffffff;
