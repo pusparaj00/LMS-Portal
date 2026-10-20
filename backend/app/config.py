@@ -1,11 +1,15 @@
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PLACEHOLDERS = ("changeme", "change-me", "change_me", "secret", "password", "example", "placeholder")
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
+    app_env: str = "development"  # "production" makes the secret checks below fatal (TR-O-04)
     database_url: str
     redis_url: str
     jwt_secret: str
@@ -49,7 +53,25 @@ class Settings(BaseSettings):
     chat_history_turns: int = 6
     retrieval_min_score: float = 0.67
 
+    def check_production(self) -> None:
+        """A pydantic validator would echo the offending values in its error; this names only the setting."""
+        if self.app_env != "production":
+            return
+        weak = []
+        for name, value, shortest in (
+            ("JWT_SECRET", self.jwt_secret, 32),
+            ("MASTERY_SERVICE_TOKEN", self.mastery_service_token, 32),
+            ("database password", urlsplit(self.database_url).password or "", 16),
+            ("Redis password", urlsplit(self.redis_url).password or "", 16),
+        ):
+            if len(value) < shortest or any(word in value.lower() for word in PLACEHOLDERS):
+                weak.append(f"{name} (at least {shortest} characters, not a placeholder)")
+        if weak:
+            raise RuntimeError("APP_ENV=production refuses weak secrets: " + "; ".join(weak))
+
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    settings.check_production()
+    return settings
