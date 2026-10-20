@@ -41,7 +41,7 @@ def record(
     """Write one event. With `conn` it commits or rolls back with that work; without, it is written at once."""
     values = {
         "e": event, "u": user_id, "ip": ip, "rid": request_id_var.get(), "st": status,
-        "d": json.dumps(detail or {}),
+        "d": json.dumps(detail or {}).replace("\\u0000", ""),  # jsonb cannot store a NUL
     }
     try:
         if conn is not None:

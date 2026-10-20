@@ -3,6 +3,7 @@ import threading
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 from app.main import app
 from tests.helpers import enroll
@@ -87,3 +88,21 @@ def test_two_simultaneous_answers_to_one_placement_item_count_once(client, make_
     state = json.loads(get_redis().get(f"diagnostic:{started['session_id']}"))
     assert state["asked"] == [item["problem_id"]] and len(state["responses"]) == 1
     assert PLACEMENT_RIGHT  # the coding tasks are not reached in this test
+
+
+def test_an_id_past_the_integer_range_is_not_found_not_a_server_error(client, make_user):
+    """Admins skip the course-membership lookup, so the id reached the database and raised (found by the audit fuzz)."""
+    _, headers = make_user("admin")
+    for path in ("courses/99999999999/gradebook", "courses/99999999999/at-risk", "courses/1/quizzes/99999999999"):
+        assert client.get(f"{API}/{path}", headers=headers).status_code in (404, 422), path
+
+
+def test_a_refused_request_with_a_nul_in_its_path_is_still_audited(client, owner):
+    before = _denied_count(owner)
+    assert client.patch(f"{API}/admin/users/%00/role", json={"role": "admin"}).status_code in (401, 403, 404, 422)
+    assert _denied_count(owner) > before
+
+
+def _denied_count(owner) -> int:
+    with owner.connect() as conn:
+        return conn.execute(text("SELECT count(*) FROM audit_events WHERE event = 'access.denied'")).scalar_one()

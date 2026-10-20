@@ -1,6 +1,8 @@
+import psycopg.errors
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DataError
 from sqlalchemy.exc import TimeoutError as PoolTimeout
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -39,6 +41,13 @@ def install_error_handlers(app: FastAPI) -> None:
         response = error_response(503, "busy", "The system is busy right now. Please try again in a moment.")
         response.headers["Retry-After"] = str(RETRY_AFTER_SECONDS)
         return response
+
+    @app.exception_handler(DataError)
+    async def bad_value(request: Request, exc: DataError) -> JSONResponse:
+        """A value the database cannot store (an id past the integer range, a NUL character): the caller's mistake."""
+        if isinstance(exc.orig, psycopg.errors.NumericValueOutOfRange):
+            return error_response(404, "http_error", "not found")
+        return error_response(422, "validation_error", "a value is not acceptable")
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:

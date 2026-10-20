@@ -52,6 +52,9 @@ app.add_middleware(BodySizeLimit)
 install_error_handlers(app)
 
 
+MAX_ID = 2**31 - 1  # every id in the API is a 32-bit integer
+
+
 @app.middleware("http")
 async def request_context(request: Request, call_next):
     offered = request.headers.get("X-Request-ID", "")
@@ -60,7 +63,10 @@ async def request_context(request: Request, call_next):
     started = time.perf_counter()
     try:
         try:
-            response = await call_next(request)
+            if any(len(part) > 9 and part.isdigit() and int(part) > MAX_ID for part in request.url.path.split("/")):
+                response = error_response(404, "http_error", "not found")  # every id is a 32-bit integer
+            else:
+                response = await call_next(request)
         except Exception:
             # Handled here, not by Starlette, so the request ID is still known and the JSON shape holds.
             log.exception("unhandled error", extra={"fields": {"path": request.url.path}})
