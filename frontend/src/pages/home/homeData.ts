@@ -98,7 +98,7 @@ export type Row = { title: string; text: string; image: string; alt: string; wid
 export const ROWS: Row[] = [
   {
     title: "A starting point, not a grade",
-    text: "Sixteen to twenty questions from your own course, mostly tracing code, then a few short tasks. Saying “I don't know” is allowed, and it tells the system more than a lucky guess does.",
+    text: "Sixteen to twenty questions from your own course, mostly tracing code, then a few short tasks. Saying “I don't know” is allowed, and it tells the system something a lucky guess hides.",
     image: "/archive/hollerith-card.jpg",
     alt: "A Hollerith punched card from 1895 with rows of rectangular holes",
     width: "320px",

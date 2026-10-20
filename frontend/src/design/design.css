@@ -59,7 +59,7 @@
 .delta {
   font-family: var(--sans);
   font-variant-numeric: tabular-nums;
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   padding: 0.05rem 0.45rem;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -133,7 +133,6 @@ a.evidence {
 }
 
 .worked {
-  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
   margin: 0.5rem 0;
@@ -167,7 +166,7 @@ a.evidence {
 .verb {
   font-family: var(--sans);
   font-variant-numeric: tabular-nums;
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   color: var(--signal);
 }
 
@@ -242,10 +241,6 @@ a.evidence {
   overflow-x: auto;
 }
 
-.auth main.narrow {
-  max-width: 26rem;
-  padding-top: 3rem;
-}
 
 .options label {
   display: flex;
@@ -296,7 +291,6 @@ a.evidence {
 
 .stat {
   background: var(--panel);
-  border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0.9rem 1rem;
 }
@@ -440,7 +434,6 @@ a.evidence {
   margin: 0.75rem 0;
   padding: 0.6rem 0.9rem;
   background: var(--panel);
-  border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 

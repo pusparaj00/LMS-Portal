@@ -53,6 +53,7 @@ export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s:
     <div className="home auth">
     <PublicBar />
     <main className="narrow">
+      <div className="auth-form">
       <h1>{mode === "login" ? "Log in" : "Create a student account"}</h1>
       <form onSubmit={submit} className="stack">
         <label>
@@ -101,6 +102,14 @@ export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s:
       <p>
         <a href="#/">Back to the home page</a>
       </p>
+      </div>
+      <img
+        className="auth-picture"
+        src="/archive/eniac.jpg"
+        width={1920}
+        height={1318}
+        alt="Two women operating the ENIAC computer in 1946"
+      />
     </main>
     </div>
   );

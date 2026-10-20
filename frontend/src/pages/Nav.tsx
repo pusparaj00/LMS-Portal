@@ -88,7 +88,7 @@ export function Nav({ role, courseId, courseTitle, hash }: { role: Role; courseI
         ))}
         {role === "student" && recent.length > 0 && (
           <div className="side-section">
-            <p className="side-title side-label">//recent</p>
+            <p className="side-title side-label">Recent</p>
             <ul>
               {recent.map((r) => (
                 <li key={r.href}>
