@@ -1,4 +1,4 @@
-/* Design system pieces and the public page (docs/ux-plan.md sections 1, 4.0 and 5). Tokens live in styles.css. */
+/* Design system pieces (chips, mastery strip, forms). Tokens live in styles.css; the public page has its own css in pages/home. */
 
 .sr-only {
   position: absolute;
@@ -23,11 +23,6 @@
   grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) 2.6rem 6.5rem auto;
   gap: 0.25rem 0.75rem;
   align-items: center;
-}
-
-.strip-small {
-  grid-template-columns: minmax(6rem, 9rem) minmax(3rem, 1fr) 2.4rem 6rem auto;
-  font-size: 0.85rem;
 }
 
 .strip-name {
@@ -80,8 +75,7 @@
 }
 
 @media (max-width: 40rem) {
-  .strip,
-  .strip-small {
+  .strip {
     grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
@@ -177,303 +171,12 @@ a.evidence {
   color: var(--signal);
 }
 
-.terminal {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  overflow: hidden;
-}
-
-.terminal-bar {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.4rem 0.9rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface-2);
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: var(--slate);
-}
-
-.terminal-body {
-  padding: 0.9rem;
-  font-family: var(--mono);
-  font-size: 0.85rem;
-}
-
-.terminal-body p {
-  margin: 0.25rem 0;
-}
-
-.terminal-tag {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.75rem;
-  color: var(--ink-3);
-}
-
-.cmd {
-  color: var(--signal);
-}
-
-.fail-line {
-  color: var(--fail);
-}
-
-/* ---- public layout ---- */
-.pub {
-  min-height: 100dvh;
-}
-
-.pubbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.6rem 1.25rem;
-  background: var(--chalk);
-  border-bottom: 1px solid var(--line);
-}
-
-.pubbrand {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: var(--ink);
-  text-decoration: none;
-  margin-right: auto;
-}
-
-.pubnav {
-  display: flex;
-  gap: 1.1rem;
-}
-
-.pubnav a,
-.pubmenu a {
-  color: var(--slate);
-  text-decoration: none;
-}
-
-.pubnav a:hover,
-.pubmenu a:hover {
-  color: var(--ink);
-  text-decoration: underline;
-}
-
-.pubmenu {
-  display: none;
-  position: relative;
-}
-
-.pubmenu summary {
-  cursor: pointer;
-  list-style: none;
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-}
-
-.pubmenu > div {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.4rem);
-  display: grid;
-  gap: 0.6rem;
-  min-width: 11rem;
-  padding: 0.9rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--overlay-shadow);
-}
-
-@media (max-width: 52rem) {
-  .pubnav {
-    display: none;
-  }
-
-  .pubmenu {
-    display: block;
-  }
-}
-
-.statusstrip {
-  margin: 0;
-  padding: 0.4rem 1.25rem;
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: var(--slate);
-  border-bottom: 1px solid var(--line);
-}
-
-.pubmain {
-  max-width: 72rem;
-  padding: 0 1.25rem 3rem;
-}
-
 .label {
   margin: 0 0 0.35rem;
   font-family: var(--sans);
   font-variant-numeric: tabular-nums;
   font-size: 0.8125rem;
   color: var(--ink-3);
-}
-
-.pub h1,
-.pub h2 {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: -0.01em;
-}
-
-.pub h2 {
-  font-size: clamp(1.4rem, 3vw, 1.9rem);
-  line-height: 1.2;
-  margin: 0 0 1rem;
-}
-
-.pub h2:focus {
-  outline: none;
-}
-
-.reading {
-  max-width: 68ch;
-  line-height: 1.6;
-  color: var(--slate);
-}
-
-.band {
-  padding: 3.5rem 0 0.5rem;
-  border-top: 1px solid var(--line);
-  margin-top: 3rem;
-}
-
-/* The grid lines and noise sit behind the replay, not behind the text column (ux-plan 8: never behind body text). */
-.hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: 2.5rem;
-  align-items: center;
-  padding: 3.5rem 0 1rem;
-  isolation: isolate;
-}
-
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0 -1.25rem;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.035 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
-    linear-gradient(color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px);
-  background-size: 160px 160px, 64px 64px, 64px 64px;
-  mask-image: linear-gradient(90deg, transparent 38%, #000 62%);
-}
-
-.pub .hero h1 {
-  font-size: clamp(2rem, 4.6vw, 3rem);
-  line-height: 1.12;
-  margin: 0 0 1.25rem;
-}
-
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-@media (max-width: 62rem) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .hero::before {
-    mask-image: none;
-    opacity: 0.5;
-  }
-}
-
-.replay-lines {
-  min-height: 15rem;
-}
-
-.replay-controls {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-}
-
-.transcript {
-  font-size: 0.9rem;
-  color: var(--slate);
-}
-
-.transcript summary {
-  cursor: pointer;
-}
-
-/* ---- features and walkthroughs ---- */
-.features {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
-  gap: 2rem;
-}
-
-.feature-list {
-  display: grid;
-  align-content: start;
-  gap: 0.25rem;
-}
-
-.feature-list button {
-  text-align: left;
-  border-color: transparent;
-  background: none;
-  padding: 0.65rem 0.8rem;
-  font-weight: 500;
-}
-
-.feature-list button[aria-selected="true"] {
-  background: var(--signal-soft);
-  border-color: var(--signal);
-  color: var(--ink);
-}
-
-.feature-no {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: var(--ink-3);
-  margin-right: 0.5rem;
-}
-
-.pane-text {
-  max-width: 62ch;
-  margin-top: 0;
-}
-
-.pane-preview {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  padding: 1rem;
-}
-
-.pane-preview > .terminal-tag {
-  display: block;
-  margin-bottom: 0.6rem;
 }
 
 .tabs {
@@ -486,47 +189,6 @@ a.evidence {
 .tabs button[aria-selected="true"] {
   background: var(--signal-soft);
   border-color: var(--signal);
-}
-
-.walk {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: 2rem;
-}
-
-.walk-count {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: var(--ink-3);
-  margin: 0;
-}
-
-.walk h3 {
-  margin: 0.3rem 0 0.5rem;
-}
-
-.walk-buttons {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-@media (max-width: 52rem) {
-  .features,
-  .walk {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .feature-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* ---- sample previews ---- */
-.sample-q {
-  margin-top: 0;
-  color: var(--slate);
 }
 
 .code {
@@ -551,21 +213,6 @@ a.evidence {
   font-size: 0.85rem;
 }
 
-.sample-tests {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.4rem;
-}
-
-.sample-tests li {
-  padding: 0.45rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  font-size: 0.9rem;
-}
-
 .sample-tests .pass {
   background: var(--pass-bg);
 }
@@ -580,37 +227,6 @@ a.evidence {
   margin-right: 0.5rem;
 }
 
-.ladder {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.hint-text {
-  color: var(--slate);
-  font-size: 0.9rem;
-}
-
-.ledger-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-}
-
-.ledger-table th,
-.ledger-table td {
-  text-align: left;
-  padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid var(--line);
-}
-
-.chat-sample .me {
-  background: var(--surface-2);
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-}
-
 .route {
   font-size: 0.85rem;
   color: var(--slate);
@@ -622,126 +238,11 @@ a.evidence {
   gap: 0.4rem;
 }
 
-/* ---- comparison, lists, tables ---- */
-.compare {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.compare-side {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem;
-  background: var(--panel);
-}
-
-.compare-checked {
-  border-color: var(--pass);
-}
-
-@media (max-width: 40rem) {
-  .compare {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.plain {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.5rem;
-  max-width: 68ch;
-}
-
 .table-wrap {
   overflow-x: auto;
 }
 
-.status-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.92rem;
-}
-
-.status-table th,
-.status-table td {
-  text-align: left;
-  padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--line);
-}
-
-.status-table th {
-  background: var(--surface-2);
-  position: sticky;
-  top: 0;
-}
-
-.faq {
-  border-bottom: 1px solid var(--line);
-  max-width: 68ch;
-}
-
-.faq summary {
-  cursor: pointer;
-  padding: 0.8rem 0;
-  font-weight: 600;
-}
-
-.faq p {
-  margin-top: 0;
-  color: var(--slate);
-}
-
-.course-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 1rem;
-}
-
-.course-card {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem;
-  background: var(--panel);
-}
-
-.course-card h3 {
-  margin-top: 0;
-}
-
-.muted-card {
-  border-style: dashed;
-}
-
-.closing {
-  margin-top: 4rem;
-  padding: 3rem 1.5rem;
-  text-align: center;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-}
-
-.closing .hero-actions {
-  justify-content: center;
-}
-
-.pubfooter {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 3rem;
-  border-top: 1px solid var(--line);
-}
-
-.footgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: 1.5rem;
-}
-
-.pub main.narrow {
+.auth main.narrow {
   max-width: 26rem;
   padding-top: 3rem;
 }
@@ -824,30 +325,6 @@ a.evidence {
   align-items: start;
 }
 
-.course-cards {
-  list-style: none;
-  margin: 0.5rem 0 1.5rem;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 0.75rem;
-}
-
-.course-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem 1.1rem;
-}
-
-.course-card h3 {
-  margin: 0;
-  font-size: 1.05rem;
-}
-
 .course-card .meta {
   margin: 0;
   font-size: 0.85rem;
@@ -909,15 +386,13 @@ a.evidence {
   font-variant-numeric: tabular-nums;
 }
 
-.grades-table th,
-.grades-table td {
+.grades-table th, .grades-table td {
   text-align: left;
   padding: 0.45rem 0.6rem;
   border-top: 1px solid var(--line);
 }
 
-.grades-table td.num,
-.grades-table th.num {
+.grades-table td.num, .grades-table th.num {
   text-align: right;
 }
 
@@ -981,8 +456,7 @@ a.evidence {
 }
 
 /* ---- course content (F-66, F-67, F-68) ---- */
-.content .module,
-.module-card {
+.content .module, .module-card {
   margin: 0.75rem 0;
 }
 
@@ -1022,8 +496,7 @@ a.evidence {
   gap: 0.5rem 0.75rem;
 }
 
-.module-head input[type="text"],
-.module-head input:not([type]) {
+.module-head input[type="text"], .module-head input:not([type]) {
   flex: 1 1 14rem;
 }
 
@@ -1041,8 +514,7 @@ a.evidence {
   margin: 0.75rem 0;
 }
 
-.module-head label,
-.item-form label {
+.module-head label, .item-form label {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;

@@ -1,7 +1,7 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, Role, Session, api } from "../api";
-import { PublicBar } from "./HomePage";
+import { PREFILL_KEY, PublicBar } from "./HomePage";
 
 type Token = { access_token: string; role: Role };
 
@@ -13,6 +13,18 @@ export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s:
   const [interests, setInterests] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    try {
+      const prefill = sessionStorage.getItem(PREFILL_KEY);
+      if (prefill) {
+        setEmail(prefill);
+        sessionStorage.removeItem(PREFILL_KEY);
+      }
+    } catch {
+      // storage can be blocked; the field then starts empty
+    }
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -38,7 +50,7 @@ export function LoginPage({ onSession, initialMode = "login" }: { onSession: (s:
   }
 
   return (
-    <div className="pub">
+    <div className="home auth">
     <PublicBar />
     <main className="narrow">
       <h1>{mode === "login" ? "Log in" : "Create a student account"}</h1>

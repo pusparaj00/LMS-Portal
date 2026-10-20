@@ -1,30 +1,28 @@
-import { ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 
 import { ThemeToggle } from "../design/ThemeToggle";
-import {
-  ChatSample,
-  HintLadder,
-  LedgerSample,
-  QuestionCard,
-  prefersReducedMotion,
-  Replay,
-  ResultSample,
-  TestResults,
-  VerifiedExplanation,
-} from "./HomePreviews";
+import { CONCEPTS, FAQ, HERO_NAMES, ROWS, STAGES, STATUS } from "./home/homeData";
+import { LiveQuestion } from "./home/LiveQuestion";
+import "./home/home.css";
+
+export const PREFILL_KEY = "lms-prefill-email";
 
 const ANCHORS = [
-  { id: "features", label: "Features" },
-  { id: "walkthroughs", label: "Walkthroughs" },
-  { id: "roles", label: "Roles" },
+  { id: "question", label: "Try a question" },
+  { id: "how", label: "How it works" },
+  { id: "features", label: "What you get" },
   { id: "status", label: "Status" },
   { id: "faq", label: "FAQ" },
 ];
 
+function reducedMotion(): boolean {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
 function scrollToSection(id: string) {
   const section = document.getElementById(id);
   if (!section) return;
-  section.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  section.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth" });
   section.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
 }
 
@@ -43,425 +41,398 @@ function SectionLink({ id, children }: { id: string; children: ReactNode }) {
   );
 }
 
-/** Top bar of the public layout. Log in sits top-left at every width (ux-plan 4.0). */
-export function PublicBar({ dashboardHref }: { dashboardHref?: string }) {
+/** Top bar of the public layout: the name, a few links and one action. Its ink follows the chapter beneath it. */
+export function PublicBar({ dashboardHref, onHome = false }: { dashboardHref?: string; onHome?: boolean }) {
+  const [tone, setTone] = useState("paper");
+  useEffect(() => {
+    if (!onHome) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const chapter = Array.from(document.querySelectorAll<HTMLElement>("[data-tone]")).find((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top <= 36 && r.bottom > 36;
+      });
+      if (chapter?.dataset.tone) setTone(chapter.dataset.tone);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [onHome]);
+
   return (
-    <header className="pubbar">
-      {dashboardHref ? (
-        <a className="button primary" href={dashboardHref}>
-          Open dashboard
-        </a>
-      ) : (
-        <a className="button primary" href="#/login">
-          Log in
-        </a>
-      )}
+    <header className={`pubbar ${onHome ? "pubbar-fixed" : ""}`} data-tone-bar={onHome ? tone : "paper"}>
       <a className="pubbrand" href={dashboardHref ? "#/home" : "#/"}>
         Adaptive LMS
       </a>
-      <nav className="pubnav" aria-label="Sections">
-        {ANCHORS.map((a) => (
-          <SectionLink key={a.id} id={a.id}>
-            {a.label}
-          </SectionLink>
-        ))}
-      </nav>
-      <details className="pubmenu">
-        <summary>Menu</summary>
-        <div>
+      {onHome && (
+        <nav className="pubnav" aria-label="Sections">
           {ANCHORS.map((a) => (
             <SectionLink key={a.id} id={a.id}>
               {a.label}
             </SectionLink>
           ))}
-          <ThemeToggle />
-        </div>
-      </details>
-      {!dashboardHref && (
-        <a className="button" href="#/register">
-          Create account
-        </a>
+        </nav>
+      )}
+      <div className="pubactions">
+        {dashboardHref ? (
+          <a className="button primary" href={dashboardHref}>
+            Open dashboard
+          </a>
+        ) : (
+          <>
+            <a className="pubtext" href="#/login">
+              Log in
+            </a>
+            <a className="button primary" href="#/register">
+              Create account
+            </a>
+          </>
+        )}
+      </div>
+      {onHome && (
+        <details className="pubmenu">
+          <summary>Menu</summary>
+          <div>
+            {ANCHORS.map((a) => (
+              <SectionLink key={a.id} id={a.id}>
+                {a.label}
+              </SectionLink>
+            ))}
+          </div>
+        </details>
       )}
     </header>
   );
 }
 
-const FEATURES: { title: string; text: string; preview: ReactNode }[] = [
-  {
-    title: "Placement test",
-    text: "Up to 10 questions that adapt to your answers and stop early once there is enough to go on. Some wrong answers point to a specific misunderstanding.",
-    preview: <QuestionCard />,
-  },
-  {
-    title: "Run with evidence",
-    text: "Your code runs in an isolated runner against the course tests. You see which passed, which failed and why. Hidden tests show their category, never their inputs.",
-    preview: <TestResults />,
-  },
-  {
-    title: "Checked explanations",
-    text: "When a submission fails, the explanation is built from the failing test, your code and your instructor's notes, then checked against the run result before you see it. If it cannot be checked, you get a plain hint.",
-    preview: <VerifiedExplanation />,
-  },
-  {
-    title: "Hints, one step at a time",
-    text: "A concept hint, then where to look, then a worked example on a different problem. Replies never contain the full solution.",
-    preview: <HintLadder />,
-  },
-  {
-    title: "Mastery you can audit",
-    text: "Every concept has a value that changes after each answer. Open any change to see the test, the error and the rule behind it.",
-    preview: <LedgerSample />,
-  },
-  {
-    title: "An assistant that routes",
-    text: "Ask for a hint, an explanation or a progress summary. You see which route answered and can change it.",
-    preview: <ChatSample />,
-  },
-];
+/** Adds `in` to every `[data-rise]` element as it scrolls into view. Without script the content simply shows. */
+function useReveal() {
+  useEffect(() => {
+    const items = Array.from(document.querySelectorAll<HTMLElement>("[data-rise]"));
+    if (reducedMotion() || !("IntersectionObserver" in window)) {
+      items.forEach((el) => el.classList.add("in"));
+      return;
+    }
+    document.documentElement.classList.add("js-rise");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" },
+    );
+    items.forEach((el) => observer.observe(el));
+    return () => {
+      observer.disconnect();
+      document.documentElement.classList.remove("js-rise");
+    };
+  }, []);
+}
+
+function useCycle(length: number, ms: number): number {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (reducedMotion()) return;
+    const timer = window.setInterval(() => setIndex((i) => (i + 1) % length), ms);
+    return () => window.clearInterval(timer);
+  }, [length, ms]);
+  return index;
+}
+
+function Headline({ name }: { name: string }) {
+  return (
+    <div className="hero2-head" aria-hidden="true">
+      <span className="hero2-line">Every error</span>
+      <span className="hero2-line">
+        has a{" "}
+        <span className="frame">
+          <span key={name} className="frame-text">
+            {name}
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function Hero({ dashboardHref }: { dashboardHref?: string }) {
+  const name = HERO_NAMES[useCycle(HERO_NAMES.length, 2600)];
+  return (
+    <section className="chapter hero2" data-tone="hero" aria-labelledby="hero-h">
+      <h1 id="hero-h" className="sr-only">
+        Every error has a name.
+      </h1>
+      <div className="hero2-field hero2-top" />
+      <div className="hero2-field hero2-bottom" />
+      <Headline name={name} />
+      <p className="hero2-sub">
+        Practise Python in a sandbox. Each wrong answer is traced to a misconception, explained with an answer that is
+        checked first, and tracked as mastery you can audit.
+        {!dashboardHref && (
+          <>
+            {" "}
+            <SectionLink id="question">Try one question.</SectionLink>
+          </>
+        )}
+      </p>
+    </section>
+  );
+}
+
+function Question() {
+  return (
+    <section id="question" className="chapter" data-tone="paper" aria-labelledby="question-h">
+      <div className="wrap">
+        <h2 id="question-h" tabIndex={-1} className="display rise" data-rise>
+          Try one question.
+        </h2>
+        <p className="lede rise" data-rise>
+          These are real items from the course bank. A wrong answer maps to the misconception it came from.
+        </p>
+        <div className="rise" data-rise>
+          <LiveQuestion />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function How() {
+  return (
+    <section id="how" className="chapter" data-tone="surface" aria-labelledby="how-h">
+      <div className="wrap">
+        <h2 id="how-h" tabIndex={-1} className="display rise" data-rise>
+          Checked before you see it.
+        </h2>
+        <ol className="stages" aria-label="What happens when a submission fails">
+          {STAGES.map((s, i) => (
+            <li key={s.name} className={`stage stage-${i} rise`} style={{ flexGrow: Math.max(s.grow, 7) }} data-rise>
+              <div className="stage-bar">
+                <span className="stage-name">{s.name}</span>
+                <span className="stage-time">{s.time}</span>
+              </div>
+              <p>{s.text}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+function Moth() {
+  return (
+    <section className="chapter moth" data-tone="ink" aria-labelledby="moth-h">
+      <div className="moth-text">
+        <h2 id="moth-h" tabIndex={-1} className="statement rise" data-rise>
+          Mistakes have always needed names.
+        </h2>
+        <p className="rise" data-rise>
+          In 1947 a moth was taped into a computer's logbook beside the words “First actual case of bug being found.”
+        </p>
+      </div>
+      <div className="moth-picture rise" data-rise>
+        <img
+          src="/archive/first-bug.jpg"
+          width={1920}
+          height={1519}
+          loading="lazy"
+          alt="A page of a 1947 computer logbook with a moth taped to it and the handwritten words: First actual case of bug being found"
+        />
+      </div>
+    </section>
+  );
+}
 
 function Features() {
-  const [selected, setSelected] = useState(0);
   return (
-    <section id="features" className="band" aria-labelledby="features-h">
-      <p className="label">//what it does</p>
-      <h2 id="features-h" tabIndex={-1}>
-        what you get when you practise here.
-      </h2>
-      <div className="features">
-        <div role="tablist" aria-label="Features" aria-orientation="vertical" className="feature-list">
-          {FEATURES.map((f, i) => (
-            <button
-              key={f.title}
-              role="tab"
-              id={`feature-tab-${i}`}
-              aria-selected={selected === i}
-              aria-controls="feature-panel"
-              tabIndex={selected === i ? 0 : -1}
-              onClick={() => setSelected(i)}
-              onKeyDown={(e) => {
-                const delta = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
-                if (!delta) return;
-                e.preventDefault();
-                const next = (i + delta + FEATURES.length) % FEATURES.length;
-                setSelected(next);
-                document.getElementById(`feature-tab-${next}`)?.focus();
-              }}
-            >
-              <span className="feature-no">{String(i + 1).padStart(2, "0")}</span> {f.title}
-            </button>
+    <section id="features" className="chapter" data-tone="paper" aria-labelledby="features-h">
+      <div className="axis">
+        <h2 id="features-h" tabIndex={-1} className="display rise" data-rise>
+          What you get here.
+        </h2>
+        {ROWS.map((row) => (
+          <article key={row.title} className="row">
+            <div className="row-text rise" data-rise>
+              <h3>{row.title}</h3>
+              <p>{row.text}</p>
+            </div>
+            <img
+              className="row-picture rise"
+              data-rise
+              src={row.image}
+              alt={row.alt}
+              loading="lazy"
+              style={{ width: row.width, aspectRatio: row.ratio }}
+            />
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Proof() {
+  const lit = useCycle(CONCEPTS.length, 2000);
+  return (
+    <section className="chapter" data-tone="surface" aria-labelledby="proof-h">
+      <div className="wrap">
+        <h2 id="proof-h" tabIndex={-1} className="proof-head rise" data-rise>
+          Twelve concepts, each tracked.
+        </h2>
+        <ul className="proof-list rise" data-rise>
+          {CONCEPTS.map((c, i) => (
+            <li key={c} className={i === lit ? "proof-name is-lit" : "proof-name"}>
+              {c}
+            </li>
           ))}
-        </div>
-        <div role="tabpanel" id="feature-panel" aria-labelledby={`feature-tab-${selected}`} className="feature-pane">
-          <p className="pane-text">{FEATURES[selected].text}</p>
-          <div className="pane-preview">
-            <span className="terminal-tag">Sample data</span>
-            {FEATURES[selected].preview}
-          </div>
-        </div>
+        </ul>
       </div>
     </section>
   );
 }
 
-type Step = { title: string; text: string; preview: ReactNode };
-
-const WALKTHROUGHS: { tab: string; steps: Step[] }[] = [
-  {
-    tab: "Take the placement test",
-    steps: [
-      { title: "One question at a time", text: "Each screen shows one item. The test says “up to 10” because it can stop early.", preview: <QuestionCard /> },
-      { title: "A wrong answer can point to a misunderstanding", text: "Some wrong options map to a specific misunderstanding, such as an off-by-one in loop bounds. The result lists the likely ones and the answer each came from.", preview: <ResultSample /> },
-      { title: "A starting point, not a grade", text: "Every concept gets a value and a label. Estimates sharpen as you solve problems.", preview: <ResultSample /> },
-    ],
-  },
-  {
-    tab: "A failed submission, explained",
-    steps: [
-      { title: "Tests first", text: "The result lists each test. For hidden tests you see the category only, never the input or the expected output.", preview: <TestResults /> },
-      { title: "The work is shown", text: "The activity log lists what ran, what was read and which checks passed. Each row opens its detail.", preview: <VerifiedExplanation /> },
-      { title: "Hints stay available", text: "If an explanation cannot be checked, you get a plain hint, and the next hint is one click away.", preview: <HintLadder /> },
-    ],
-  },
-  {
-    tab: "Why did my mastery change?",
-    steps: [
-      { title: "The value moves", text: "After a submission or a probe answer, the strip shows the old and new value.", preview: <LedgerSample /> },
-      { title: "The ledger gives the reason", text: "Each change lists the evidence and the fixed rule that applied. Only a logged rule changes a value, never the AI.", preview: <LedgerSample /> },
-      { title: "Ask about it", text: "In the assistant you can ask for a progress summary and see which route answered.", preview: <ChatSample /> },
-    ],
-  },
-];
-
-function Walkthroughs() {
-  const [tab, setTab] = useState(0);
-  const [step, setStep] = useState(0);
-  const steps = WALKTHROUGHS[tab].steps;
-  const current = steps[step];
+function Status() {
   return (
-    <section id="walkthroughs" className="band" aria-labelledby="walk-h">
-      <p className="label">//take a closer look</p>
-      <h2 id="walk-h" tabIndex={-1}>
-        step through it.
-      </h2>
-      <div role="tablist" aria-label="Walkthroughs" className="tabs">
-        {WALKTHROUGHS.map((w, i) => (
-          <button
-            key={w.tab}
-            role="tab"
-            aria-selected={tab === i}
-            onClick={() => {
-              setTab(i);
-              setStep(0);
-            }}
-          >
-            {w.tab}
-          </button>
-        ))}
-      </div>
-      <div className="walk" role="tabpanel" aria-label={WALKTHROUGHS[tab].tab}>
-        <div className="walk-text">
-          <p className="walk-count">
-            Step {step + 1} of {steps.length}
-          </p>
-          <h3>{current.title}</h3>
-          <p>{current.text}</p>
-          <div className="walk-buttons">
-            <button type="button" onClick={() => setStep(step - 1)} disabled={step === 0}>
-              Back
-            </button>
-            <button type="button" onClick={() => setStep(step + 1)} disabled={step === steps.length - 1}>
-              Next
-            </button>
-          </div>
-        </div>
-        <div className="pane-preview">
-          <span className="terminal-tag">Sample data</span>
-          {current.preview}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Comparison() {
-  return (
-    <section className="band" aria-labelledby="why-h">
-      <p className="label">//why checks matter</p>
-      <h2 id="why-h" tabIndex={-1}>
-        stop guessing why your code failed.
-      </h2>
-      <p className="reading">
-        An explanation is only useful if it matches what actually ran. Here is the same failed submission with and
-        without checks.
-      </p>
-      <div className="compare">
-        <div className="compare-side">
-          <p className="terminal-tag">Illustration · without checks</p>
-          <p>
-            Your <code>while</code> loop on line 14 never ends, so the program times out.
-          </p>
-          <p className="muted">The code has no line 14, and the failing test was empty_input.</p>
-        </div>
-        <div className="compare-side compare-checked">
-          <p className="terminal-tag">Illustration · with checks</p>
-          <p>
-            <span className="badge badge-verified">Verified · 6 of 6</span>
-          </p>
-          <p>
-            Your loop reads <code>xs[0]</code> before it checks that the list has items.
-          </p>
-          <p className="sources">
-            <span className="evidence">test: empty_input</span> <span className="evidence">line 3</span>{" "}
-            <span className="evidence">notes: lists.md</span>
+    <section id="status" className="chapter" data-tone="paper" aria-labelledby="status-h">
+      <div className="wrap status-grid">
+        <h2 id="status-h" tabIndex={-1} className="head rise" data-rise>
+          Working today, and not yet.
+        </h2>
+        <div className="status-side">
+          <p className="status-name">Status</p>
+          <table className="status-table rise" data-rise>
+            <tbody>
+              {STATUS.map((r) => (
+                <tr key={r.what}>
+                  <th scope="row">{r.who}</th>
+                  <td>{r.what}</td>
+                  <td className={r.status === "Live" ? "is-live" : ""}>{r.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="muted small">
+            A prototype built for a course review. Accuracy figures come from simulated students; nothing here is a claim
+            about learning outcomes.
           </p>
         </div>
       </div>
     </section>
   );
 }
-
-const ROLES = [
-  {
-    name: "Students",
-    items: [
-      "See what you know and what to do next.",
-      "Get unstuck without being handed the answer.",
-      "Ask for hints, explanations or a progress summary.",
-    ],
-  },
-  {
-    name: "Instructors",
-    items: [
-      "See where the class struggles on a heatmap and a list of common misunderstandings.",
-      "Upload the notes explanations draw on.",
-      "Review stored explanations and make the checks stricter per problem.",
-    ],
-  },
-  {
-    name: "Administrators",
-    items: [
-      "Manage users and roles.",
-      "Disable accounts and reset passwords.",
-      "Create staff accounts with a temporary password.",
-    ],
-  },
-];
-
-function Roles() {
-  const [tab, setTab] = useState(0);
-  return (
-    <section id="roles" className="band" aria-labelledby="roles-h">
-      <p className="label">//for your role</p>
-      <h2 id="roles-h" tabIndex={-1}>
-        one app, three views.
-      </h2>
-      <div role="tablist" aria-label="Roles" className="tabs">
-        {ROLES.map((r, i) => (
-          <button key={r.name} role="tab" aria-selected={tab === i} onClick={() => setTab(i)}>
-            {r.name}
-          </button>
-        ))}
-      </div>
-      <ul className="plain" role="tabpanel" aria-label={ROLES[tab].name}>
-        {ROLES[tab].items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function WillNot() {
-  return (
-    <section className="band" aria-labelledby="not-h">
-      <p className="label">//what it will not do</p>
-      <h2 id="not-h" tabIndex={-1}>
-        limits we keep on purpose.
-      </h2>
-      <ul className="plain">
-        <li>Give you the full solution.</li>
-        <li>Show an explanation that failed its checks.</li>
-        <li>Let the AI change your mastery value. Only a fixed, logged rule does.</li>
-        <li>Run your code anywhere except the isolated runner.</li>
-      </ul>
-    </section>
-  );
-}
-
-type Status = "Live now" | "Preview" | "Planned";
-
-/** Mirrors docs/results/gap-report.md. Add a row here only when that report says so. */
-const STATUS_ROWS: [string, Status, string][] = [
-  ["Placement test with likely misunderstandings", "Live now", "Student"],
-  ["Run code against tests in an isolated runner", "Live now", "Student"],
-  ["Checked explanations with a plain-hint fallback", "Live now", "Student"],
-  ["Hint ladder and a quick check after a failure", "Live now", "Student"],
-  ["Mastery dashboard with a ledger of every change", "Live now", "Student"],
-  ["Assistant that routes questions", "Live now", "Student"],
-  ["Class heatmap, misconceptions and student drill-down", "Live now", "Instructor"],
-  ["Course notes upload (text, Markdown, PDF)", "Live now", "Instructor"],
-  ["Problem editor with sandbox validation", "Live now", "Instructor"],
-  ["Review of stored explanations", "Live now", "Instructor"],
-  ["Assignments, gradebook and announcements", "Live now", "Instructor"],
-  ["Users, roles and password resets", "Live now", "Administrator"],
-  ["Launch from Moodle and grade passback (LTI 1.3, tested on a local Moodle 5.3)", "Live now", "All"],
-  ["Admin pages for model and runner settings", "Planned", "Administrator"],
-  ["Roster sync and deep linking from an LMS", "Planned", "All"],
-  ["C and Java courses", "Planned", "All"],
-  ["Full run on a local model", "Planned", "All"],
-];
-
-const GATES = [
-  ["G0 Foundation", "Passed"],
-  ["G1 Execution core", "Passed"],
-  ["G2 Diagnostic and mastery", "Passed with a caveat"],
-  ["G3 Verified feedback", "Passed"],
-  ["G4 Router and dashboards", "Passed"],
-  ["G5 Integration and demo", "Technical part passed; recording, report and IPR conversation open"],
-];
-
-function StatusSection() {
-  return (
-    <section id="status" className="band" aria-labelledby="status-h">
-      <p className="label">//status</p>
-      <h2 id="status-h" tabIndex={-1}>
-        what works today.
-      </h2>
-      <div className="table-wrap">
-        <table className="status-table">
-          <thead>
-            <tr>
-              <th scope="col">Feature</th>
-              <th scope="col">Who</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {STATUS_ROWS.map(([feature, status, who]) => (
-              <tr key={feature}>
-                <td>{feature}</td>
-                <td>{who}</td>
-                <td>
-                  <span className={`badge badge-${status === "Live now" ? "verified" : "plain"}`}>{status}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <h3>Build log</h3>
-      <ul className="plain">
-        {GATES.map(([gate, result]) => (
-          <li key={gate}>
-            <strong>{gate}:</strong> {result}
-          </li>
-        ))}
-      </ul>
-      <p className="muted">
-        This is a prototype built for a course review. Everything above comes from measured results in the project
-        repository; nothing on this page is a claim about learning outcomes.
-      </p>
-    </section>
-  );
-}
-
-const FAQ: [string, string][] = [
-  ["Does it give me the answer?", "No. Hints go one step at a time, and replies never contain a full solution."],
-  [
-    "Can I use it with Moodle or Canvas?",
-    "A course can launch it from an LMS that supports LTI 1.3, and scores can be sent back. This was tested on a local Moodle 5.3. Canvas has not been tested.",
-  ],
-  [
-    "Where does my code go?",
-    "To the isolated runner and, for explanations, to the configured AI model. A privacy notice states which provider before you start.",
-  ],
-  ["Is the AI always right?", "No. Explanations are checked against the run result and fall back to a plain hint when they fail."],
-  [
-    "Who can see my code and chat?",
-    "You and your course's teacher can see your submissions and code. Your chat messages are not shown to teachers.",
-  ],
-];
 
 function Faq() {
   return (
-    <section id="faq" className="band" aria-labelledby="faq-h">
-      <p className="label">//faq</p>
-      <h2 id="faq-h" tabIndex={-1}>
-        questions people ask.
-      </h2>
-      {FAQ.map(([q, a]) => (
-        <details key={q} className="faq">
-          <summary>{q}</summary>
-          <p>{a}</p>
-        </details>
-      ))}
+    <section id="faq" className="chapter" data-tone="paper" aria-labelledby="faq-h">
+      <div className="wrap">
+        <h2 id="faq-h" tabIndex={-1} className="head rise" data-rise>
+          Questions people ask.
+        </h2>
+        <div className="faq-list">
+          {FAQ.map(([q, a]) => (
+            <details key={q} className="faq2 rise" data-rise>
+              <summary>{q}</summary>
+              <p>{a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
     </section>
+  );
+}
+
+function Begin() {
+  const [email, setEmail] = useState("");
+  function go(event: FormEvent) {
+    event.preventDefault();
+    try {
+      sessionStorage.setItem(PREFILL_KEY, email.trim());
+    } catch {
+      // the next page then simply starts empty
+    }
+    window.location.hash = "#/register";
+  }
+  return (
+    <section className="chapter begin" data-tone="accent" aria-label="Create an account">
+      <form className="begin-sentence rise" data-rise onSubmit={go}>
+        <label htmlFor="begin-email">Find where you stand,</label>{" "}
+        <input id="begin-email" type="email" required autoComplete="email" placeholder="you@school.edu" value={email} onChange={(e) => setEmail(e.target.value)} />{" "}
+        <button type="submit">begin</button>
+      </form>
+      <p className="begin-note rise" data-rise>
+        You choose a password on the next page. Your instructor gives you a class code to join a course.
+      </p>
+    </section>
+  );
+}
+
+const CREDITS: [string, string, string][] = [
+  ["First Computer Bug, 1947", "Naval Surface Warfare Center, Dahlgren", "https://commons.wikimedia.org/wiki/File:First_Computer_Bug,_1947.jpg"],
+  ["Diagram for the computation of Bernoulli numbers", "Ada Lovelace", "https://commons.wikimedia.org/wiki/File:Diagram_for_the_computation_of_Bernoulli_numbers.jpg"],
+  ["Portrait of Ada King, Countess of Lovelace", "Alfred Edward Chalon", "https://commons.wikimedia.org/wiki/File:Ada_Lovelace_portrait.jpg"],
+  ["Two women operating ENIAC", "U.S. Army", "https://commons.wikimedia.org/wiki/File:Two_women_operating_ENIAC_(full_resolution).jpg"],
+  ["Hollerith Punched Card", "1895", "https://commons.wikimedia.org/wiki/File:Hollerith_Punched_Card.jpg"],
+];
+
+function Footer({ dashboardHref }: { dashboardHref?: string }) {
+  return (
+    <footer className="chapter foot" data-tone="ink">
+      <div className="foot-top">
+        <div>
+          <p className="foot-invite">Start with one question.</p>
+          {!dashboardHref && (
+            <a className="button primary" href="#/register">
+              Create account
+            </a>
+          )}
+        </div>
+        <ul className="foot-links">
+          <li>
+            <a href="#/login">Log in</a>
+          </li>
+          <li>
+            <SectionLink id="status">Status</SectionLink>
+          </li>
+          <li>
+            <SectionLink id="faq">FAQ</SectionLink>
+          </li>
+          <li>
+            <ThemeToggle />
+          </li>
+        </ul>
+      </div>
+      <p className="foot-credits">
+        Pictures, all public domain, from Wikimedia Commons:{" "}
+        {CREDITS.map(([title, by, href], i) => (
+          <span key={href}>
+            <a href={href}>{title}</a> ({by}){i < CREDITS.length - 1 ? "; " : "."}
+          </span>
+        ))}{" "}
+        A prototype built for a course review.
+      </p>
+      <div className="foot-name" aria-hidden="true">
+        Adaptive LMS
+      </div>
+    </footer>
   );
 }
 
 export function HomePage({ dashboardHref }: { dashboardHref?: string }) {
+  useReveal();
   return (
-    <div className="pub">
+    <div className="home">
       <a
         className="skip"
         href="#/"
@@ -472,120 +443,19 @@ export function HomePage({ dashboardHref }: { dashboardHref?: string }) {
       >
         Skip to content
       </a>
-      <PublicBar dashboardHref={dashboardHref} />
-      <p className="statusstrip">
-        Placement test and checked explanations are live. <SectionLink id="status">See status</SectionLink>
-      </p>
-      <main id="content" tabIndex={-1} className="pubmain">
-        <section className="hero" aria-labelledby="hero-h">
-          <div className="hero-text">
-            <h1 id="hero-h">programming practice that shows you what to fix next.</h1>
-            <p className="reading">
-              Run your code, see which tests failed, and get an explanation checked against the test result and your
-              course notes. Mastery of every concept updates after each submission.
-            </p>
-            <div className="hero-actions">
-              {!dashboardHref && (
-                <a className="button primary" href="#/register">
-                  Create account
-                </a>
-              )}
-              <a
-                className="button"
-                href="#/walkthroughs"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection("walkthroughs");
-                }}
-              >
-                See how it works
-              </a>
-            </div>
-          </div>
-          <Replay />
-        </section>
+      <PublicBar dashboardHref={dashboardHref} onHome />
+      <main id="content" tabIndex={-1}>
+        <Hero dashboardHref={dashboardHref} />
+        <Question />
+        <How />
+        <Moth />
         <Features />
-        <Walkthroughs />
-        <Comparison />
-        <Roles />
-        <WillNot />
-        <section className="band" aria-labelledby="courses-h">
-          <p className="label">//courses</p>
-          <h2 id="courses-h" tabIndex={-1}>
-            what you can study.
-          </h2>
-          <div className="course-cards">
-            <div className="course-card">
-              <h3>Python 101</h3>
-              <p>Open now.</p>
-              {!dashboardHref && (
-                <a className="button" href="#/register">
-                  Create account to enrol
-                </a>
-              )}
-            </div>
-            <div className="course-card muted-card">
-              <h3>C</h3>
-              <span className="badge badge-plain">Planned</span>
-            </div>
-            <div className="course-card muted-card">
-              <h3>Java</h3>
-              <span className="badge badge-plain">Planned</span>
-            </div>
-          </div>
-        </section>
-        <StatusSection />
+        <Proof />
+        <Status />
         <Faq />
-        <section className="closing" aria-labelledby="closing-h">
-          <h2 id="closing-h" tabIndex={-1}>
-            find your starting point.
-          </h2>
-          {dashboardHref ? (
-            <a className="button primary" href={dashboardHref}>
-              Open dashboard
-            </a>
-          ) : (
-            <div className="hero-actions">
-              <a className="button primary" href="#/register">
-                Create account
-              </a>
-              <a className="button" href="#/login">
-                Log in
-              </a>
-            </div>
-          )}
-        </section>
+        {!dashboardHref && <Begin />}
       </main>
-      <footer className="pubfooter">
-        <div className="footgrid">
-          <div>
-            <p className="label">//product</p>
-            <ul className="plain">
-              {ANCHORS.filter((a) => a.id !== "roles" && a.id !== "faq").map((a) => (
-                <li key={a.id}>
-                  <SectionLink id={a.id}>{a.label}</SectionLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="label">//account</p>
-            <ul className="plain">
-              <li>
-                <a href="#/login">Log in</a>
-              </li>
-              <li>
-                <a href="#/register">Create account</a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="label">//display</p>
-            <ThemeToggle />
-          </div>
-        </div>
-        <p className="muted">A prototype built for the course review.</p>
-      </footer>
+      <Footer dashboardHref={dashboardHref} />
     </div>
   );
 }
