@@ -8,7 +8,7 @@
   --line: #3b3431;
   --ink: #ebe5e3;
   --slate: #b0a7a2;
-  --ink-3: #958c87;
+  --ink-3: #a0978f;
   --signal: #3fbf80;
   --signal-soft: #1b2b23;
   --warn: #e0a05a;
@@ -39,8 +39,8 @@
   --ink: #2b2622;
   --slate: #50473f;
   --ink-3: #6a615d;
-  --signal: #0f7d45;
-  --signal-soft: #dcebe2;
+  --signal: #0b6a3a;
+  --signal-soft: #d6e8dd;
   --warn: #8a5a00;
   --warn-bg: #f6e8cc;
   --pass: #0b6e6d;
@@ -1537,8 +1537,12 @@ blockquote {
   min-height: 12rem;
 }
 
-.calendar-cell.outside {
-  opacity: 0.45;
+.calendar-row {
+  display: contents;
+}
+
+.calendar-cell.outside .calendar-date {
+  color: var(--ink-3);
 }
 
 .calendar-cell.today {
@@ -1725,5 +1729,19 @@ a.button.primary {
 @media (max-width: 40rem) {
   .bar .who {
     display: none;
+  }
+}
+
+/* Heatmap cells: black or white text, whichever reads better on the cell's colour in the current theme. The crossover
+   is lightness 49.6, where both inks give about 4.5:1. The first colour is the fallback for browsers without relative
+   colour syntax. */
+.cell {
+  background: var(--cell);
+  color: var(--ink);
+}
+
+@supports (color: lch(from red l c h)) {
+  .cell {
+    color: lch(from var(--cell) calc((l - 49.6) * -100000) 0 0);
   }
 }

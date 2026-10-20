@@ -1,4 +1,4 @@
-import Editor from "@monaco-editor/react";
+import { CodeEditor as Editor } from "./CodeEditor";
 import { useState } from "react";
 
 import { ApiError, BUSY_RETRIES, Session, api } from "../api";

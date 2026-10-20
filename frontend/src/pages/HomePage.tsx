@@ -20,6 +20,7 @@ function reducedMotion(): boolean {
 }
 
 function scrollToSection(id: string) {
+  document.querySelector("details.pubmenu")?.removeAttribute("open");
   const section = document.getElementById(id);
   if (!section) return;
   section.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth" });
@@ -68,6 +69,16 @@ export function PublicBar({ dashboardHref, onHome = false }: { dashboardHref?: s
 
   return (
     <header className={`pubbar ${onHome ? "pubbar-fixed" : ""}`} data-tone-bar={onHome ? tone : "paper"}>
+      <a
+        className="skip"
+        href="#/"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById("content")?.focus();
+        }}
+      >
+        Skip to content
+      </a>
       <a className="pubbrand" href={dashboardHref ? "#/home" : "#/"}>
         Adaptive LMS
       </a>
@@ -140,13 +151,21 @@ function useReveal() {
   }, []);
 }
 
-function useCycle(length: number, ms: number): number {
+/** Steps through `length` items once, then stops (moving text must not run for ever). `paused` stops it sooner. */
+function useCycle(length: number, ms: number, paused: boolean): number {
   const [index, setIndex] = useState(0);
   useEffect(() => {
-    if (reducedMotion()) return;
-    const timer = window.setInterval(() => setIndex((i) => (i + 1) % length), ms);
+    if (reducedMotion() || paused) return;
+    const timer = window.setInterval(
+      () =>
+        setIndex((i) => {
+          if (i + 1 >= length) window.clearInterval(timer);
+          return Math.min(i + 1, length - 1);
+        }),
+      ms,
+    );
     return () => window.clearInterval(timer);
-  }, [length, ms]);
+  }, [length, ms, paused]);
   return index;
 }
 
@@ -166,8 +185,8 @@ function Headline({ name }: { name: string }) {
   );
 }
 
-function Hero({ dashboardHref }: { dashboardHref?: string }) {
-  const name = HERO_NAMES[useCycle(HERO_NAMES.length, 2600)];
+function Hero({ dashboardHref, still, onStill }: { dashboardHref?: string; still: boolean; onStill: () => void }) {
+  const name = HERO_NAMES[useCycle(HERO_NAMES.length, 2600, still)];
   return (
     <section className="chapter hero2" data-tone="hero" aria-labelledby="hero-h">
       <h1 id="hero-h" className="sr-only">
@@ -186,6 +205,9 @@ function Hero({ dashboardHref }: { dashboardHref?: string }) {
           </>
         )}
       </p>
+      <button type="button" className="hero2-still" aria-pressed={still} onClick={onStill}>
+        {still ? "Play the moving words" : "Pause the moving words"}
+      </button>
     </section>
   );
 }
@@ -283,8 +305,8 @@ function Features() {
   );
 }
 
-function Proof() {
-  const lit = useCycle(CONCEPTS.length, 2000);
+function Proof({ still }: { still: boolean }) {
+  const lit = useCycle(CONCEPTS.length, 2000, still);
   return (
     <section className="chapter" data-tone="surface" aria-labelledby="proof-h">
       <div className="wrap">
@@ -431,26 +453,17 @@ function Footer({ dashboardHref }: { dashboardHref?: string }) {
 
 export function HomePage({ dashboardHref }: { dashboardHref?: string }) {
   useReveal();
+  const [still, setStill] = useState(false);
   return (
-    <div className="home">
-      <a
-        className="skip"
-        href="#/"
-        onClick={(e) => {
-          e.preventDefault();
-          document.getElementById("content")?.focus();
-        }}
-      >
-        Skip to content
-      </a>
+    <div className={still ? "home is-still" : "home"}>
       <PublicBar dashboardHref={dashboardHref} onHome />
       <main id="content" tabIndex={-1}>
-        <Hero dashboardHref={dashboardHref} />
+        <Hero dashboardHref={dashboardHref} still={still} onStill={() => setStill(!still)} />
         <Question />
         <How />
         <Moth />
         <Features />
-        <Proof />
+        <Proof still={still} />
         <Status />
         <Faq />
         {!dashboardHref && <Begin />}

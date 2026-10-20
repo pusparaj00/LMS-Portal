@@ -71,7 +71,16 @@ export function ChatPanel({ session, problemId }: { session: Session; problemId:
 
   if (session.role !== "student") return null;
   return (
-    <aside className={`chat ${open ? "open" : ""}`} aria-label="Assistant chat">
+    <aside
+      className={`chat ${open ? "open" : ""}`}
+      aria-label="Assistant chat"
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          setOpen(false);
+          e.currentTarget.querySelector<HTMLElement>(".chat-toggle")?.focus();
+        }
+      }}
+    >
       <button className="chat-toggle primary" onClick={() => setOpen(!open)} aria-expanded={open}>
         {open ? "Close assistant" : "Ask the assistant"}
       </button>

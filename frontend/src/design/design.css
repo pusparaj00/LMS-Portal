@@ -186,7 +186,8 @@ a.evidence {
 }
 
 .tabs button[aria-selected="true"] {
-  background: var(--signal-soft);
+  background: var(--signal);
+  color: var(--primary-ink);
   border-color: var(--signal);
 }
 

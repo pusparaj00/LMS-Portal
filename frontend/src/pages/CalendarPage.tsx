@@ -34,6 +34,7 @@ export function CalendarPage({ session }: { session: Session }) {
   const first = view === "week" ? startOfWeek(anchor) : startOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
   const days = view === "week" ? 7 : 42;
   const cells = Array.from({ length: days }, (_, n) => new Date(first.getFullYear(), first.getMonth(), first.getDate() + n));
+  const weeks = Array.from({ length: Math.ceil(days / 7) }, (_, w) => cells.slice(w * 7, w * 7 + 7));
 
   useEffect(() => {
     api<Course[]>("/courses", session)
@@ -95,30 +96,36 @@ export function CalendarPage({ session }: { session: Session }) {
         </label>
       </p>
       <div className={`calendar calendar-${view}`} role="grid" aria-label={title}>
-        {NAMES.map((n) => (
-          <div key={n} className="calendar-head" role="columnheader">
-            {n}
+        <div role="row" className="calendar-row">
+          {NAMES.map((n) => (
+            <div key={n} className="calendar-head" role="columnheader">
+              {n}
+            </div>
+          ))}
+        </div>
+        {weeks.map((week) => (
+          <div key={week[0].toISOString()} role="row" className="calendar-row">
+            {week.map((day) => {
+              const due = entries.filter((e) => sameDay(new Date(e.due_at), day));
+              const outside = view === "month" && day.getMonth() !== anchor.getMonth();
+              return (
+                <div key={day.toISOString()} role="gridcell" className={`calendar-cell${outside ? " outside" : ""}${sameDay(day, new Date()) ? " today" : ""}`}>
+                  <span className="calendar-date">{day.getDate()}</span>
+                  {due.map((e) => (
+                    <a
+                      key={`${e.course_id}-${e.assignment_id}`}
+                      className={`calendar-item${e.state ? ` state-${e.state}` : ""}`}
+                      href={session.role === "student" ? itemHref(e.course_id, e.assignment_id, e.has_work) : `#/course/${e.course_id}/assignments`}
+                      title={`${e.title} (${e.course_title}), due ${new Date(e.due_at).toLocaleTimeString([], { timeStyle: "short" })}`}
+                    >
+                      {e.title}
+                    </a>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         ))}
-        {cells.map((day) => {
-          const due = entries.filter((e) => sameDay(new Date(e.due_at), day));
-          const outside = view === "month" && day.getMonth() !== anchor.getMonth();
-          return (
-            <div key={day.toISOString()} role="gridcell" className={`calendar-cell${outside ? " outside" : ""}${sameDay(day, new Date()) ? " today" : ""}`}>
-              <span className="calendar-date">{day.getDate()}</span>
-              {due.map((e) => (
-                <a
-                  key={`${e.course_id}-${e.assignment_id}`}
-                  className={`calendar-item${e.state ? ` state-${e.state}` : ""}`}
-                  href={session.role === "student" ? itemHref(e.course_id, e.assignment_id, e.has_work) : `#/course/${e.course_id}/assignments`}
-                  title={`${e.title} (${e.course_title}), due ${new Date(e.due_at).toLocaleTimeString([], { timeStyle: "short" })}`}
-                >
-                  {e.title}
-                </a>
-              ))}
-            </div>
-          );
-        })}
       </div>
     </>
   );

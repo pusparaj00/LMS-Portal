@@ -39,7 +39,7 @@ The first version of the public CSS used global class names (`.statement`, `.row
 ## Not done or not measured
 
 - The phone layout of the signed-in top bar still wraps to two rows; the email is hidden to keep it short.
-- The Monaco editor still loads from a CDN (known gap).
+- The Monaco editor still loaded from a CDN when this step ended; step 62 bundled it.
 - No moving clip: no honest footage was searched for; the logbook photograph drifts instead.
 - Not browser-tested beyond the sweep: the keyboard path through the live question, and the focus order of the closing sentence form.
 - The look is judged from screenshots at three widths in both themes; no user has been shown it.

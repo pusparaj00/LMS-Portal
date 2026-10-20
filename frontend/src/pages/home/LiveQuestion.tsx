@@ -24,13 +24,12 @@ export function LiveQuestion() {
         <p className="live-ask" id="live-ask">
           What does this program print?
         </p>
-        <div role="radiogroup" aria-labelledby="live-ask" className="live-options">
+        <div role="group" aria-labelledby="live-ask" className="live-options">
           {question.options.map((o, i) => (
             <button
               key={`${question.id}-${o.text}`}
               type="button"
-              role="radio"
-              aria-checked={picked === i}
+              aria-pressed={picked === i}
               className="live-option"
               onClick={() => setPicked(i)}
             >

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
 import { StoredExplanations } from "./StoredExplanations";
@@ -10,11 +10,10 @@ type Misconception = { name: string; description: string; concept: string; stude
 
 const pretty = (name: string) => name.replace(/_/g, " ");
 
+/** The cell colour is a custom property so the stylesheet can pick black or white text for whatever it ends up being
+ *  in the current theme (.cell in styles.css). */
 function cellStyle(p: number) {
-  return {
-    background: `color-mix(in srgb, var(--signal) ${Math.round(p * 100)}%, var(--panel))`,
-    color: p > 0.55 ? "#fff" : "var(--ink)",
-  };
+  return { "--cell": `color-mix(in srgb, var(--signal) ${Math.round(p * 100)}%, var(--panel))` } as CSSProperties;
 }
 
 export function InstructorPage({ session, courseId }: { session: Session; courseId: number }) {
@@ -89,7 +88,7 @@ export function InstructorPage({ session, courseId }: { session: Session; course
               <tr className="average">
                 <th scope="row">Class average</th>
                 {grid.concepts.map((c) => (
-                  <td key={c.concept_id} style={cellStyle(c.p_known)}>
+                  <td key={c.concept_id} className="cell" style={cellStyle(c.p_known)}>
                     {Math.round(c.p_known * 100)}
                   </td>
                 ))}
@@ -106,7 +105,7 @@ export function InstructorPage({ session, courseId }: { session: Session; course
                     )}
                   </th>
                   {s.mastery.map((c) => (
-                    <td key={c.concept_id} style={cellStyle(c.p_known)}>
+                    <td key={c.concept_id} className="cell" style={cellStyle(c.p_known)}>
                       {Math.round(c.p_known * 100)}
                     </td>
                   ))}
@@ -119,7 +118,7 @@ export function InstructorPage({ session, courseId }: { session: Session; course
       <p className="legend">
         <span>Percent mastery:</span>
         {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-          <span key={p} className="swatch" style={cellStyle(p)}>
+          <span key={p} className="swatch cell" style={cellStyle(p)}>
             {p * 100}
           </span>
         ))}
