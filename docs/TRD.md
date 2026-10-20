@@ -170,6 +170,20 @@ The research gives no performance figures for this kind of system, so every numb
 | TR-P-08 | Each failed submission shall cause at most one LLM call plus one retry, and the system shall report LLM calls per 100 submissions and the share served from cache | P1 | D |
 | TR-P-09 | The interface shall work in current Chrome and Edge at 1366 px width | P1 | D |
 
+### Deployment and operations
+
+One VPS or college server, reached by IP address. A browser warns about the self-signed certificate until the institution installs a certificate from its own authority or gets a domain name.
+
+| ID | Requirement | Priority | Basis |
+| --- | --- | --- | --- |
+| TR-O-01 | A reverse proxy shall terminate TLS with a self-signed certificate for the server's IP address and redirect plain HTTP to HTTPS | P1 | D |
+| TR-O-02 | In the production configuration only the proxy shall publish ports (80 and 443); the API, the front end, the database, Redis and the mastery service shall be reachable only inside the container network | P0 | D, TR-S-02 |
+| TR-O-03 | Behind the proxy, rate limits shall still count the real client address, and an address sent by the client in X-Forwarded-For shall be ignored | P0 | D, TR-S-04 |
+| TR-O-04 | In production mode the API shall refuse to start if the JWT secret or the mastery token is shorter than 32 characters or still a placeholder, or if the database or Redis password is shorter than 16 characters | P0 | D, TR-S-03 |
+| TR-O-05 | Every service shall restart on failure, rotate its logs and have a memory limit | P1 | D, TR-P-07 |
+| TR-O-06 | A script shall back up the database on a schedule, delete dumps older than a set number of days, and a second script shall restore the latest dump into a scratch database and compare row counts with the live one | P1 | D, TR-S-07 |
+| TR-O-07 | The proxy shall send X-Content-Type-Options, X-Frame-Options, Referrer-Policy and Permissions-Policy headers on every response, and a health check shall show whether the proxy and the API are up | P1 | D |
+
 ## 10. Verification and acceptance
 
 Each requirement is checked by a test below. Results should be saved with the date they were run, because they are also the evidence for the final report and for any later patent filing.
