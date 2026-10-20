@@ -1,0 +1,72 @@
+# Production overrides (TR-O-01 to TR-O-07):
+#   docker compose -f docker-compose.yml -f compose.prod.yml up -d --wait
+# SITE_ADDRESS must be set in .env to the server's IP address.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports:
+      - "${CADDY_HTTP_PORT:-80}:80"
+      - "${CADDY_HTTPS_PORT:-443}:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    mem_limit: 128m
+    logging: *logging
+
+  frontend:
+    ports: !reset []
+    volumes:
+      - ./frontend/nginx.realip.conf:/etc/nginx/conf.d/realip.conf:ro
+    mem_limit: 128m
+    logging: *logging
+
+  api:
+    ports: !reset []
+    environment:
+      APP_ENV: production
+    mem_limit: 1g
+    logging: *logging
+
+  db:
+    mem_limit: 1g
+    logging: *logging
+
+  redis:
+    mem_limit: 256m
+    logging: *logging
+
+  mastery:
+    mem_limit: 256m
+    logging: *logging
+
+  worker:
+    mem_limit: 512m
+    logging: *logging
+
+  sandbox:
+    logging: *logging
+
+  migrate:
+    logging: *logging
+
+volumes:
+  caddy_data:
+  caddy_config:

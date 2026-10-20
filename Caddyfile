@@ -1,0 +1,21 @@
+# TR-O-01, TR-O-07. SITE_ADDRESS is the server's IP address. `tls internal` signs the certificate with Caddy's own
+# authority, so browsers warn until that root (in the caddy_data volume) is installed or a domain name and a public
+# certificate replace it. Caddy also redirects plain HTTP to HTTPS, and sets X-Forwarded-For to the address it saw,
+# discarding any value the client sent (TR-O-03). A browser sends no server name when it connects to an IP address, so
+# default_sni names the certificate to use then.
+{
+	default_sni {$SITE_ADDRESS}
+}
+
+https://{$SITE_ADDRESS} {
+	tls internal
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+	reverse_proxy frontend:8080
+}
