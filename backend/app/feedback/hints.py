@@ -47,12 +47,14 @@ def advance(r: redis.Redis, user_id: int, problem_id: int, max_level: int) -> in
 def concept_hint(conn: Connection, ctx: ExplainContext) -> Hint:
     name = (ctx.primary_concept_name or "this topic").replace("_", " ")
     sources = store.search(
-        conn, course_id=ctx.course_id, query=ctx.retrieval_query, k=1, min_score=-1.0,
+        conn, course_id=ctx.course_id, query=ctx.retrieval_query, k=3, min_score=-1.0,
         concept_id=ctx.primary_concept_id,
     )
-    if not sources:
+    # Notes are shown as written, so one that holds this problem's solution (an instructor's worked example) is skipped.
+    safe = [s for s in sources if not leak.copies_reference(s.text, ctx.reference_solution, ctx.leak_threshold)]
+    if not safe:
         return Hint(1, 3, "concept", f"Review the course notes on {name}.")
-    return Hint(1, 3, "concept", sources[0].text, source_title=f"{sources[0].title} > {sources[0].section}")
+    return Hint(1, 3, "concept", safe[0].text, source_title=f"{safe[0].title} > {safe[0].section}")
 
 
 def location_hint(ctx: ExplainContext) -> Hint:

@@ -90,3 +90,35 @@ def test_a_solution_shorter_than_the_usual_minimum_is_still_a_leak_when_pasted_w
 @pytest.mark.parametrize("text", ["Convert it with `int(input())` first.", "Then add one to the number you read."])
 def test_a_pointer_into_a_tiny_solution_still_passes(text):
     assert leak.check(text, TINY).passed
+
+
+NOTES_WITH_SOLUTION = (
+    "A worked example for this exercise:\n" + FENCE + "python\n" + REFERENCE + FENCE + "\nThe loop adds each number."
+)
+NOTES_WITH_SNIPPET = (
+    "Dictionaries map keys to values:\n" + FENCE + "python\nd = {'a': 1}\nprint(d.get('b', 0))\n" + FENCE + "\nUse get for a default."
+)
+
+
+def test_a_notes_section_that_holds_the_solution_is_recognised_but_a_generic_example_is_not():
+    assert leak.copies_reference(NOTES_WITH_SOLUTION, REFERENCE)
+    assert not leak.copies_reference(NOTES_WITH_SNIPPET, REFERENCE)
+    assert not leak.copies_reference("Review how loops repeat a block of code.", REFERENCE)
+
+
+def test_the_concept_hint_skips_notes_that_contain_the_solution(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.feedback import hints
+    from app.retrieval.store import Source
+
+    ctx = SimpleNamespace(
+        primary_concept_name="loops", course_id=1, retrieval_query="loops", primary_concept_id=1,
+        reference_solution=REFERENCE, leak_threshold=0.7)
+    leaking = Source(1, "Loops", "Worked example", NOTES_WITH_SOLUTION, 0.9, 1)
+    harmless = Source(2, "Loops", "Range", NOTES_WITH_SNIPPET, 0.8, 1)
+
+    monkeypatch.setattr(hints.store, "search", lambda *a, **k: [leaking, harmless])
+    assert hints.concept_hint(None, ctx).text == harmless.text
+    monkeypatch.setattr(hints.store, "search", lambda *a, **k: [leaking])
+    assert hints.concept_hint(None, ctx).text == "Review the course notes on loops."

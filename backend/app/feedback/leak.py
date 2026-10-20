@@ -91,6 +91,21 @@ def code_like_text(text: str) -> tuple[list[str], list[str]]:
     return [line for line in without_inline.splitlines() if looks_like_code(line)], inline
 
 
+def code_in(text: str) -> str:
+    """All the code in a text: fenced blocks, lines that look like code, and inline snippets."""
+    blocks = re.findall(FENCE + r"[^\n]*\n(.*?)" + FENCE, text, re.S)
+    lines, snippets = code_like_text(re.sub(FENCE + ".*?" + FENCE, " ", text, flags=re.S))
+    return "\n".join([*blocks, *lines, *snippets])
+
+
+def copies_reference(text: str, reference_solution: str, threshold: float = SIMILARITY_THRESHOLD) -> bool:
+    """Whether code in a text matches the reference solution. Unlike `check`, a short example in a fence is allowed:
+    this is for text written for the course (notes), not for a model reply."""
+    code = code_in(text)
+    return long_enough_to_compare(code, reference_solution) and containment(code, reference_solution) >= min(
+        threshold, SIMILARITY_THRESHOLD)
+
+
 def check(text: str, reference_solution: str, threshold: float = SIMILARITY_THRESHOLD) -> LeakResult:
     """`threshold` is the problem's leak policy; it is never allowed above the tuned default."""
     threshold = min(threshold, SIMILARITY_THRESHOLD)

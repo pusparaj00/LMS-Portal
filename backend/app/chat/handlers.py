@@ -263,8 +263,7 @@ def _copies_a_course_solution(turn: Turn, answer: str) -> bool:
 
     Without an open problem the answer is not compared with one solution, so closing the problem page must not be a way
     to get a graded problem solved."""
-    blocks = re.findall(r"```[^\n]*\n(.*?)```", answer, re.S)
-    code = "\n".join([*blocks, *leak.code_like_text(re.sub(r"```.*?```", " ", answer, flags=re.S))[0]])
+    code = leak.code_in(answer)
     if len(leak.normalise_tokens(code)) < leak.MIN_TOKENS_FLOOR:
         return False
     references = turn.conn.execute(
