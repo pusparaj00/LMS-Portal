@@ -131,6 +131,7 @@ Priority: P0 must work in the demo, P1 should, P2 is design only.
 | F-90 | At-risk alerts list students with the factors that triggered each alert (missing work, low mastery, falling scores, inactivity), so an alert can be explained and checked | P1 |
 | F-91 | A quiz report shows, per question, how many students answered it and how many were right, so the instructor sees which questions most of the class missed | P1 |
 | F-92 | A content report compares, for each lesson item, the mastery or scores of students who completed it with those who did not, labelled as an association and not as proof of effect | P2 |
+| F-93 | An instructor can show an uploaded note to the course's students (hidden by default, and the assistant uses every note either way); enrolled students read the shown notes under Classwork and a few on the stream; a note whose code copies a problem's reference solution is shown only after the instructor confirms a second time | P1 |
 | F-70 | Launch from Moodle or Canvas through LTI 1.3 so the system fits an existing LMS | P2 |
 
 ## 5. Non-functional requirements
