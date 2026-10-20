@@ -90,6 +90,21 @@ A dump keeps data a student has since had erased (TR-S-07), and a restore brings
 dumps are kept, delete old ones, and after a restore erase again anyone whose erasure completed after the dump was made
 (the worker's log lists each completed erasure by user number). This repository sets no backup expiry.
 
+## Deploy on one server (TR-O-01 to TR-O-07)
+
+On a Linux server with Docker, clone the repository, copy your `.env`, and add `SITE_ADDRESS=<the server's IP address>` and
+`TOOL_BASE_URL=https://<the same address>`. Use secrets of at least 32 characters (16 for the database and Redis
+passwords); in production mode the API refuses to start with shorter or placeholder ones. Then:
+
+```
+docker compose -f docker-compose.yml -f compose.prod.yml up -d --build --wait
+```
+
+Only ports 80 and 443 are published, by Caddy. Browsers warn about the certificate, which Caddy signs with its own
+authority; install its root (`caddy_data` volume, `pki/authorities/local/root.crt`) on the machines that use the system, or
+replace the certificate when the institution has a domain name. Back up with `scripts/backup.sh` (daily from cron, keeps
+`BACKUP_KEEP_DAYS` days, default 14) and prove a dump restores with `scripts/restore-check.sh`.
+
 ## Accounts (F-01)
 
 Everyone can set a display name and change their password under **Account**. An admin manages people under **Users**:
