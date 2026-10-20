@@ -7,6 +7,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app import audit
 from app.bodylimit import BodySizeLimit
+from app.config import get_settings
 from app.errors import error_response, install_error_handlers
 from app.logging import REQUEST_ID, configure_logging, request_id_var
 from app.ratelimit import client_ip
@@ -43,6 +44,7 @@ from app.routers import (
 )
 
 configure_logging()
+get_settings()  # read and checked now, so weak production secrets stop the process at start (TR-O-04)
 log = logging.getLogger("app.request")
 
 app = FastAPI(title="Adaptive AI-Powered LMS API", version="1.0.0")
