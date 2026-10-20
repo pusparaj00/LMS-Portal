@@ -355,8 +355,18 @@ export function App() {
             />
           ) : hash === "#/dashboard" ? (
             <RoleDashboard session={session} me={me} courses={courses} />
-          ) : (
+          ) : ["", "#", "#/", "#/courses"].includes(hash) ? (
             <CoursesPage session={session} />
+          ) : (
+            <>
+              <h1>Page not found</h1>
+              <p>There is no page at this address, or it is not for your role.</p>
+              <p>
+                <a className="button" href="#/courses">
+                  Go to my courses
+                </a>
+              </p>
+            </>
           )}
         </main>
       </div>

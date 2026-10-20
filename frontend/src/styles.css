@@ -144,6 +144,11 @@ a {
   .bar button.ghost {
     padding: 0.3rem 0.2rem;
   }
+
+  /* The bar needs two rows on a phone; scrolling away with the page leaves the screen to the content. */
+  .bar {
+    position: static;
+  }
 }
 
 .who {
