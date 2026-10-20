@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import TimeoutError as PoolTimeout
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.logging import request_id_var
@@ -30,6 +31,13 @@ def install_error_handlers(app: FastAPI) -> None:
     async def http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         response = error_response(exc.status_code, "http_error", str(exc.detail))
         response.headers.update(exc.headers or {})
+        return response
+
+    @app.exception_handler(PoolTimeout)
+    async def pool_busy(request: Request, exc: PoolTimeout) -> JSONResponse:
+        """Every database connection is in use: say so and ask the client to retry, instead of a 500."""
+        response = error_response(503, "busy", "The system is busy right now. Please try again in a moment.")
+        response.headers["Retry-After"] = str(RETRY_AFTER_SECONDS)
         return response
 
     @app.exception_handler(RequestValidationError)

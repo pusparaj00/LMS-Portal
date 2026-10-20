@@ -40,6 +40,7 @@ services:
   db:
     restart: unless-stopped
     image: pgvector/pgvector:pg16
+    command: ["postgres", "-c", "max_connections=200"]
     environment:
       POSTGRES_USER: lms_owner
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}

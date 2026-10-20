@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     mastery_service_url: str
     mastery_service_token: str
     jwt_expire_minutes: int = 60
+    # One request holds one connection for its whole run (a chat request holds one from each of two pools), so each pool
+    # must cover the server's worker threads (40). Postgres is started with max_connections=200 to fit both.
+    db_pool_size: int = 30
+    db_max_overflow: int = 10
+    db_pool_timeout_s: float = 10
     retention_days: int = 0  # erase a student's data after this many days without activity; 0 keeps it
     audit_retention_days: int = 0  # remove audit events older than this; 0 keeps them
     tool_base_url: str = ""  # this app's public address as the LMS sees it (LTI, TR-A-09); empty turns LTI off
@@ -26,6 +31,11 @@ class Settings(BaseSettings):
     llm_model: str = "stub"
     llm_timeout_s: float = 12  # one request to one provider
     llm_budget_s: float = 20  # the whole answer, across retries and fallback providers
+    # Model calls in flight at once. A request holds a worker thread and a database connection while it waits for the
+    # model, so without a cap a class asking together uses them all and cheap requests wait behind it. A call that
+    # cannot start within llm_queue_wait_s fails like a model outage, which every caller already handles.
+    llm_max_concurrent: int = 16
+    llm_queue_wait_s: float = 3
     # A new explanation, both attempts and their checks, ends within this; then the template is shown (TR-P-03, 15 s).
     explain_budget_s: float = 14
     llm_max_retries: int = 1

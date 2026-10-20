@@ -2,6 +2,7 @@
 from configuration; swapping provider needs no change elsewhere."""
 import json
 import logging
+import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -24,6 +25,9 @@ QUOTA_COOLDOWN_SECONDS = 60  # when the provider does not say how long to wait
 UNREACHABLE_COOLDOWN_SECONDS = 60  # nothing listens there (a local model that is not running): do not retry per request
 # provider and model -> time.monotonic() until which it goes to the back of the chain
 _cooling: dict[tuple[str, str], float] = {}
+# How many model calls may be in flight at once, shared by every request in this process (Settings.llm_max_concurrent).
+_slots_lock = threading.Lock()
+_slots: tuple[int, threading.BoundedSemaphore] | None = None
 # The moment (time.monotonic) by which the whole chain must have answered; set by FallbackChain.
 _deadline: ContextVar[float | None] = ContextVar("llm_deadline", default=None)
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -258,6 +262,14 @@ class OpenAICompatibleAdapter:
         raise last_error or LLMError("LLM call failed")
 
 
+def _call_slots(size: int) -> threading.BoundedSemaphore:
+    global _slots
+    with _slots_lock:
+        if _slots is None or _slots[0] != size:
+            _slots = (size, threading.BoundedSemaphore(size))
+        return _slots[1]
+
+
 class FallbackChain:
     """Tries each provider in order; the next one is used when one fails or has no quota left.
 
@@ -265,9 +277,13 @@ class FallbackChain:
     key does not cost time on every request, yet is still used if everything else fails.
     """
 
-    def __init__(self, adapters: list[LLMAdapter], budget_s: float = 20.0) -> None:
+    def __init__(
+        self, adapters: list[LLMAdapter], budget_s: float = 20.0, max_concurrent: int = 16, queue_wait_s: float = 3.0
+    ) -> None:
         self.adapters = adapters
         self.budget_s = budget_s
+        self.max_concurrent = max_concurrent
+        self.queue_wait_s = queue_wait_s
         self.last: LLMAdapter = adapters[0]
 
     @property
@@ -276,6 +292,17 @@ class FallbackChain:
         return self.last.config
 
     def complete(self, system: str, user: str, json_schema: dict | None = None) -> str:
+        """At most `max_concurrent` calls run at once in this process; one that cannot start within `queue_wait_s`
+        fails as if the model were down, so a crowd of waiting requests cannot use every thread and connection."""
+        slots = _call_slots(self.max_concurrent)
+        if not slots.acquire(timeout=self.queue_wait_s):
+            raise LLMError("too many model calls are waiting; try again shortly")
+        try:
+            return self._complete(system, user, json_schema)
+        finally:
+            slots.release()
+
+    def _complete(self, system: str, user: str, json_schema: dict | None = None) -> str:
         """One answer within `budget_s` seconds in total, however many providers have to be tried, and never past a
         deadline the caller has already set."""
         mine = time.monotonic() + self.budget_s
@@ -362,4 +389,4 @@ def build_adapter(settings: Settings) -> LLMAdapter:
             adapters.append(make(provider, model.strip() or None))
         except LLMError:
             log.warning("fallback provider skipped: no key", extra={"fields": {"provider": provider}})
-    return FallbackChain(adapters, settings.llm_budget_s)
+    return FallbackChain(adapters, settings.llm_budget_s, settings.llm_max_concurrent, settings.llm_queue_wait_s)
