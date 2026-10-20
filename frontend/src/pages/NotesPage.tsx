@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { ApiError, Session, api } from "../api";
 
 type Concept = { concept_id: number; name: string };
-type Note = { id: number; title: string; concept: string | null; status: "pending" | "ready" | "failed"; detail: string | null };
+type Note = { id: number; title: string; concept: string | null; status: "pending" | "ready" | "failed"; detail: string | null; visible_to_students: boolean };
 
 const MAX_PDF_BYTES = 4_000_000;
 const MAX_TEXT_CHARS = 50_000;
@@ -29,6 +29,7 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
   const [concept, setConcept] = useState("");
   const [pasted, setPasted] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
@@ -62,13 +63,29 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
     }
   }
 
+  async function setShown(note: Note, shown: boolean, confirmSolution = false): Promise<void> {
+    setError(null);
+    try {
+      await api(`/courses/${courseId}/documents/${note.id}`, session, {
+        method: "PATCH",
+        body: { visible_to_students: shown, confirm_solution: confirmSolution },
+      });
+      await load();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409 && window.confirm(`${e.message}\n\nShow it to students anyway?`)) {
+        return setShown(note, shown, true);
+      }
+      setError(e instanceof ApiError ? e.message : "The notes could not be changed.");
+    }
+  }
+
   async function upload(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setSent(null);
     setBusy(true);
     try {
-      const body: Record<string, unknown> = { title, ...(concept ? { concept } : {}) };
+      const body: Record<string, unknown> = { title, visible_to_students: visible, ...(concept ? { concept } : {}) };
       if (file) {
         const isPdf = file.name.toLowerCase().endsWith(".pdf");
         if (isPdf) {
@@ -83,10 +100,16 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
       }
       if (typeof body.text === "string" && body.text.length > MAX_TEXT_CHARS)
         throw new Error(`The text is longer than ${MAX_TEXT_CHARS.toLocaleString()} characters. Split it into smaller notes.`);
-      await api(`/courses/${courseId}/documents`, session, { body });
+      try {
+        await api(`/courses/${courseId}/documents`, session, { body });
+      } catch (e) {
+        if (!(e instanceof ApiError && e.status === 409 && window.confirm(`${e.message}\n\nShow it to students anyway?`))) throw e;
+        await api(`/courses/${courseId}/documents`, session, { body: { ...body, confirm_solution: true } });
+      }
       setSent(`"${title}" was added and is being prepared.`);
       setTitle("");
       setPasted("");
+      setVisible(false);
       setFile(null);
       if (fileInput.current) fileInput.current.value = "";
       await load();
@@ -104,7 +127,8 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
       </p>
       <h1>Course notes</h1>
       <p>
-        Students' explanations and the assistant draw on these notes and cite them. A note is cut into sections and
+        Students' explanations and the assistant draw on all of these notes and cite them. Notes you show to students can
+        also be read under Classwork. A note is cut into sections and
         prepared in the background, which takes a few seconds.
       </p>
 
@@ -141,6 +165,14 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
             <small>Use headings (## Heading) to mark sections. A PDF must contain text, not scanned images.</small>
           </label>
         )}
+        <label className="inline">
+          <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
+          Show these notes to students
+        </label>
+        <small>
+          Students read them under Classwork. The assistant uses the notes either way. Do not show notes that contain a
+          solution.
+        </small>
         {error && (
           <p role="alert" className="error">
             {error}
@@ -164,6 +196,10 @@ export function NotesPage({ session, courseId }: { session: Session; courseId: n
               {n.status === "failed" && n.detail && <small className="error"> {n.detail}</small>}
             </span>
             <span className="tag">{STATUS_LABEL[n.status]}</span>
+            <span className="tag">{n.visible_to_students ? "shown to students" : "hidden from students"}</span>
+            <button className="link" onClick={() => setShown(n, !n.visible_to_students)}>
+              {n.visible_to_students ? "Hide from students" : "Show to students"}
+            </button>
             <button className="link" onClick={() => remove(n)}>
               Delete
             </button>

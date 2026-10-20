@@ -7,6 +7,7 @@ import { StudentAssignments } from "./AssignmentsPage";
 import { CourseTabs, UpcomingBox } from "./CourseTabs";
 import { StudentQuizzes } from "./QuizPage";
 import { CourseContent } from "./CourseContent";
+import { CourseNotes } from "./StudentNotes";
 import { CourseSettings } from "./CourseSettings";
 import { RatingsSection } from "./RatingsSection";
 
@@ -173,6 +174,7 @@ export function CoursePage({
           {session.role === "instructor" && <CourseSettings session={session} courseId={courseId} />}
           {student && <UpcomingBox session={session} courseId={courseId} />}
           <Announcements session={session} courseId={courseId} />
+          {student && <CourseNotes session={session} courseId={courseId} compact />}
           {student && problems && <StudentHome session={session} courseId={courseId} problems={coding} />}
           {student && <RatingsSection session={session} courseId={courseId} />}
         </>
@@ -197,6 +199,7 @@ export function CoursePage({
           )}
           {student && <StudentAssignments session={session} courseId={courseId} />}
           {student && <StudentQuizzes session={session} courseId={courseId} />}
+          {student && <CourseNotes session={session} courseId={courseId} />}
           <CourseContent session={session} courseId={courseId} />
           {problems === null && !error && <p className="empty">Loading problems…</p>}
           {problems && coding.length === 0 && <p className="empty">This course has no coding problems yet.</p>}

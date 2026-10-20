@@ -29,6 +29,7 @@ import { HomePage } from "./pages/HomePage";
 import { NewProblemPage } from "./pages/NewProblemPage";
 import { Nav } from "./pages/Nav";
 import { NotesPage } from "./pages/NotesPage";
+import { NoteReader } from "./pages/StudentNotes";
 import { InstructorPage } from "./pages/InstructorPage";
 import { LtiLanding } from "./pages/LtiLanding";
 import { LoginPage } from "./pages/LoginPage";
@@ -171,6 +172,7 @@ export function App() {
   const newProblem = hash.match(/^#\/course\/(\d+)\/problem\/new$/);
   const editProblem = hash.match(/^#\/course\/(\d+)\/problem\/(\d+)\/edit$/);
   const notes = hash.match(/^#\/course\/(\d+)\/notes$/);
+  const note = hash.match(/^#\/course\/(\d+)\/note\/(\d+)$/);
   const assignments = hash.match(/^#\/course\/(\d+)\/assignments$/);
   const quizzes = hash.match(/^#\/course\/(\d+)\/quizzes$/);
   const takeQuiz = hash.match(/^#\/course\/(\d+)\/quiz\/(\d+)$/);
@@ -271,6 +273,8 @@ export function App() {
             />
           ) : notes && session.role === "instructor" ? (
             <NotesPage session={session} courseId={Number(notes[1])} />
+          ) : note && session.role !== "admin" ? (
+            <NoteReader key={note[2]} session={session} courseId={Number(note[1])} noteId={Number(note[2])} />
           ) : assignments && session.role === "instructor" ? (
             <AssignmentsPage session={session} courseId={Number(assignments[1])} />
           ) : handIn && session.role === "student" ? (
