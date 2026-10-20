@@ -97,3 +97,4 @@ for module in (
 ):
     app.include_router(module.router, prefix="/api/v1")
 app.include_router(work.queue_router, prefix="/api/v1")
+app.include_router(documents.student_router, prefix="/api/v1")

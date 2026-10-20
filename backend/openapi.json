@@ -2325,6 +2325,11 @@
             ],
             "title": "Concept"
           },
+          "confirm_solution": {
+            "default": false,
+            "title": "Confirm Solution",
+            "type": "boolean"
+          },
           "pdf_base64": {
             "anyOf": [
               {
@@ -2368,6 +2373,11 @@
             "minLength": 1,
             "title": "Title",
             "type": "string"
+          },
+          "visible_to_students": {
+            "default": false,
+            "title": "Visible To Students",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2416,6 +2426,11 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "visible_to_students": {
+            "default": false,
+            "title": "Visible To Students",
+            "type": "boolean"
           }
         },
         "required": [
@@ -4192,6 +4207,24 @@
           "late"
         ],
         "title": "MyWork",
+        "type": "object"
+      },
+      "NoteVisibility": {
+        "properties": {
+          "confirm_solution": {
+            "default": false,
+            "title": "Confirm Solution",
+            "type": "boolean"
+          },
+          "visible_to_students": {
+            "title": "Visible To Students",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "visible_to_students"
+        ],
+        "title": "NoteVisibility",
         "type": "object"
       },
       "NotificationList": {
@@ -6339,6 +6372,71 @@
           "updated_at"
         ],
         "title": "StoredExplanation",
+        "type": "object"
+      },
+      "StudentNoteBody": {
+        "properties": {
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "concept",
+          "text"
+        ],
+        "title": "StudentNoteBody",
+        "type": "object"
+      },
+      "StudentNoteOut": {
+        "properties": {
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "concept"
+        ],
+        "title": "StudentNoteOut",
         "type": "object"
       },
       "StudentStats": {
@@ -10627,6 +10725,71 @@
         "tags": [
           "documents"
         ]
+      },
+      "patch": {
+        "description": "Show a note to the course's students, or hide it again. The assistant uses the note either way.",
+        "operationId": "set_visibility_api_v1_courses__course_id__documents__document_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteVisibility"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Visibility",
+        "tags": [
+          "documents"
+        ]
       }
     },
     "/api/v1/courses/{course_id}/enroll": {
@@ -11823,6 +11986,114 @@
         "summary": "Move Module",
         "tags": [
           "content"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/notes": {
+      "get": {
+        "description": "F-93: the notes a student may read. A teacher sees the same list (every note) to check what students see.",
+        "operationId": "list_visible_notes_api_v1_courses__course_id__notes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StudentNoteOut"
+                  },
+                  "title": "Response List Visible Notes Api V1 Courses  Course Id  Notes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Visible Notes",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/notes/{document_id}": {
+      "get": {
+        "operationId": "read_note_api_v1_courses__course_id__notes__document_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNoteBody"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Note",
+        "tags": [
+          "documents"
         ]
       }
     },

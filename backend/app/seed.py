@@ -19,6 +19,7 @@ from app import notes_import, synthetic
 from app.auth import hash_password
 from app.bank_import import import_bank, load_bank, validate_bank
 from app.db import get_engine
+from app.retrieval import store
 from app.schemas import MAX_PASSWORD_BYTES
 
 STUDENT = "student@demo.local"
@@ -71,6 +72,10 @@ def seed(synthetic_students: int = 20, wait: bool = True) -> dict:
             {"u": student_id, "c": course_id},
         )
         queued, skipped = notes_import.stage_notes(conn, course_id, data / "notes")
+        for document_id in queued:  # F-93: demo notes are shown to students unless they copy a reference solution
+            body = conn.execute(text("SELECT body FROM documents WHERE id = :d"), {"d": document_id}).scalar_one()
+            if not store.problems_copied_by(conn, course_id, body):
+                conn.execute(text("UPDATE documents SET visible_to_students = true WHERE id = :d"), {"d": document_id})
     notes_import.enqueue(queued)
 
     seeded = synthetic.seed(course_id, synthetic_students)

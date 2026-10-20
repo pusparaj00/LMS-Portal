@@ -805,6 +805,8 @@ class DocumentCreate(BaseModel):
     title: Text = Field(min_length=1, max_length=200)
     source_ref: Text | None = Field(default=None, max_length=200)
     concept: Text | None = None
+    visible_to_students: bool = False
+    confirm_solution: bool = False
     text: Text | None = Field(default=None, min_length=1, max_length=50_000)
     pdf_base64: str | None = Field(default=None, min_length=1, max_length=5_400_000)
 
@@ -821,6 +823,22 @@ class DocumentOut(BaseModel):
     concept: str | None
     status: Literal["pending", "ready", "failed"]
     detail: str | None
+    visible_to_students: bool = False
+
+
+class NoteVisibility(BaseModel):
+    visible_to_students: bool
+    confirm_solution: bool = False
+
+
+class StudentNoteOut(BaseModel):
+    id: int
+    title: str
+    concept: str | None
+
+
+class StudentNoteBody(StudentNoteOut):
+    text: str
 
 
 class ExplanationOut(BaseModel):

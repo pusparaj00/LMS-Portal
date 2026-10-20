@@ -97,6 +97,7 @@ BODIES = {
         "score": 5, "reason": "because"},
     ("PUT", "/courses/{course_id}/concepts/{concept_id}/prerequisites"): lambda ids: {"prerequisite_ids": []},
     ("PUT", "/courses/{course_id}/quizzes/{quiz_id}"): lambda ids: quiz_body(),
+    ("PATCH", "/courses/{course_id}/documents/{document_id}"): lambda ids: {"visible_to_students": True},
     ("PUT", "/courses/{course_id}/ratings"): lambda ids: {"course_rating": 5, "instructor_rating": 5},
     ("PUT", "/courses/{course_id}/students/{student_id}/mute"): lambda ids: {"muted": True},
 }

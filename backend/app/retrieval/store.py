@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Connection, text
 
+from app.feedback import leak
 from app.retrieval import embedder
 from app.retrieval.chunking import chunk_note
 
@@ -92,3 +93,13 @@ def search(
         for r in rows
         if r.score >= min_score
     ]
+
+
+def problems_copied_by(conn: Connection, course_id: int, body: str) -> list[str]:
+    """Titles of the course's problems whose reference solution the note's code copies (F-93): such a note would hand
+    out a solution if it were shown to students."""
+    rows = conn.execute(
+        text("SELECT title, reference_solution FROM problems WHERE course_id = :c AND reference_solution IS NOT NULL"),
+        {"c": course_id},
+    ).all()
+    return [title for title, reference in rows if leak.copies_reference(body, reference)]
