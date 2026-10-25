@@ -11,6 +11,7 @@ export type Course = {
   section?: string | null;
   subject?: string | null;
   color?: string | null;
+  language?: string;
 };
 
 export type ConceptTag = { concept_id: number; name: string; weight: number };
@@ -20,6 +21,7 @@ export type Problem = {
   course_id: number;
   title: string;
   statement: string;
+  language?: string;
   kind: "code" | "mcq";
   review_status: "needs human review" | "reviewed";
   concepts: ConceptTag[];

@@ -21,7 +21,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   progress: "My progress",
   recommend: "What next",
   lms: "Course info",
-  general: "Python question",
+  general: "Programming question",
 };
 
 const HOW_LABELS = {
@@ -90,7 +90,7 @@ export function ChatPanel({ session, problemId }: { session: Session; problemId:
             {entries.length === 0 && (
               <p className="empty">
                 Ask about an error in your last submission, ask for a hint, check your progress, ask what to do next,
-                ask about deadlines, grades or announcements, or ask a Python question.
+                ask about deadlines, grades or announcements, or ask a programming question.
                 {problemId === null && " Open a problem to get help with a submission."}
               </p>
             )}

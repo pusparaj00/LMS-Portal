@@ -2,6 +2,7 @@ import { CodeEditor as Editor } from "./CodeEditor";
 import { useState } from "react";
 
 import { ApiError, BUSY_RETRIES, Session, api } from "../api";
+import { editorLanguage } from "../design/language";
 import { withoutFences } from "../statement";
 
 type Source = { chunk_id: number; title: string; section: string; text: string };
@@ -11,6 +12,7 @@ type Probe = {
   title: string;
   statement: string;
   options: { id: number; text: string }[];
+  language?: string;
 };
 type Explanation = {
   status: "verified" | "fallback";
@@ -255,7 +257,7 @@ function ProbeCard({ session, submissionId, probe }: { session: Session; submiss
             <div className="editor short">
               <Editor
                 height="100%"
-                defaultLanguage="python"
+                defaultLanguage={editorLanguage(probe.language)}
                 value={code}
                 onChange={(v) => setCode(v ?? "")}
                 options={{ minimap: { enabled: false }, fontSize: 14, scrollBeyondLastLine: false }}

@@ -2,6 +2,7 @@ import { CodeEditor as Editor } from "./CodeEditor";
 import { useEffect, useRef, useState } from "react";
 
 import { ApiError, BUSY_RETRIES, DRAFT_PREFIX, ProblemDetail, Session, SubmissionResult, api } from "../api";
+import { editorLanguage, starterComment } from "../design/language";
 import { recordRecent } from "../design/recent";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { HelpPolicy } from "./HelpPolicy";
@@ -102,6 +103,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
       .then((p) => {
         setProblem(p);
         recordRecent({ href: `#/problem/${problemId}`, title: p.title });
+        setCode((prev) => (prev === STARTER ? starterComment(p.language) : prev));
       })
       .catch((e: Error) => setError(e.message));
   }, [problemId]);
@@ -174,7 +176,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
           <div className="editor">
             <Editor
               height="100%"
-              defaultLanguage="python"
+              defaultLanguage={editorLanguage(problem?.language)}
               value={code}
               onChange={(v) => {
                 setCode(v ?? "");
