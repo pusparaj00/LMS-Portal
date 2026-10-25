@@ -43,8 +43,8 @@ def normalise(text: str) -> str:
     return "\n".join(line.rstrip() for line in text.rstrip().splitlines())
 
 
-def grade(code: str, tests: list[TestSpec]) -> Grade:
-    runs = run_batch(code, [t.input for t in tests])
+def grade(code: str, tests: list[TestSpec], language: str = "python") -> Grade:
+    runs = run_batch(code, [t.input for t in tests], language)
     outcomes = [
         TestOutcome(t, r.status == "ok" and normalise(r.stdout) == normalise(t.expected), r)
         for t, r in zip(tests, runs, strict=True)
