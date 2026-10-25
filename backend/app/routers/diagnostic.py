@@ -122,7 +122,7 @@ def top_misconceptions(conn: Connection, user_id: int, course_id: int) -> list[S
 
 def _item_out(conn: Connection, problem_id: int, session_id: str) -> DiagnosticItem:
     problem = conn.execute(
-        text("SELECT title, statement, kind FROM problems WHERE id = :p"), {"p": problem_id}
+        text("SELECT title, statement, kind, language FROM problems WHERE id = :p"), {"p": problem_id}
     ).one()
     options = [
         OptionOut(id=r[0], text=r[1])
@@ -134,7 +134,7 @@ def _item_out(conn: Connection, problem_id: int, session_id: str) -> DiagnosticI
     random.Random(f"{session_id}:{problem_id}").shuffle(options)  # the correct answer is not always first
     return DiagnosticItem(
         problem_id=problem_id, kind=problem.kind, title=problem.title,
-        statement=problem.statement, options=options,
+        statement=problem.statement, options=options, language=problem.language,
     )
 
 
@@ -280,7 +280,10 @@ def _grade_answer(conn: Connection, body: DiagnosticAnswerRequest, kind: str) ->
         )
     ]
     try:
-        return grade(body.code, tests).status == "passed", None
+        language = conn.execute(
+            text("SELECT language FROM problems WHERE id = :p"), {"p": body.problem_id}
+        ).scalar_one()
+        return grade(body.code, tests, language).status == "passed", None
     except SandboxUnavailable as exc:
         raise sandbox_error(exc) from None
 

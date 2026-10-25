@@ -11,6 +11,7 @@ def validate_code_problem(
     known_concepts: set[str],
     reference_solution: str,
     tests: list[dict],
+    language: str = "python",
 ) -> list[str]:
     errors = []
     if not concept_names:
@@ -27,6 +28,7 @@ def validate_code_problem(
     result = grade(
         reference_solution,
         [TestSpec(None, t["input"], t["expected"], t["hidden"], t["category"]) for t in tests],
+        language,
     )
     for number, outcome in enumerate(result.outcomes, 1):
         if not outcome.passed:
@@ -48,7 +50,7 @@ def _short(value: str, limit: int = 60) -> str:
 
 def validate_mcq_item(
     *, concept_names: list[str], known_concepts: set[str], options: list[dict],
-    known_misconceptions: set[str], code: str,
+    known_misconceptions: set[str], code: str, language: str = "python",
 ) -> list[str]:
     errors = []
     if not concept_names:
@@ -68,7 +70,7 @@ def validate_mcq_item(
 
     correct = [o["text"] for o in options if o["correct"]]
     if not errors and len(correct) == 1:
-        (run,) = run_batch(code, [""])
+        (run,) = run_batch(code, [""], language)
         if run.status != "ok":
             errors.append(f"code does not run: {run.status}")
         elif normalise(run.stdout) != normalise(correct[0]):

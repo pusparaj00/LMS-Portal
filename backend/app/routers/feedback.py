@@ -94,7 +94,10 @@ def answer_probe(problem_id: int, body: ProbeAnswerRequest, user: Student, conn:
             )
         ]
         try:
-            correct = grade(body.code, tests).status == "passed"
+            language = conn.execute(
+                text("SELECT language FROM problems WHERE id = :p"), {"p": problem_id}
+            ).scalar_one()
+            correct = grade(body.code, tests, language).status == "passed"
         except SandboxUnavailable as exc:
             raise sandbox_error(exc) from None
     try:

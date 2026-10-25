@@ -26,6 +26,7 @@ class Bank:
     evidence_map: list[dict]
     problems: list[dict]
     items: list[dict]
+    language: str = "python"
 
 
 @dataclass
@@ -35,22 +36,25 @@ class Verdict:
     errors: list[str] = field(default_factory=list)
 
 
-def _with_statement(item: dict) -> dict:
+def _with_statement(item: dict, language: str = "python") -> dict:
     fence = "```"
-    return {**item, "statement": f"{item['question']}\n\n{fence}python\n{item['code']}{fence}"}
+    return {**item, "statement": f"{item['question']}\n\n{fence}{language}\n{item['code']}{fence}"}
 
 
 def load_bank(root: Path) -> Bank:
     problems = []
     for path in sorted((root / "problems").glob("*.json")):
         problems += json.loads(path.read_text())
+    course = json.loads((root / "course.json").read_text())
+    language = course.get("language", "python")
     return Bank(
-        course_title=json.loads((root / "course.json").read_text())["title"],
+        course_title=course["title"],
         concepts=json.loads((root / "concepts.json").read_text()),
         misconceptions=json.loads((root / "misconceptions.json").read_text()),
         evidence_map=json.loads((root / "evidence_map.json").read_text()),
         problems=problems,
-        items=[_with_statement(i) for i in json.loads((root / "items.json").read_text())],
+        items=[_with_statement(i, language) for i in json.loads((root / "items.json").read_text())],
+        language=language,
     )
 
 
@@ -64,6 +68,7 @@ def validate_bank(bank: Bank) -> list[Verdict]:
             known_concepts=concepts,
             reference_solution=p.get("reference_solution", ""),
             tests=p.get("tests", []),
+            language=bank.language,
         )
         verdicts.append(Verdict("code", p["title"], errors))
     for item in bank.items:
@@ -73,6 +78,7 @@ def validate_bank(bank: Bank) -> list[Verdict]:
             options=item["options"],
             known_misconceptions=misconceptions,
             code=item["code"],
+            language=bank.language,
         )
         verdicts.append(Verdict("mcq", item["title"], errors))
     return verdicts
@@ -133,8 +139,8 @@ def import_bank(
     ).scalar()
     if course_id is None:
         course_id = conn.execute(
-            text("INSERT INTO courses (title, instructor_id) VALUES (:t, :i) RETURNING id"),
-            {"t": bank.course_title, "i": instructor_id},
+            text("INSERT INTO courses (title, instructor_id, language) VALUES (:t, :i, :l) RETURNING id"),
+            {"t": bank.course_title, "i": instructor_id, "l": bank.language},
         ).scalar_one()
 
     concept_ids = _concept_ids(conn, course_id, bank.concepts)

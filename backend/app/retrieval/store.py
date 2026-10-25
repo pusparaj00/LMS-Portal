@@ -1,5 +1,6 @@
 """Course-note storage, ingestion and retrieval in pgvector (TR-L-01, TR-L-02, TR-A-07)."""
 import hashlib
+import re
 from dataclasses import dataclass
 
 from sqlalchemy import Connection, text
@@ -72,11 +73,21 @@ def ingest_document(conn: Connection, document_id: int) -> int:
     return len(chunks)
 
 
+def _tokens(s: str) -> set[str]:
+    return {t for t in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", s.lower()) if len(t) > 2}
+
+
 def search(
     conn: Connection, *, course_id: int, query: str, k: int = 3, min_score: float, concept_id: int | None = None
 ) -> list[Source]:
-    """Top-k chunks above the minimum cosine similarity; an empty list means no course source applies."""
+    """Top-k chunks above the minimum cosine similarity, with a lexical (BM25-lite) boost.
+
+    Dense cosine similarity from BGE-small is combined with a token-overlap score so
+    that programming identifiers (function names, keywords, error types) that the
+    dense model may miss still surface. Candidates are over-fetched and re-ranked.
+    """
     vector = _vector(embedder.embed_query(query))
+    fetch = max(k * 4, 12)
     rows = conn.execute(
         text(
             "SELECT c.id, d.title, c.section, c.text, d.concept_id,"
@@ -86,20 +97,38 @@ def search(
             " AND (CAST(:concept AS integer) IS NULL OR d.concept_id = :concept)"
             " ORDER BY c.embedding <=> CAST(:q AS vector) LIMIT :k"
         ),
-        {"q": vector, "course": course_id, "m": embedder.model_id(), "concept": concept_id, "k": k},
+        {"q": vector, "course": course_id, "m": embedder.model_id(), "concept": concept_id, "k": fetch},
     )
-    return [
-        Source(r.id, r.title, r.section or "", r.text, float(r.score), r.concept_id)
-        for r in rows
-        if r.score >= min_score
-    ]
+    q_tokens = _tokens(query)
+    scored = []
+    for r in rows:
+        dense = float(r.score)
+        lex = 0.0
+        if q_tokens:
+            t_tokens = _tokens(f"{r.title} {r.section or ''} {r.text}")
+            overlap = len(q_tokens & t_tokens)
+            lex = overlap / (len(q_tokens) ** 0.5 * (len(t_tokens) ** 0.5 or 1.0))
+        combined = 0.7 * dense + 0.3 * lex
+        scored.append((combined, dense, r))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    out = []
+    for combined, dense, r in scored[:k]:
+        if dense >= min_score or combined >= min_score:
+            out.append(Source(r.id, r.title, r.section or "", r.text, float(dense), r.concept_id))
+    return out
 
 
 def problems_copied_by(conn: Connection, course_id: int, body: str) -> list[str]:
     """Titles of the course's problems whose reference solution the note's code copies (F-93): such a note would hand
     out a solution if it were shown to students."""
     rows = conn.execute(
-        text("SELECT title, reference_solution FROM problems WHERE course_id = :c AND reference_solution IS NOT NULL"),
+        text(
+            "SELECT title, reference_solution, language FROM problems"
+            " WHERE course_id = :c AND reference_solution IS NOT NULL"
+        ),
         {"c": course_id},
     ).all()
-    return [title for title, reference in rows if leak.copies_reference(body, reference)]
+    return [
+        title for title, reference, language in rows
+        if leak.copies_reference(body, reference, language=language)
+    ]

@@ -24,7 +24,10 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 Instructor = Annotated[CurrentUser, Depends(require_role("instructor"))]
 
 
-_COURSE = "c.id, c.title, c.instructor_id, c.section, c.subject, c.color, c.archived_at IS NOT NULL AS archived"
+_COURSE = (
+    "c.id, c.title, c.instructor_id, c.section, c.subject, c.color, c.language,"
+    " c.archived_at IS NOT NULL AS archived"
+)
 _ENROLLED = "EXISTS (SELECT 1 FROM enrollments e WHERE e.course_id = c.id AND e.user_id = :u)"
 
 
@@ -53,10 +56,10 @@ def create_course(
 ):
     row = conn.execute(
         text(
-            "INSERT INTO courses (title, instructor_id) VALUES (:t, :u)"
-            " RETURNING id, title, instructor_id, section, subject, color, false AS archived"
+            "INSERT INTO courses (title, instructor_id, language) VALUES (:t, :u, :lang)"
+            " RETURNING id, title, instructor_id, section, subject, color, language, false AS archived"
         ),
-        {"t": body.title, "u": user.id},
+        {"t": body.title, "u": user.id, "lang": body.language},
     ).mappings().one()
     return {**row, "enrolled": False}
 

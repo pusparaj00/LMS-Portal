@@ -75,7 +75,10 @@ def run_batch(code: str, stdins: list[str], language: str = "python") -> list[Ru
     job_id = uuid.uuid4().hex
     tmp = jobs / "in" / f"{job_id}.json.tmp"
     try:
-        job = {"code": code, "language": language, "runs": [{"stdin": s} for s in stdins], "request_id": request_id_var.get()}
+        job = {
+            "code": code, "language": language, "runs": [{"stdin": s} for s in stdins],
+            "request_id": request_id_var.get(),
+        }
         tmp.write_text(json.dumps(job))
         os.replace(tmp, jobs / "in" / f"{job_id}.json")
     except OSError as exc:

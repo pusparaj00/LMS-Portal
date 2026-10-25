@@ -114,7 +114,7 @@ def test_the_concept_hint_skips_notes_that_contain_the_solution(monkeypatch):
 
     ctx = SimpleNamespace(
         primary_concept_name="loops", course_id=1, retrieval_query="loops", primary_concept_id=1,
-        reference_solution=REFERENCE, leak_threshold=0.7)
+        reference_solution=REFERENCE, leak_threshold=0.7, language="python")
     leaking = Source(1, "Loops", "Worked example", NOTES_WITH_SOLUTION, 0.9, 1)
     harmless = Source(2, "Loops", "Range", NOTES_WITH_SNIPPET, 0.8, 1)
 

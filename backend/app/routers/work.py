@@ -39,7 +39,8 @@ Teacher = Annotated[CurrentUser, Depends(require_role("instructor"))]
 MAX_FILE_BYTES = 4_500_000
 UNSAFE_NAME = re.compile(r"[^A-Za-z0-9._ -]")
 ZIP_STARTS = (b"PK\x03\x04", b"PK\x05\x06")
-EXTENSIONS = (".pdf", ".txt", ".py", ".zip")
+TEXT_EXTENSIONS = (".txt", ".py", ".java", ".c", ".h")
+EXTENSIONS = (".pdf", *TEXT_EXTENSIONS, ".zip")
 
 
 def _check_course(conn: Connection, user: CurrentUser, course_id: int) -> None:
@@ -147,12 +148,12 @@ def _clean_file(name: str, encoded: str) -> tuple[str, bytes]:
     cleaned = UNSAFE_NAME.sub("_", re.split(r"[\\/]", name)[-1]).strip(" .") or "file"
     extension = next((e for e in EXTENSIONS if cleaned.lower().endswith(e)), None)
     if extension is None:
-        raise HTTPException(422, "a file must be a PDF, text, Python or zip file (.pdf, .txt, .py, .zip)")
+        raise HTTPException(422, "a file must be a PDF, text, source code (Python, Java or C) or zip file (.pdf, .txt, .py, .java, .c, .h, .zip)")
     if extension == ".pdf" and not data.startswith(b"%PDF-"):
         raise HTTPException(422, "the file is not a PDF")
     if extension == ".zip" and not data.startswith(ZIP_STARTS):
         raise HTTPException(422, "the file is not a zip file")
-    if extension in (".txt", ".py"):
+    if extension in TEXT_EXTENSIONS:
         try:
             if b"\x00" in data or not data.decode("utf-8").strip():
                 raise ValueError

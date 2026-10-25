@@ -27,9 +27,9 @@ def sandbox_calls(monkeypatch):
     calls = []
     real = claim_check.run_batch
 
-    def counting(code, stdins):
+    def counting(code, stdins, language="python"):
         calls.append(stdins)
-        return real(code, stdins)
+        return real(code, stdins, language)
 
     monkeypatch.setattr(claim_check, "run_batch", counting)
     return calls
@@ -131,7 +131,7 @@ def test_a_malformed_or_oversized_example_is_rejected_before_anything_is_run(
 
 
 def test_a_claim_that_cannot_be_tried_is_not_shown(client, make_user, world, owner, llm, monkeypatch):  # noqa: F811
-    def down(code, stdins):
+    def down(code, stdins, language="python"):
         raise SandboxUnavailable("down")
 
     monkeypatch.setattr(claim_check, "run_batch", down)

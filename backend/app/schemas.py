@@ -28,6 +28,7 @@ def _password(value: str) -> str:
 
 
 Text = Annotated[str, AfterValidator(_no_nul)]  # Postgres text cannot hold NUL
+LANGUAGE = Literal["python", "java", "c"]
 Email = Annotated[str, AfterValidator(_email)]
 Password = Annotated[str, Field(min_length=8), AfterValidator(_password)]
 
@@ -147,6 +148,7 @@ class Course(BaseModel):
     section: str | None = None
     subject: str | None = None
     color: str | None = None
+    language: LANGUAGE = "python"
 
 
 COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -478,6 +480,7 @@ class ConceptCreate(BaseModel):
 
 class CourseCreate(BaseModel):
     title: Text = Field(min_length=1, max_length=200)
+    language: LANGUAGE = "python"
 
 
 class Problem(BaseModel):
@@ -631,6 +634,7 @@ class DiagnosticItem(BaseModel):
     title: str
     statement: str
     options: list[OptionOut]
+    language: str = "python"
 
 
 class DiagnosticStartRequest(BaseModel):
@@ -857,6 +861,7 @@ class ProbeOut(BaseModel):
     title: str
     statement: str
     options: list[OptionOut]
+    language: str = "python"
 
 
 class ExplainResponse(BaseModel):

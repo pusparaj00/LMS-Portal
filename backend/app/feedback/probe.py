@@ -20,6 +20,7 @@ class Probe:
     title: str
     statement: str
     options: list[tuple[int, str]]
+    language: str = "python"
 
 
 def _logit(p: float) -> float:
@@ -40,7 +41,7 @@ def select_probe(conn: Connection, ctx: ExplainContext) -> Probe | None:
     ).scalar_one()
     rows = conn.execute(
         text(
-            "SELECT p.id, p.kind, p.title, p.statement, p.difficulty_b FROM problems p"
+            "SELECT p.id, p.kind, p.title, p.statement, p.difficulty_b, p.language FROM problems p"
             " JOIN problem_concepts pc ON pc.problem_id = p.id AND pc.concept_id = :c AND pc.weight >= :w"
             " WHERE p.course_id = :course AND p.id <> :cur AND p.archived_at IS NULL AND NOT EXISTS ("
             "   SELECT 1 FROM mastery_events e WHERE e.user_id = :u AND e.evidence_ref LIKE 'probe:%:' || p.id)"
@@ -62,7 +63,7 @@ def select_probe(conn: Connection, ctx: ExplainContext) -> Probe | None:
         )
     ]
     random.Random(f"{ctx.submission_id}:{chosen.id}").shuffle(options)
-    return Probe(chosen.id, chosen.kind, chosen.title, chosen.statement, options)
+    return Probe(chosen.id, chosen.kind, chosen.title, chosen.statement, options, chosen.language)
 
 
 def remember(r: redis.Redis, submission_id: int, problem_id: int) -> None:

@@ -82,6 +82,10 @@ def get_problem(problem_id: int, user: Annotated[CurrentUser, Depends(current_us
     return problem
 
 
+def _course_language(conn: Connection, course_id: int) -> str:
+    return conn.execute(text("SELECT language FROM courses WHERE id = :c"), {"c": course_id}).scalar_one()
+
+
 def _validated(conn: Connection, body: ProblemCreate) -> tuple[list[dict], list[tuple[int, float]], list[str]]:
     """The checks every coding problem passes before it is saved (TR-D-04): concepts of this course, categories, and a
     reference solution that passes every test in the sandbox."""
@@ -91,10 +95,11 @@ def _validated(conn: Connection, body: ProblemCreate) -> tuple[list[dict], list[
     }
     names = [known.get(c.concept_id, f"#{c.concept_id}") for c in body.concepts]
     tests = [t.model_dump() for t in body.test_cases]
+    language = _course_language(conn, body.course_id)
     try:
         errors = validate_code_problem(
             concept_names=names, known_concepts=set(known.values()), reference_solution=body.reference_solution,
-            tests=tests,
+            tests=tests, language=language,
         )
     except SandboxUnavailable as exc:
         raise sandbox_error(exc) from None
@@ -103,10 +108,13 @@ def _validated(conn: Connection, body: ProblemCreate) -> tuple[list[dict], list[
     return tests, [(c.concept_id, c.weight) for c in body.concepts], names
 
 
-def _difficulty(body: ProblemCreate, concept_names: list[str]) -> tuple[float, str]:
-    """The teacher's choice, or an estimate from the text and the course's own concept names when it is empty (F-23)."""
+def _difficulty(body: ProblemCreate, concept_names: list[str], language: str) -> tuple[float, str]:
+    """The teacher's choice, or an estimate from the text and the course's own concept names when it is empty (F-23).
+    The estimate is fitted on the Python bank only, so a Java or C problem needs the teacher's own value."""
     if body.difficulty_b is not None:
         return body.difficulty_b, "prior"
+    if language != "python":
+        raise HTTPException(422, "difficulty estimates exist only for Python problems; choose a difficulty")
     try:
         value = difficulty.estimate(body.statement, body.reference_solution, concept_names)
     except difficulty.NoBank as exc:
@@ -130,7 +138,7 @@ def create_problem(body: ProblemCreate, user: Instructor, conn: Conn):
     # save_problem replaces a same-titled problem (for re-importing the bank); here that would silently overwrite one.
     _title_taken(conn, body.course_id, body.title)
     tests, weights, names = _validated(conn, body)
-    difficulty_b, source = _difficulty(body, names)
+    difficulty_b, source = _difficulty(body, names, _course_language(conn, body.course_id))
     problem_id, _ = repo.save_problem(
         conn,
         course_id=body.course_id,
@@ -176,7 +184,7 @@ def edit_problem(problem_id: int, body: ProblemCreate, user: Instructor, conn: C
         raise HTTPException(422, "a problem cannot be moved to another course")
     _title_taken(conn, problem.course_id, body.title, other_than=problem_id)
     tests, weights, names = _validated(conn, body)
-    difficulty_b, source = _difficulty(body, names)
+    difficulty_b, source = _difficulty(body, names, _course_language(conn, body.course_id))
     repo.update_code_problem(
         conn, problem_id, title=body.title, statement=body.statement, difficulty_b=difficulty_b,
         discrimination_a=body.discrimination_a, reference_solution=body.reference_solution, concept_weights=weights,

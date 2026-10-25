@@ -40,6 +40,12 @@ def _check_problem(conn, problem_id: int, user: CurrentUser) -> None:
         raise HTTPException(422, "this item is not a coding problem")
 
 
+def _language(conn, problem_id: int) -> str:
+    return conn.execute(
+        text("SELECT language FROM problems WHERE id = :id"), {"id": problem_id}
+    ).scalar_one()
+
+
 def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) -> list[TestSpec]:
     _check_problem(conn, problem_id, user)
     where = "AND NOT hidden" if visible_only else ""
@@ -53,9 +59,9 @@ def _load_tests(conn, problem_id: int, user: CurrentUser, visible_only: bool) ->
     return [TestSpec(r.id, r.input, r.expected, r.hidden, r.category) for r in rows]
 
 
-def _grade(code: str, tests: list[TestSpec]) -> Grade:
+def _grade(code: str, tests: list[TestSpec], language: str = "python") -> Grade:
     try:
-        return grade(code, tests)
+        return grade(code, tests, language)
     except SandboxUnavailable as exc:
         raise sandbox_error(exc) from None
 
@@ -92,7 +98,7 @@ def run_code(body: SubmissionCreate, user: Student, conn: Conn):
     """Run against the visible examples only; nothing is stored."""
     ratelimit.check("run", user.id)
     tests = _load_tests(conn, body.problem_id, user, visible_only=True)
-    return _result(None, body.problem_id, _grade(body.code, tests))
+    return _result(None, body.problem_id, _grade(body.code, tests, _language(conn, body.problem_id)))
 
 
 @router.post("/run-custom", response_model=CustomRunResult)
@@ -101,7 +107,7 @@ def run_custom(body: CustomRun, user: Annotated[CurrentUser, Depends(_runner)], 
     ratelimit.check("run_custom", user.id)
     _check_problem(conn, body.problem_id, user)
     try:
-        run = run_batch(body.code, [body.stdin])[0]
+        run = run_batch(body.code, [body.stdin], _language(conn, body.problem_id))[0]
     except SandboxUnavailable as exc:
         raise sandbox_error(exc) from None
     return CustomRunResult(
@@ -116,7 +122,7 @@ def run_custom(body: CustomRun, user: Annotated[CurrentUser, Depends(_runner)], 
 def submit_code(body: SubmissionCreate, user: Student, conn: Conn):
     ratelimit.check("submit", user.id)
     tests = _load_tests(conn, body.problem_id, user, visible_only=False)
-    g = _grade(body.code, tests)
+    g = _grade(body.code, tests, _language(conn, body.problem_id))
     submission_id = conn.execute(
         text(
             "INSERT INTO submissions (user_id, problem_id, code)"

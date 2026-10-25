@@ -15,7 +15,26 @@ from app.retrieval import store
 
 KEY_TTL_SECONDS = 7 * 24 * 3600
 TRACEBACK_LINE = re.compile(r'File "[^"]*main\.py", line (\d+)')
+JAVA_LINE = re.compile(r"\.java:(\d+)")
+C_LINE = re.compile(r"\.c(?:pp)?:([0-9]+)")
 LEVEL_KINDS = {1: "concept", 2: "location", 3: "example"}
+
+_REPORTS = {"python": "Python reports", "java": "Java reports", "c": "The compiler reports"}
+_CANNOT_READ = {
+    "python": "Python could not read the program; start at the first line the error message names.",
+    "java": "Java could not compile the program; start at the first line the error message names.",
+    "c": "The compiler could not build the program; start at the first line the error message names.",
+}
+
+
+def _line_from_stderr(stderr: str, language: str) -> int | None:
+    if language == "java":
+        found = JAVA_LINE.findall(stderr)
+    elif language == "c":
+        found = C_LINE.findall(stderr)
+    else:
+        found = TRACEBACK_LINE.findall(stderr)
+    return int(found[-1]) if found else None
 
 
 class NoMoreHints(Exception):
@@ -51,19 +70,22 @@ def concept_hint(conn: Connection, ctx: ExplainContext) -> Hint:
         concept_id=ctx.primary_concept_id,
     )
     # Notes are shown as written, so one that holds this problem's solution (an instructor's worked example) is skipped.
-    safe = [s for s in sources if not leak.copies_reference(s.text, ctx.reference_solution, ctx.leak_threshold)]
+    safe = [
+        s for s in sources
+        if not leak.copies_reference(s.text, ctx.reference_solution, ctx.leak_threshold, ctx.language)
+    ]
     if not safe:
         return Hint(1, 3, "concept", f"Review the course notes on {name}.")
     return Hint(1, 3, "concept", safe[0].text, source_title=f"{safe[0].title} > {safe[0].section}")
 
 
 def location_hint(ctx: ExplainContext) -> Hint:
-    line = (TRACEBACK_LINE.findall(ctx.stderr) or [None])[-1]
+    line = _line_from_stderr(ctx.stderr, ctx.language)
     categories = ", ".join(c.replace("_", " ") for c in ctx.failed_categories) or "the examples"
     if line:
-        where = f"Python reports the problem on line {line} of your code."
+        where = f"{_REPORTS.get(ctx.language, _REPORTS['python'])} the problem on line {line} of your code."
     elif ctx.error_type == "syntax_error":
-        where = "Python could not read the program; start at the first line the error message names."
+        where = _CANNOT_READ.get(ctx.language, _CANNOT_READ["python"])
     else:
         where = "Your program runs, so trace it by hand on the smallest failing example."
     return Hint(2, 3, "location", f"{where} The tests that fail are in these categories: {categories}.")
@@ -85,7 +107,7 @@ def worked_example(conn: Connection, ctx: ExplainContext) -> Hint:
         {"c": ctx.primary_concept_id, "course": ctx.course_id, "p": ctx.problem_id},
     ).all()
     for row in rows:
-        if leak.containment(row.reference_solution, ctx.reference_solution) < ctx.leak_threshold:
+        if leak.containment(row.reference_solution, ctx.reference_solution, ctx.language) < ctx.leak_threshold:
             conn.execute(
                 text(
                     "INSERT INTO worked_examples_seen (user_id, problem_id) VALUES (:u, :p)"

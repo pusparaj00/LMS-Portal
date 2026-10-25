@@ -29,13 +29,15 @@ def _shown(outcome) -> str:
     return (text[:MAX_SHOWN_OUTPUT] + "...") if len(text) > MAX_SHOWN_OUTPUT else text or "(nothing was printed)"
 
 
-def run_claim(code: str, reference_solution: str, example_input: str) -> tuple[Check, ExampleRun | None]:
+def run_claim(
+    code: str, reference_solution: str, example_input: str, language: str = "python"
+) -> tuple[Check, ExampleRun | None]:
     if not reference_solution.strip():
         return Check(CHECK_NAME, False, "there is no reference solution to compare with"), None
     stdin = example_input if example_input.endswith("\n") else example_input + "\n"
     try:
-        (student,) = run_batch(code, [stdin])
-        (reference,) = run_batch(reference_solution, [stdin])
+        (student,) = run_batch(code, [stdin], language)
+        (reference,) = run_batch(reference_solution, [stdin], language)
     except SandboxUnavailable:
         return Check(CHECK_NAME, False, "the sandbox could not try the example input"), None
     if reference.status != "ok":
@@ -51,6 +53,7 @@ def verify_with_example(raw: str, evidence: Evidence) -> tuple[Explanation | Non
     explanation, checks = verify(raw, evidence)
     example = None
     if explanation is not None and all_passed(checks) and explanation.example_input.strip():
-        check, example = run_claim(evidence.code, evidence.reference_solution, explanation.example_input)
+        check, example = run_claim(
+            evidence.code, evidence.reference_solution, explanation.example_input, evidence.language)
         checks.append(check)
     return explanation, checks, example

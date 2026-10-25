@@ -2,14 +2,11 @@
 
 Every check is independent so the log shows exactly which one failed.
 """
-import ast
-import builtins
 import json
-import keyword
 import re
 from dataclasses import dataclass
 
-from app.feedback import leak
+from app.feedback import lang, leak
 
 MAX_CLAIM_CHARS = 400
 ALLOWED_HINT_LEVELS = {1, 2}  # level 3 is the worked example, which never comes from the model
@@ -17,7 +14,6 @@ MIN_HIDDEN_TEXT = 4  # shorter hidden values (such as "0") would match ordinary 
 MAX_EXAMPLE_CHARS = 300  # an input a student could type; also keeps the sandbox runs small
 
 QUOTED_CODE = re.compile(r"`([^`\n]+)`")
-PLAIN_NAMES = set(dir(builtins)) | set(keyword.kwlist)  # a claim may name these without the student having used them
 
 REQUIRED = {
     "failing_test_id": int,
@@ -65,6 +61,7 @@ class Evidence:
     hidden_inputs: frozenset[str] = frozenset()  # every hidden test input of the problem, passed or failed
     error_type: str | None = None  # the run's error_type, used to keep syntax errors on the syntax concept
     leak_threshold: float = leak.SIMILARITY_THRESHOLD  # the problem's leak policy (F-62)
+    language: str = "python"  # the problem's language, for language-aware code checks
 
 
 @dataclass(frozen=True)
@@ -85,7 +82,45 @@ class Explanation:
     example_input: str = ""  # optional: an input on which the claim says the program goes wrong (TR-L-05)
 
 
+def clean_json(raw: str) -> str:
+    """Best-effort repair of common LLM JSON malformations before parsing.
+
+    Strips markdown code fences, removes trailing commas, and escapes raw newlines
+    inside string values. Returns the (possibly repaired) text.
+    """
+    text = raw.strip()
+    # Strip markdown code fences: ```json ... ``` or ``` ... ```
+    fence = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL | re.IGNORECASE)
+    if fence:
+        text = fence.group(1).strip()
+    # Remove trailing commas before } or ]
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    return text
+
+
 def parse(raw: str) -> tuple[Explanation | None, Check]:
+    for candidate in (raw, clean_json(raw)):
+        try:
+            data = json.loads(candidate)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        ok = True
+        for key, kind in REQUIRED.items():
+            value = data.get(key)
+            if not isinstance(value, kind) or (kind is int and isinstance(value, bool)):
+                ok = False
+                break
+        if not ok:
+            continue
+        if not all(isinstance(i, int) and not isinstance(i, bool) for i in data["source_chunk_ids"]):
+            continue
+        example = data.get("example_input")
+        if example is not None and not isinstance(example, str):
+            continue
+        return Explanation(**{k: data[k] for k in REQUIRED}, example_input=example or ""), Check("json_valid", True)
+    # Fall back to original strict parse for a precise error message.
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, TypeError):
@@ -108,21 +143,21 @@ def _squash(text: str) -> str:
     return re.sub(r"\s+", "", text)
 
 
-def foreign_quotes(claim: str, code: str) -> list[str]:
+def foreign_quotes(claim: str, code: str, language: str = "python") -> list[str]:
     """Code the claim quotes in backticks that is not in the student's code (F-43): a made-up name or a suggested fix.
 
-    Plain Python names (len, range, ValueError), literals such as 0 or "a" and `name()` forms of those are allowed.
+    Plain names of the language (len, int, String, printf), literals such as 0 or "a" and `name()` forms
+    of those are allowed.
     """
     own = _squash(code)
     foreign = []
     for quoted in QUOTED_CODE.findall(claim):
         bare = re.sub(r"\(\)$", "", quoted.strip()).lstrip(".")
-        if _squash(quoted) in own or _squash(bare) in own or bare in PLAIN_NAMES:
+        if _squash(quoted) in own or _squash(bare) in own or lang.is_plain(bare, language):
             continue
-        try:
-            ast.literal_eval(quoted.strip())
-        except (ValueError, SyntaxError):
-            foreign.append(quoted)
+        if lang.is_literal(quoted.strip(), language):
+            continue
+        foreign.append(quoted)
     return foreign
 
 
@@ -147,8 +182,8 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
     example = explanation.example_input.strip()
     if example and example in hidden_secrets:
         leaked.append(example)  # the example would show a student a hidden test input or output
-    foreign = foreign_quotes(explanation.claim, evidence.code)
-    guard = leak.check(explanation.claim, evidence.reference_solution, evidence.leak_threshold)
+    foreign = foreign_quotes(explanation.claim, evidence.code, evidence.language)
+    guard = leak.check(explanation.claim, evidence.reference_solution, evidence.leak_threshold, evidence.language)
     unknown_chunks = sorted(set(explanation.source_chunk_ids) - evidence.retrieved_chunk_ids)
     example_ok = len(explanation.example_input) <= MAX_EXAMPLE_CHARS and "\x00" not in explanation.example_input
 
