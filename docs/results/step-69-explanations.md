@@ -52,3 +52,8 @@ Median 2.2 s per explanation after, 2.4 s before; the slowest were provider rate
   OpenAI also 429, and OpenRouter's configured free model returns 404 ("Provider returned error"); the setting
   `LLM_MODEL_OPENROUTER` needs a model that exists. These need your decision and keys, not code.
 - Measured with synthetic wrong submissions written by me, not by students.
+- The time share has a cost: a hosted model that legitimately needs more than a third of the budget (about 4.7 s of the
+  14 s explanation budget, 6.7 s of the chat budget) is now cut off and goes behind the others for 30 seconds. The
+  explanations measured above all took under 7 s. With `LLM_PROVIDER=local` and Ollama running, the local model is
+  still tried first and wastes its share about once every 30 seconds; setting a fast hosted provider as primary avoids
+  that.
