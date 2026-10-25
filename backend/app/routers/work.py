@@ -148,7 +148,11 @@ def _clean_file(name: str, encoded: str) -> tuple[str, bytes]:
     cleaned = UNSAFE_NAME.sub("_", re.split(r"[\\/]", name)[-1]).strip(" .") or "file"
     extension = next((e for e in EXTENSIONS if cleaned.lower().endswith(e)), None)
     if extension is None:
-        raise HTTPException(422, "a file must be a PDF, text, source code (Python, Java or C) or zip file (.pdf, .txt, .py, .java, .c, .h, .zip)")
+        raise HTTPException(
+            422,
+            "a file must be a PDF, text, source code (Python, Java or C) or zip file"
+            " (.pdf, .txt, .py, .java, .c, .h, .zip)",
+        )
     if extension == ".pdf" and not data.startswith(b"%PDF-"):
         raise HTTPException(422, "the file is not a PDF")
     if extension == ".zip" and not data.startswith(ZIP_STARTS):

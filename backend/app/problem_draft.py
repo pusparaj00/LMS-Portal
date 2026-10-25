@@ -28,7 +28,8 @@ IO_RULES = {
     "c": "The program is one file with a main function, reads standard input with scanf or fgets and prints the "
          "answer. No prompts, no files, the C standard library only.",
 }
-SYSTEM_TEMPLATE = """You write one short {language} practice problem for a beginners' course, on the concept named in <concept>.
+SYSTEM_TEMPLATE = """You write one short {language} practice problem for a beginners' course, on the concept named in
+<concept>.
 
 Rules:
 1. {io_rule}
