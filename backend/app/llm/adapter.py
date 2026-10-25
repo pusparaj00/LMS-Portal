@@ -23,6 +23,8 @@ PERMANENT_STATUS = {401, 403, 404}  # bad key, project denied, model gone: retry
 REJECTED_COOLDOWN_SECONDS = 600
 QUOTA_COOLDOWN_SECONDS = 60  # when the provider does not say how long to wait
 UNREACHABLE_COOLDOWN_SECONDS = 60  # nothing listens there (a local model that is not running): do not retry per request
+SLOW_COOLDOWN_SECONDS = 30  # a provider that spent its whole share of the budget goes behind the others for a while
+MAX_SHARE_DIVISOR = 3  # the first provider may use at most a third of the budget, so the others still get a turn
 # provider and model -> time.monotonic() until which it goes to the back of the chain
 _cooling: dict[tuple[str, str], float] = {}
 # How many model calls may be in flight at once, shared by every request in this process (Settings.llm_max_concurrent).
@@ -74,6 +76,19 @@ def _cooldown_for(response: httpx.Response) -> float:
         wait = _provider_retry_delay(response)
         return min(wait, REJECTED_COOLDOWN_SECONDS) if wait else QUOTA_COOLDOWN_SECONDS
     return 0.0
+
+
+def _why(response: httpx.Response) -> str:
+    """The provider's own short reason for a 400 or 404 (a bad request, an unknown model), so a log line says what to
+    fix. Never given for other statuses: a rejected key's message can echo part of the key."""
+    if response.status_code not in (400, 404):
+        return ""
+    try:
+        error = response.json()["error"]
+        reason = (error.get("message") or error.get("code")) if isinstance(error, dict) else error
+    except (ValueError, KeyError, TypeError):
+        return ""
+    return f": {' '.join(str(reason).split())[:80]}" if reason else ""
 
 
 def _time_left(timeout_s: float) -> float:
@@ -179,7 +194,9 @@ class GeminiAdapter:
                 wait = _provider_retry_delay(exc.response)
                 daily = wait is not None and wait > MAX_PROVIDER_WAIT_SECONDS
                 cooldown = REJECTED_COOLDOWN_SECONDS if daily else _cooldown_for(exc.response)
-                last_error = LLMError(f"HTTP {exc.response.status_code} from {self.config.provider}", cooldown)
+                last_error = LLMError(
+                    f"HTTP {exc.response.status_code} from {self.config.provider}{_why(exc.response)}", cooldown
+                )
                 if exc.response.status_code not in TRANSIENT_STATUS or cooldown:
                     break  # rejected, or out of quota: the next provider is the better use of the time
                 if wait is not None and attempt < self.config.max_retries:
@@ -246,7 +263,9 @@ class OpenAICompatibleAdapter:
                 last_error = LLMError("the model returned no text")
             except httpx.HTTPStatusError as exc:
                 cooldown = _cooldown_for(exc.response)
-                last_error = LLMError(f"HTTP {exc.response.status_code} from {self.config.provider}", cooldown)
+                last_error = LLMError(
+                    f"HTTP {exc.response.status_code} from {self.config.provider}{_why(exc.response)}", cooldown
+                )
                 if exc.response.status_code not in TRANSIENT_STATUS or cooldown:
                     break
             except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
@@ -313,17 +332,25 @@ class FallbackChain:
         cooling = [a for a in self.adapters if _cooling.get(_key(a), 0.0) > now]
         ordered = [a for a in self.adapters if a not in cooling] + cooling
         try:
-            for adapter in ordered:
+            for position, adapter in enumerate(ordered):
+                left = _deadline.get() - time.monotonic()
+                share = left / min(len(ordered) - position, MAX_SHARE_DIVISOR)
+                last = position == len(ordered) - 1
+                share_ends = time.monotonic() + share
                 try:
-                    reply = adapter.complete(system, user, json_schema)
+                    with deadline_within(left if last or share < MIN_USEFUL_SECONDS else share):
+                        reply = adapter.complete(system, user, json_schema)
                 except LLMError as exc:
-                    if exc.cooldown_s:
-                        _cooling[_key(adapter)] = time.monotonic() + exc.cooldown_s
+                    cooldown_s = exc.cooldown_s
+                    if not cooldown_s and not last and time.monotonic() >= share_ends - 0.5:
+                        cooldown_s = SLOW_COOLDOWN_SECONDS
+                    if cooldown_s:
+                        _cooling[_key(adapter)] = time.monotonic() + cooldown_s
                     errors.append(f"{adapter.config.provider}/{adapter.config.model}: {exc}")
                     log.warning(
                         "provider failed, trying the next",
                         extra={"fields": {"provider": adapter.config.provider, "model": adapter.config.model,
-                                          "cooldown_s": exc.cooldown_s}},
+                                          "cooldown_s": cooldown_s}},
                     )
                     continue
                 _cooling.pop(_key(adapter), None)

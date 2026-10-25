@@ -1,4 +1,6 @@
 """TR-A-04: provider adapters and the fallback chain (no real provider is called)."""
+import time
+
 import httpx
 import pytest
 
@@ -422,3 +424,35 @@ def test_a_real_openai_compatible_server_on_localhost_answers_through_the_chain(
     finally:
         server.shutdown()
     assert seen == [("/v1/chat/completions", None, "tiny")]  # no key, the configured model, the configured path
+
+
+class SpendsItsShare:
+    """A model too slow for the time it is given: it uses everything it gets, then times out."""
+
+    def __init__(self, provider: str) -> None:
+        self.config = LLMConfig(provider, f"{provider}-model", 0.2, 0, 30.0)
+        self.calls = 0
+
+    def complete(self, system, user, json_schema=None):
+        self.calls += 1
+        deadline = llm._deadline.get()
+        time.sleep(max(0.0, deadline - time.monotonic()))
+        raise LLMError("time budget used up")
+
+
+def test_a_slow_first_provider_cannot_use_the_whole_budget_and_goes_behind_the_others():
+    slow, quick = SpendsItsShare("local"), Scripted("groq", "from groq", "again")
+    chain = FallbackChain([slow, quick], budget_s=6)
+    started = time.monotonic()
+    assert chain.complete("s", "u") == "from groq"
+    first_took = time.monotonic() - started
+    assert first_took < 5  # the slow one got a share (half here), not the 6 seconds
+    started = time.monotonic()
+    assert chain.complete("s", "u") == "again"
+    assert time.monotonic() - started < 1  # it is tried last now, so the quick one answers at once
+    assert slow.calls == 1
+
+
+def test_the_last_provider_may_use_all_the_time_that_is_left():
+    chain = FallbackChain([Scripted("gemini", LLMError("HTTP 503")), Scripted("groq", "late")], budget_s=6)
+    assert chain.complete("s", "u") == "late"

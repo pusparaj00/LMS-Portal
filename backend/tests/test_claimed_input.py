@@ -52,7 +52,7 @@ def test_an_input_on_which_the_program_really_differs_is_verified_and_shown_with
     assert len(sandbox_calls) == 2  # the student's program and the reference, each once
     rows = check_rows(owner, sid)
     assert any(r["check_name"] == "claimed_input" and r["passed"] for r in rows)
-    assert {r["prompt_version"] for r in rows} == {"explain-v2"}
+    assert {r["prompt_version"] for r in rows} == {"explain-v3"}
 
 
 def test_an_input_on_which_the_program_already_gives_the_right_answer_is_rejected_then_retried(
