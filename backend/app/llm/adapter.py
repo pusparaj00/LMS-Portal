@@ -374,6 +374,7 @@ GEMINI_KEYS = {
     "gemini": ("gemini_api_key", "llm_model_gemini"),
     "gemini_pro": ("gemini_pro_api_key", "llm_model_gemini_pro"),
 }
+GEMINI_MODEL_PREFIXES = ("gemini", "gemma", "models/", "tunedModels/")  # what the Gemini API serves
 
 
 def build_adapter(settings: Settings) -> LLMAdapter:
@@ -407,6 +408,12 @@ def build_adapter(settings: Settings) -> LLMAdapter:
 
     if settings.llm_provider == "stub":
         return StubAdapter(config("stub", settings.llm_model))
+    if settings.llm_provider in GEMINI_KEYS and not settings.llm_model.startswith(GEMINI_MODEL_PREFIXES):
+        # LLM_MODEL names the primary provider's model; one left over from another provider makes every call a 404
+        raise ValueError(
+            f"LLM_MODEL is '{settings.llm_model}', which is not a Gemini model, but LLM_PROVIDER is "
+            f"{settings.llm_provider}; set LLM_MODEL to the model of the primary provider"
+        )
     adapters = [make(settings.llm_provider, settings.llm_model)]
     for entry in (e.strip() for e in settings.llm_fallback.split(",") if e.strip()):
         provider, _, model = entry.partition(":")

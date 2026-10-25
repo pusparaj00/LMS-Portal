@@ -456,3 +456,14 @@ def test_a_slow_first_provider_cannot_use_the_whole_budget_and_goes_behind_the_o
 def test_the_last_provider_may_use_all_the_time_that_is_left():
     chain = FallbackChain([Scripted("gemini", LLMError("HTTP 503")), Scripted("groq", "late")], budget_s=6)
     assert chain.complete("s", "u") == "late"
+
+
+def test_a_gemini_primary_with_another_providers_model_name_is_refused_at_start():
+    with pytest.raises(ValueError, match="not a Gemini model"):
+        build_adapter(settings(llm_provider="gemini_pro", llm_model="qwen2.5:3b", gemini_pro_api_key="pro-key"))
+
+
+@pytest.mark.parametrize("model", ["gemini-3.5-flash-lite", "gemma-3-27b-it", "models/gemini-2.5-flash"])
+def test_the_models_the_gemini_api_serves_are_accepted(model):
+    chain = build_adapter(settings(llm_provider="gemini_pro", llm_model=model, gemini_pro_api_key="pro-key"))
+    assert chain.adapters[0].config.model == model
