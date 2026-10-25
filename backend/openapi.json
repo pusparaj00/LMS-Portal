@@ -1575,16 +1575,6 @@
             "title": "Instructor Id",
             "type": "integer"
           },
-          "language": {
-            "default": "python",
-            "enum": [
-              "python",
-              "java",
-              "c"
-            ],
-            "title": "Language",
-            "type": "string"
-          },
           "section": {
             "anyOf": [
               {
@@ -1731,16 +1721,6 @@
       },
       "CourseCreate": {
         "properties": {
-          "language": {
-            "default": "python",
-            "enum": [
-              "python",
-              "java",
-              "c"
-            ],
-            "title": "Language",
-            "type": "string"
-          },
           "title": {
             "maxLength": 200,
             "minLength": 1,
@@ -2205,11 +2185,6 @@
               "mcq"
             ],
             "title": "Kind",
-            "type": "string"
-          },
-          "language": {
-            "default": "python",
-            "title": "Language",
             "type": "string"
           },
           "options": {
@@ -4559,11 +4534,6 @@
               "mcq"
             ],
             "title": "Kind",
-            "type": "string"
-          },
-          "language": {
-            "default": "python",
-            "title": "Language",
             "type": "string"
           },
           "options": {

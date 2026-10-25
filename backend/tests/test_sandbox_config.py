@@ -18,7 +18,7 @@ def test_runner_has_no_network_and_a_read_only_root(config):
 
 def test_runner_reports_every_explicit_limit(config):
     assert set(config["limits"]) == {
-        "cpu_seconds", "wall_seconds", "compile_wall_seconds", "memory_bytes", "max_processes", "max_open_files",
+        "cpu_seconds", "wall_seconds", "memory_bytes", "max_processes", "max_open_files",
         "output_file_bytes", "result_text_bytes", "max_code_bytes", "max_stdin_bytes",
         "max_runs_per_job",
     }
@@ -33,10 +33,3 @@ def test_student_code_runs_as_an_unprivileged_uid(config):
 def test_the_sandbox_has_no_listening_interface():
     # Jobs travel only through the shared volume, so the API holds no sandbox URL or token.
     assert "SANDBOX_URL" not in os.environ
-
-
-def test_runner_reports_per_language_run_and_compile_profiles(config):
-    assert set(config["profiles"]["run"]) == {"python", "java", "c"}
-    assert set(config["profiles"]["compile"]) == {"java", "c"}
-    assert "javac" in config["java"] or "openjdk" in config["java"]
-    assert config["cc"]

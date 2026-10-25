@@ -27,7 +27,7 @@ def _probe_out(p: probe.Probe | None) -> ProbeOut | None:
         return None
     return ProbeOut(
         problem_id=p.problem_id, kind=p.kind, title=p.title, statement=p.statement,
-        options=[OptionOut(id=i, text=t) for i, t in p.options], language=p.language,
+        options=[OptionOut(id=i, text=t) for i, t in p.options],
     )
 
 

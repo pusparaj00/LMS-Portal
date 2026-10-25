@@ -84,30 +84,25 @@ def save_problem(
     concept_weights: list[tuple[int, float]],
     tests: list[dict],
     options: list[dict],
-    language: str | None = None,
 ) -> tuple[int, Literal["created", "updated", "unchanged"]]:
     """Insert a problem, or replace the content of the one with the same title in the course.
 
     An identical problem is left alone, so importing the same bank again keeps its ids and any human review.
     """
-    if language is None:
-        language = conn.execute(
-            text("SELECT language FROM courses WHERE id = :c"), {"c": course_id}
-        ).scalar_one()
     existing = conn.execute(
         text("SELECT id FROM problems WHERE course_id = :c AND title = :t"),
         {"c": course_id, "t": title},
     ).scalar()
     values = {
         "c": course_id, "t": title, "s": statement, "k": kind, "b": difficulty_b,
-        "a": discrimination_a, "ps": param_source, "ref": reference_solution, "lang": language,
+        "a": discrimination_a, "ps": param_source, "ref": reference_solution,
     }
     if existing is None:
         problem_id = conn.execute(
             text(
-                "INSERT INTO problems (course_id, title, statement, language, kind, difficulty_b,"
+                "INSERT INTO problems (course_id, title, statement, kind, difficulty_b,"
                 " discrimination_a, param_source, reference_solution)"
-                " VALUES (:c, :t, :s, :lang, :k, :b, :a, :ps, :ref) RETURNING id"
+                " VALUES (:c, :t, :s, :k, :b, :a, :ps, :ref) RETURNING id"
             ),
             values,
         ).scalar_one()

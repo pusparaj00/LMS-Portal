@@ -91,7 +91,6 @@ The sandbox is the highest-risk component. Security researchers published three 
 | TR-X-07 | Student code shall never run inside the API process; the submission service shall send code and test inputs and receive only a structured result, and hidden test inputs shall never be returned to the client | P0 | D |
 | TR-X-08 | If Judge0 cannot be deployed in time, a custom Docker runner shall be used with no network, a read-only root filesystem, a non-root user and the same resource limits | P1 | D |
 | TR-X-09 | Judge0 is licensed under GPL v3, so it shall be used unmodified as a separate service called over its API, and the institution shall confirm the licence is acceptable | P1 | [Judge0 docs](https://api.judge0.com) |
-| TR-X-10 | Java and C student programs shall be compiled and run in the same sandbox container under the same no-network, read-only, non-root and wall-clock rules as Python; the compile happens once per job, with its own time limit, as the unprivileged user; compiler output shown to a student shall not name host paths or include the contents of files outside the job directory; per-language memory and process limits shall be measured and recorded | P0 | F-94 |
 
 ## 6. Retrieval and LLM requirements
 
@@ -111,7 +110,6 @@ The research shows that LLM feedback on student code is useful but often wrong, 
 | TR-L-10 | Probe questions shall be selected from the vetted question bank by concept; LLM-generated probes are P2 and shall enter the bank only after a reference solution passes all their tests and a deliberately wrong solution fails | P0 | D, R3 |
 | TR-L-11 | Temperature shall be set low through configuration, and each explanation shall log the model name, prompt version and check results | P0 | D |
 | TR-L-12 | If the LLM times out or fails, the system shall show a template hint keyed on error type and concept, and shall record the fallback | P1 | D |
-| TR-L-13 | The verifier, the leak guard and the template fallback shall use the problem's language for tokens, keywords, literals and error lines; a language without a measured wrong-solution result shall be labelled as such | P0 | F-94 |
 
 ## 7. Data, interface and integration requirements
 
@@ -204,7 +202,6 @@ Each requirement is checked by a test below. Results should be saved with the da
 | TR-V-10 | Run 10 concurrent students, 10 consecutive demo runs and an API restart | TR-P-04, TR-P-06, TR-P-07 | No failed requests, no manual repair, and no lost diagnostic session |
 | TR-V-11 | Repeat the same failing submission for a second student | TR-L-09, TR-P-03 | The stored explanation is returned in under 1 s with no new LLM call logged |
 | TR-V-12 | Run the full demo flow on a local model | TR-S-09 | The flow completes and the log shows no call to a hosted provider |
-| TR-V-13 | Run the sandbox adversarial suite and the wrong-solution suite (TR-V-01, TR-V-02) for Java and C | TR-X-10, TR-L-13 | Every attack is stopped within limits and leaves the host unchanged; every reference solution passes and every deliberately wrong solution fails |
 
 **Simulation caveat.** If simulated students are drawn from the same model that selects the items, the result is circular, as it was in the earlier CAT study. Generate the simulated answers with a different model (for example, a different response function and a different set of guess and slip values) and say so in the report.
 

@@ -2,7 +2,6 @@ import { CodeEditor as Editor } from "./CodeEditor";
 import { useState } from "react";
 
 import { ApiError, BUSY_RETRIES, Session, api } from "../api";
-import { editorLanguage, starterComment } from "../design/language";
 import { DiagnosticItem, DiagnosticResult, DiagnosticStart, DiagnosticStep } from "../types";
 import { MasteryBars, Misconceptions } from "./MasteryBars";
 import { withoutFences } from "../statement";
@@ -59,7 +58,6 @@ export function PlacementPage({ session, courseId, recheck = false }: { session:
     if (!started) return;
     setSessionId(started.session_id);
     setItem(started.item);
-    setCode(starterComment(started.item.language));
     setNumber(started.item_number);
     setMax(started.max_items);
   }
@@ -76,7 +74,7 @@ export function PlacementPage({ session, courseId, recheck = false }: { session:
     if (!step) return;
     setOption(null);
     setConfidence(null);
-    setCode(step.next_item ? starterComment(step.next_item.language) : STARTER);
+    setCode(STARTER);
     setNumber(step.item_number);
     if (step.done) {
       setItem(null);
@@ -173,7 +171,7 @@ export function PlacementPage({ session, courseId, recheck = false }: { session:
         <div className="editor">
           <Editor
             height="100%"
-            defaultLanguage={editorLanguage(item?.language)}
+            defaultLanguage="python"
             value={code}
             onChange={(v) => setCode(v ?? "")}
             options={{ minimap: { enabled: false }, fontSize: 14, scrollBeyondLastLine: false }}

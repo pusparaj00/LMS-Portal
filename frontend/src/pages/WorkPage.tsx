@@ -154,8 +154,8 @@ export function WorkPage({ session, courseId, assignmentId }: { session: Session
                     </p>
                   )}
                   <label>
-                    {work.file_name ? "Replace the file" : "Attach a file"} (PDF, text, Python, Java or C source, or zip, up to {sizeText(MAX_FILE_BYTES)})
-                    <input key={fileKey} type="file" accept=".pdf,.txt,.py,.java,.c,.h,.zip" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                    {work.file_name ? "Replace the file" : "Attach a file"} (PDF, text, Python or zip, up to {sizeText(MAX_FILE_BYTES)})
+                    <input key={fileKey} type="file" accept=".pdf,.txt,.py,.zip" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
                   </label>
                 </>
               )}

@@ -94,7 +94,6 @@ services:
     cpus: 1.0
     tmpfs:
       - /work:size=64m,mode=0711,noexec,nosuid,nodev
-      - /cwork:size=64m,mode=0711,exec,nosuid,nodev
       - /tmp:size=8m,noexec,nosuid,nodev
     volumes:
       - jobs:/jobs

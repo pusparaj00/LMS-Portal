@@ -76,7 +76,6 @@ def run_explain(
         code=ctx.code, reference_solution=ctx.reference_solution, failed_tests=ctx.failed_tests,
         error_concept_ids=ctx.error_concept_ids, retrieved_chunk_ids=frozenset(s.chunk_id for s in sources),
         hidden_inputs=ctx.hidden_inputs, error_type=ctx.error_type, leak_threshold=ctx.leak_threshold,
-        language=ctx.language,
     )
     previous: list[Check] | None = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -103,7 +102,7 @@ def run_explain(
             )
         previous = checks
 
-    text_hint = fallback.template_hint(ctx.error_type, ctx.primary_concept_name, ctx.failed_categories, ctx.language)
+    text_hint = fallback.template_hint(ctx.error_type, ctx.primary_concept_name, ctx.failed_categories)
     log_checks(conn, ctx.submission_id, MAX_ATTEMPTS, adapter, [Check("final", False, "fallback")])
     return Outcome("fallback", MAX_ATTEMPTS, concept_name=ctx.primary_concept_name, sources=sources[:1],
                    fallback_text=text_hint)

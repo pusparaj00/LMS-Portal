@@ -196,7 +196,7 @@ function Hero({ dashboardHref, still, onStill }: { dashboardHref?: string; still
       <div className="hero2-field hero2-bottom" />
       <Headline name={name} />
       <p className="hero2-sub">
-        Practise Python, Java or C in a sandbox. Each wrong answer is traced to a misconception, explained with an answer that is
+        Practise Python in a sandbox. Each wrong answer is traced to a misconception, explained with an answer that is
         checked first, and tracked as mastery you can audit.
         {!dashboardHref && (
           <>

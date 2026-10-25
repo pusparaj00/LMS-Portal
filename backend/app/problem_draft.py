@@ -19,20 +19,11 @@ from app.services.validation import validate_code_problem
 ATTEMPTS = 2  # one retry with the reasons, as for explanations (TR-P-08)
 MIN_TESTS, MAX_DRAFT_TESTS = 4, 8
 
-LANGUAGE_NAMES = {"python": "Python", "java": "Java", "c": "C"}
-IO_RULES = {
-    "python": "The program reads standard input with input() and prints the answer. No prompts in input(), no files, "
-              "no imports beyond the standard library.",
-    "java": "The program is one file with `public class Main` and a main method, reads standard input with Scanner or "
-            "BufferedReader and prints the answer. No prompts, no files, standard library only.",
-    "c": "The program is one file with a main function, reads standard input with scanf or fgets and prints the "
-         "answer. No prompts, no files, the C standard library only.",
-}
-SYSTEM_TEMPLATE = """You write one short {language} practice problem for a beginners' course, on the concept named in
-<concept>.
+SYSTEM = """You write one short Python practice problem for a beginners' course, on the concept named in <concept>.
 
 Rules:
-1. {io_rule}
+1. The program reads standard input with input() and prints the answer. No prompts in input(), no files, no imports
+   beyond the standard library.
 2. Give 4 to 8 tests. Each test has input, the exact expected output, hidden (true or false) and a short snake_case
    category such as basic, empty_input, boundary, negative_numbers, duplicates. At least two tests are hidden, and at
    least one test is in a category other than basic.
@@ -41,10 +32,6 @@ Rules:
    and should pass the basic ones.
 5. The title must not be one of the titles in <existing_titles>.
 6. Reply with JSON only."""
-
-
-def system_for(language: str) -> str:
-    return SYSTEM_TEMPLATE.format(language=LANGUAGE_NAMES[language], io_rule=IO_RULES[language])
 
 SCHEMA = {
     "type": "object",
@@ -102,7 +89,7 @@ def _parse(raw: str) -> dict:
         raise DraftRejected([f"the reply could not be read ({str(exc).splitlines()[0]})"]) from None
 
 
-def check(data: dict, concept: str, titles: set[str], language: str = "python") -> list[str]:
+def check(data: dict, concept: str, titles: set[str]) -> list[str]:
     """Every reason the draft cannot be offered; empty when it passes. Both programs run only in the sandbox."""
     tests = [t.model_dump() for t in data["tests"]]
     reasons = []
@@ -117,12 +104,10 @@ def check(data: dict, concept: str, titles: set[str], language: str = "python") 
     if reasons:
         return reasons
     reasons += validate_code_problem(
-        concept_names=[concept], known_concepts={concept}, reference_solution=data["reference_solution"], tests=tests,
-        language=language,
+        concept_names=[concept], known_concepts={concept}, reference_solution=data["reference_solution"], tests=tests
     )
     wrong = grade(
-        data["wrong_solution"], [TestSpec(None, t["input"], t["expected"], t["hidden"], t["category"]) for t in tests],
-        language,
+        data["wrong_solution"], [TestSpec(None, t["input"], t["expected"], t["hidden"], t["category"]) for t in tests]
     )
     if wrong.status == "passed":
         reasons.append("the wrong solution passes every test, so the tests would not catch that mistake")
@@ -135,8 +120,6 @@ def check(data: dict, concept: str, titles: set[str], language: str = "python") 
 
 
 def draft(conn: Connection, adapter: LLMAdapter, course_id: int, concept: str) -> Draft:
-    language = conn.execute(text("SELECT language FROM courses WHERE id = :c"), {"c": course_id}).scalar_one()
-    system = system_for(language)
     titles = {
         t.lower()
         for t in conn.execute(text("SELECT title FROM problems WHERE course_id = :c"), {"c": course_id}).scalars()
@@ -150,8 +133,8 @@ def draft(conn: Connection, adapter: LLMAdapter, course_id: int, concept: str) -
         if reasons:
             user += "\n<previous_attempt_rejected>" + json.dumps(reasons) + "</previous_attempt_rejected>"
         try:
-            data = _parse(adapter.complete(system, user, SCHEMA))
-            reasons = check(data, concept, titles, language)
+            data = _parse(adapter.complete(SYSTEM, user, SCHEMA))
+            reasons = check(data, concept, titles)
         except DraftRejected as exc:
             reasons = exc.reasons
         if not reasons:

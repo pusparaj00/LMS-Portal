@@ -4,7 +4,6 @@ export type DiagnosticItem = {
   title: string;
   statement: string;
   options: { id: number; text: string }[];
-  language?: string;
 };
 
 export type ConceptMastery = {

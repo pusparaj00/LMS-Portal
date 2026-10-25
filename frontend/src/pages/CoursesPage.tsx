@@ -1,13 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, Course, Session, api } from "../api";
-import { languageName } from "../design/language";
 
 export function CoursesPage({ session }: { session: Session }) {
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
-  const [newLang, setNewLang] = useState("python");
   const [filter, setFilter] = useState("");
   const [code, setCode] = useState("");
 
@@ -24,7 +22,7 @@ export function CoursesPage({ session }: { session: Session }) {
     event.preventDefault();
     setError(null);
     try {
-      const course = await api<Course>("/courses", session, { body: { title: newTitle, language: newLang } });
+      const course = await api<Course>("/courses", session, { body: { title: newTitle } });
       window.location.hash = `#/course/${course.id}`;
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not create the course.");
@@ -74,14 +72,6 @@ export function CoursesPage({ session }: { session: Session }) {
             New course title
             <input value={newTitle} maxLength={200} required onChange={(e) => setNewTitle(e.target.value)} />
           </label>
-          <label>
-            Language
-            <select value={newLang} onChange={(e) => setNewLang(e.target.value)}>
-              <option value="python">Python</option>
-              <option value="java">Java</option>
-              <option value="c">C</option>
-            </select>
-          </label>
           <button className="primary" type="submit">
             Create course
           </button>
@@ -103,8 +93,7 @@ export function CoursesPage({ session }: { session: Session }) {
         {shown.map((c) => (
           <li key={c.id} className="course-row" style={c.color ? { borderLeft: `6px solid ${c.color}` } : undefined}>
             <span className="grow">
-              <strong>{c.title}</strong> <span className="flag">{languageName(c.language)}</span>{" "}
-              {c.archived && <span className="flag">archived</span>}
+              <strong>{c.title}</strong> {c.archived && <span className="flag">archived</span>}
               {(c.section || c.subject) && (
                 <>
                   <br />

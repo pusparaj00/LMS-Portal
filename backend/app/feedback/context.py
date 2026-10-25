@@ -28,7 +28,6 @@ class ExplainContext:
     primary_concept_id: int | None
     hidden_inputs: frozenset[str] = frozenset()
     leak_threshold: float = 0.7  # the problem's leak policy, or the tuned default (F-62)
-    language: str = "python"  # the problem's language
 
     @property
     def primary_concept_name(self) -> str | None:
@@ -53,7 +52,7 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
     row = conn.execute(
         text(
             "SELECT s.user_id, s.problem_id, s.code, p.course_id, p.title, p.statement, p.reference_solution,"
-            " p.leak_threshold, p.language,"
+            " p.leak_threshold,"
             " r.status, r.error_type, r.stderr, r.failed_categories, r.failed_test_ids"
             " FROM submissions s JOIN problems p ON p.id = s.problem_id"
             " JOIN run_results r ON r.submission_id = s.id WHERE s.id = :s"
@@ -114,5 +113,4 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
         error_concept_ids=error_concepts, concepts=names, primary_concept_id=primary,
         hidden_inputs=hidden_inputs,
         leak_threshold=row.leak_threshold if row.leak_threshold is not None else leak.SIMILARITY_THRESHOLD,
-        language=row.language or "python",
     )
