@@ -198,5 +198,17 @@ Each row names what is missing, where the evidence is, which component changes, 
 | G-17 | The simulation harness is outside the repository | MiroFish is AGPL and was kept out on purpose; the run needs Ollama and takes 4 to 15 minutes | `MiroFish/student_eval/lms_agents.py` | Decide whether to publish the harness under its own licence in a separate repository; rerun before each release | Decision | P2 |
 | G-18 | Adversarial coverage in the simulation is thin | Run 2: 2 escalation tries, 3 oversized submissions, 2 spam bursts, a handful of solution requests | harness | Longer runs, more cheaters, a stronger model for the personas | Build | P2 |
 
+Status after steps 68 to 70 (2026-10-25; numbers in `docs/results/step-68-placement.md`, `step-69-explanations.md`,
+`step-70-small-fixes.md`):
+- G-1: JSON validity is no longer the problem. On 28 varied failures with the real provider chain, explanations verified
+  71% of the time before and 86% after (96% of the runs where a provider answered); retries now recover. What remains is
+  the verifier rejecting suggested code and named edge values, and provider rate limits and a dead OpenRouter model id.
+- G-3: with 48 students asking at once, the slowest cheap request fell from 13.9 s to 1.4 s (70 worker threads, pools
+  45+25). Still open above about 70 simultaneous model-backed requests.
+- G-4: with the bank at 75 items the simulator saves 35% to 39% of the questions on four held-out seeds (target 30%);
+  "error under 0.15" stays unreachable there (floor 0.173 with the whole bank); on the 50 personas the 5-question test still
+  fails because their mastery hardly varies. All of this is simulated; only a pilot can settle it.
+- G-14: a problem without a hidden test is refused. G-15: a past due date needs the teacher's confirmation.
+
 Fixed in steps 58 to 62 (so the table above does not list them): the code editor loading from a CDN (the student's address went to a third party; it is now bundled); short reference solutions leaking through the guard; weak production secrets not stopping the API at start; the proxy sharing one rate-limit bucket on non-172 Docker networks; the database connection pool exhaustion and the starvation of cheap requests under concurrent model-backed requests; concept hints served from notes without a leak check.
 
