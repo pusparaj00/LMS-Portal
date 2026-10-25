@@ -133,5 +133,80 @@
     "name": "running_max_confusion",
     "concept": "loops",
     "description": "Believes the largest value is the last one, or the total."
+  },
+  {
+    "name": "string_digits_are_numbers",
+    "concept": "variables_io",
+    "description": "Believes text made of digits is added like numbers."
+  },
+  {
+    "name": "string_repeat_confusion",
+    "concept": "variables_io",
+    "description": "Believes multiplying a string by a number appends the number or repeats each letter."
+  },
+  {
+    "name": "set_keeps_duplicates",
+    "concept": "tuples_sets",
+    "description": "Believes a set stores a repeated value more than once."
+  },
+  {
+    "name": "len_vs_sum",
+    "concept": "tuples_sets",
+    "description": "Confuses the number of items in a collection with the total of its values."
+  },
+  {
+    "name": "tuple_assignment_ignored",
+    "concept": "tuples_sets",
+    "description": "Believes assigning to a tuple item is silently ignored instead of raising an error."
+  },
+  {
+    "name": "recursion_sums_arguments",
+    "concept": "recursion",
+    "description": "Believes a recursive function adds up its arguments instead of following its return statement."
+  },
+  {
+    "name": "recursion_runs_once",
+    "concept": "recursion",
+    "description": "Believes the recursive call happens only once, or not at all."
+  },
+  {
+    "name": "fib_index_shift",
+    "concept": "recursion",
+    "description": "Counts the terms of a recursive sequence from the wrong starting index."
+  },
+  {
+    "name": "except_runs_without_error",
+    "concept": "exceptions",
+    "description": "Believes an except block runs even when nothing was raised."
+  },
+  {
+    "name": "finally_runs_after_return",
+    "concept": "exceptions",
+    "description": "Believes a finally block runs after the returned value has been used."
+  },
+  {
+    "name": "finally_only_on_error",
+    "concept": "exceptions",
+    "description": "Believes a finally block runs only when an exception happened."
+  },
+  {
+    "name": "comprehension_modifies_original",
+    "concept": "comprehensions",
+    "description": "Believes a list comprehension changes the list it reads from."
+  },
+  {
+    "name": "attribute_name_vs_value",
+    "concept": "classes",
+    "description": "Believes reading an attribute gives its name, not the value stored in it."
+  },
+  {
+    "name": "instance_vs_class_confusion",
+    "concept": "classes",
+    "description": "Confuses an object with the class it was made from."
+  },
+  {
+    "name": "object_assignment_copies",
+    "concept": "classes",
+    "description": "Believes assigning one object variable to another makes an independent copy."
   }
 ]

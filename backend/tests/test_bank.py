@@ -109,7 +109,7 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
         transaction = conn.begin()
         try:
             summary = import_bank(conn, bank, titles, email)
-            assert (summary["created"], summary["updated"], summary["unchanged"]) == (61, 0, 0)
+            assert (summary["created"], summary["updated"], summary["unchanged"]) == (75, 0, 0)
             rows = conn.execute(
                 text(
                     "SELECT kind, review_status, param_source, count(*) FROM problems"
@@ -119,7 +119,7 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
             ).all()
             assert [tuple(r) for r in rows] == [
                 ("code", "needs human review", "prior", 35),
-                ("mcq", "needs human review", "prior", 26),
+                ("mcq", "needs human review", "prior", 40),
             ]
             untagged = conn.execute(
                 text(
@@ -141,13 +141,13 @@ def test_import_loads_everything_flagged_for_review(bank, verdicts, make_user, o
                 text("UPDATE problems SET review_status = 'reviewed' WHERE course_id = :c"), {"c": summary["course_id"]}
             )
             again = import_bank(conn, bank, titles, email)
-            assert (again["created"], again["updated"], again["unchanged"]) == (0, 0, 61)
+            assert (again["created"], again["updated"], again["unchanged"]) == (0, 0, 75)
             assert ids() == before  # nothing was deleted and re-inserted
             reviewed = conn.execute(
                 text("SELECT count(*) FROM problems WHERE course_id = :c AND review_status = 'reviewed'"),
                 {"c": summary["course_id"]},
             ).scalar_one()
-            assert reviewed == 61  # a human review survives running the seed again
+            assert reviewed == 75  # a human review survives running the seed again
         finally:
             transaction.rollback()
 

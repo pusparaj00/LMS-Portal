@@ -825,5 +825,425 @@
         "misconception": "counter_vs_sum"
       }
     ]
+  },
+  {
+    "title": "Trace: adding digit strings",
+    "question": "What does this program print?",
+    "code": "x = \"3\"\ny = \"4\"\nprint(x + y)\n",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.7,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "34",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "7",
+        "correct": false,
+        "misconception": "string_digits_are_numbers"
+      },
+      {
+        "text": "12",
+        "correct": false,
+        "misconception": "string_digits_are_numbers"
+      }
+    ]
+  },
+  {
+    "title": "Trace: string times number",
+    "question": "What does this program print?",
+    "code": "print(\"ab\" * 3)\n",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.0,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "ababab",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "ab3",
+        "correct": false,
+        "misconception": "string_repeat_confusion"
+      },
+      {
+        "text": "aaabbb",
+        "correct": false,
+        "misconception": "string_repeat_confusion"
+      }
+    ]
+  },
+  {
+    "title": "Trace: copy a number",
+    "question": "What does this program print?",
+    "code": "a = 5\nb = a\na = 7\nprint(b)\n",
+    "concepts": [
+      {
+        "name": "variables_io",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.2,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "5",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "7",
+        "correct": false,
+        "misconception": "assignment_ties_variables"
+      },
+      {
+        "text": "12",
+        "correct": false,
+        "misconception": "assignment_ties_variables"
+      }
+    ]
+  },
+  {
+    "title": "Trace: set size",
+    "question": "What does this program print?",
+    "code": "s = {1, 2, 2, 3}\nprint(len(s))\n",
+    "concepts": [
+      {
+        "name": "tuples_sets",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.6,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "3",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "4",
+        "correct": false,
+        "misconception": "set_keeps_duplicates"
+      },
+      {
+        "text": "8",
+        "correct": false,
+        "misconception": "len_vs_sum"
+      }
+    ]
+  },
+  {
+    "title": "Trace: change a tuple item",
+    "question": "What does this program print?",
+    "code": "t = (1, 2, 3)\ntry:\n    t[0] = 9\nexcept TypeError:\n    print(\"error\")\nelse:\n    print(t)\n",
+    "concepts": [
+      {
+        "name": "tuples_sets",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.2,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "error",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "(9, 2, 3)",
+        "correct": false,
+        "misconception": "tuple_mutable"
+      },
+      {
+        "text": "(1, 2, 3)",
+        "correct": false,
+        "misconception": "tuple_assignment_ignored"
+      }
+    ]
+  },
+  {
+    "title": "Trace: counting down recursively",
+    "question": "What does this program print?",
+    "code": "def count(n):\n    if n == 0:\n        return 0\n    return 1 + count(n - 1)\nprint(count(3))\n",
+    "concepts": [
+      {
+        "name": "recursion",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.2,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "3",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "0",
+        "correct": false,
+        "misconception": "recursion_runs_once"
+      },
+      {
+        "text": "6",
+        "correct": false,
+        "misconception": "recursion_sums_arguments"
+      }
+    ]
+  },
+  {
+    "title": "Trace: factorial of four",
+    "question": "What does this program print?",
+    "code": "def f(n):\n    if n <= 1:\n        return 1\n    return n * f(n - 1)\nprint(f(4))\n",
+    "concepts": [
+      {
+        "name": "recursion",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.4,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "24",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "10",
+        "correct": false,
+        "misconception": "recursion_sums_arguments"
+      },
+      {
+        "text": "12",
+        "correct": false,
+        "misconception": "recursion_runs_once"
+      }
+    ]
+  },
+  {
+    "title": "Trace: fibonacci of five",
+    "question": "What does this program print?",
+    "code": "def fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)\nprint(fib(5))\n",
+    "concepts": [
+      {
+        "name": "recursion",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.9,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "5",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "8",
+        "correct": false,
+        "misconception": "fib_index_shift"
+      },
+      {
+        "text": "3",
+        "correct": false,
+        "misconception": "fib_index_shift"
+      }
+    ]
+  },
+  {
+    "title": "Trace: except without an error",
+    "question": "What does this program print?",
+    "code": "try:\n    print(\"A\", end=\"\")\nexcept ValueError:\n    print(\"B\", end=\"\")\n",
+    "concepts": [
+      {
+        "name": "exceptions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.5,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "A",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "AB",
+        "correct": false,
+        "misconception": "except_runs_without_error"
+      },
+      {
+        "text": "B",
+        "correct": false,
+        "misconception": "except_runs_without_error"
+      }
+    ]
+  },
+  {
+    "title": "Trace: finally with return",
+    "question": "What does this program print?",
+    "code": "def f():\n    try:\n        return \"T\"\n    finally:\n        print(\"F\", end=\"\")\nprint(f())\n",
+    "concepts": [
+      {
+        "name": "exceptions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.7,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "FT",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "TF",
+        "correct": false,
+        "misconception": "finally_runs_after_return"
+      },
+      {
+        "text": "T",
+        "correct": false,
+        "misconception": "finally_only_on_error"
+      }
+    ]
+  },
+  {
+    "title": "Trace: add one to each",
+    "question": "What does this program print?",
+    "code": "print([x + 1 for x in [1, 2, 3]])\n",
+    "concepts": [
+      {
+        "name": "comprehensions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.6,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "[2, 3, 4]",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "[1, 2, 3]",
+        "correct": false,
+        "misconception": "comprehension_ignores_expression"
+      },
+      {
+        "text": "[2, 3]",
+        "correct": false,
+        "misconception": "comprehension_filter_vs_map"
+      }
+    ]
+  },
+  {
+    "title": "Trace: the list after a comprehension",
+    "question": "What does this program print?",
+    "code": "nums = [1, 2, 3]\nsquares = [n * n for n in nums]\nprint(nums)\n",
+    "concepts": [
+      {
+        "name": "comprehensions",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.1,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "[1, 2, 3]",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "[1, 4, 9]",
+        "correct": false,
+        "misconception": "comprehension_modifies_original"
+      },
+      {
+        "text": "[1, 2, 3, 1, 4, 9]",
+        "correct": false,
+        "misconception": "comprehension_modifies_original"
+      }
+    ]
+  },
+  {
+    "title": "Trace: read an attribute",
+    "question": "What does this program print?",
+    "code": "class Dog:\n    def __init__(self, name):\n        self.name = name\nd = Dog(\"Rex\")\nprint(d.name)\n",
+    "concepts": [
+      {
+        "name": "classes",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": -0.5,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "Rex",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "name",
+        "correct": false,
+        "misconception": "attribute_name_vs_value"
+      },
+      {
+        "text": "Dog",
+        "correct": false,
+        "misconception": "instance_vs_class_confusion"
+      }
+    ]
+  },
+  {
+    "title": "Trace: two names, one object",
+    "question": "What does this program print?",
+    "code": "class Box:\n    def __init__(self):\n        self.n = 1\na = Box()\nb = a\nb.n = 5\nprint(a.n)\n",
+    "concepts": [
+      {
+        "name": "classes",
+        "weight": 1.0
+      }
+    ],
+    "difficulty_b": 0.3,
+    "discrimination_a": 1.0,
+    "options": [
+      {
+        "text": "5",
+        "correct": true,
+        "misconception": null
+      },
+      {
+        "text": "1",
+        "correct": false,
+        "misconception": "object_assignment_copies"
+      },
+      {
+        "text": "0",
+        "correct": false,
+        "misconception": "object_assignment_copies"
+      }
+    ]
   }
 ]
