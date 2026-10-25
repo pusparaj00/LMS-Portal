@@ -379,3 +379,12 @@ def test_a_question_archived_during_the_test_does_not_break_it(client, make_user
         data = answer(client, headers, session_id, item, wrong_for=wrong_for).json()
         item = data["next_item"]
     assert len(data["result"]["mastery"]) == 3
+
+
+def test_placement_items_carry_their_number_of_options(owner, placement_course):
+    from app.routers.diagnostic import _items
+
+    with owner.connect() as conn:
+        items = _items(conn, placement_course["course_id"])
+    assert {i.options for i in items if i.kind == "mcq"} == {3}
+    assert {i.options for i in items if i.kind == "code"} == {None}

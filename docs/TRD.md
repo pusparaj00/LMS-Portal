@@ -75,6 +75,8 @@ The published work on coding knowledge tracing already covers concept tagging an
 | TR-M-16 | The learner model shall be computed from the ledger and shall give for each concept the mastery, the evidence count and weight of real evidence, a confidence label from fixed cut points on 0.5 over the square root of (effective evidence plus 2), the time of the newest real evidence, and a status (assessed, estimated or not assessed) | P0 | F-28 |
 | TR-M-17 | The recommendation shall put a weak prerequisite (concepts.parent_ids) before the concept that needs it, give the reason, and be the same for the dashboard and the assistant | P1 | F-29 |
 | TR-M-18 | The pooled estimate shall be a multidimensional 2PL with one ability per concept, a Gaussian prior whose pairwise correlation and spread are declared constants chosen only on training seeds and refitted when real answers exist, the app's own slip and guess rates and item parameters, and mastery defined as the chance of a right answer to an item with a = 1 and b = 0 and no guessing | P0 | F-28, TR-V-05 |
+| TR-M-19 | The weight of concept coverage against expected shrinkage in the placement selector shall be a declared constant chosen only on training seeds by the smallest worst-case relative regret in final error, and reported on seeds not used for choosing it | P1 | TR-M-18, TR-V-05 |
+| TR-M-20 | A tracing question's guess rate shall be 1 divided by its number of answer options in the selector, the pooled estimate and its replay; the confidence variants ("guessing", "don't know") keep their declared rates | P1 | TR-M-18 |
 
 ## 5. Code execution and sandbox requirements
 

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Connection, text
 
-from app.diagnostic import pooled
+from app.diagnostic import pooled, selection
 from app.mastery import core
 from app.mastery.plan import Plan, plan_submission
 
@@ -295,7 +295,10 @@ def record_pooled(
         }
         if not weights:  # a question whose concepts were all removed says nothing about this course's concepts
             continue
-        slip, guess = core.DEFAULT_PARAMS[row.evidence_type]
+        options = conn.execute(
+            text("SELECT count(*) FROM item_options WHERE problem_id = :p"), {"p": problem_id}
+        ).scalar_one()
+        slip, guess = selection.slip_guess(row.evidence_type, options or None)
         answers.append(pooled.Answer(weights, a, b, slip, guess, bool(row.correct)))
     theta, covariance = pooled.fit(answers, len(concepts), prior_mean)
     estimate = pooled.mastery(theta, covariance)

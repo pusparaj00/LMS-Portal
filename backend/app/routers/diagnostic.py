@@ -61,7 +61,8 @@ def _save_state(session_id: str, state: dict) -> None:
 def _items(conn: Connection, course_id: int) -> list[selection.Item]:
     rows = conn.execute(
         text(
-            "SELECT p.id, p.kind, p.discrimination_a, p.difficulty_b, pc.concept_id, pc.weight"
+            "SELECT p.id, p.kind, p.discrimination_a, p.difficulty_b, pc.concept_id, pc.weight,"
+            " (SELECT count(*) FROM item_options o WHERE o.problem_id = p.id) AS options"
             " FROM problems p JOIN problem_concepts pc ON pc.problem_id = p.id"
             " WHERE p.course_id = :c AND p.archived_at IS NULL"
             " AND NOT EXISTS (SELECT 1 FROM assignment_problems ap WHERE ap.problem_id = p.id) ORDER BY p.id"
@@ -69,11 +70,12 @@ def _items(conn: Connection, course_id: int) -> list[selection.Item]:
         {"c": course_id},
     )
     by_id: dict[int, dict] = {}
-    for pid, kind, a, b, concept_id, weight in rows:
-        entry = by_id.setdefault(pid, {"kind": kind, "a": a, "b": b, "concepts": {}})
+    for pid, kind, a, b, concept_id, weight, options in rows:
+        entry = by_id.setdefault(pid, {"kind": kind, "a": a, "b": b, "concepts": {}, "options": options or None})
         entry["concepts"][concept_id] = weight
     return [
-        selection.Item(pid, e["kind"], e["a"], e["b"], e["concepts"]) for pid, e in sorted(by_id.items())
+        selection.Item(pid, e["kind"], e["a"], e["b"], e["concepts"], e["options"])
+        for pid, e in sorted(by_id.items())
     ]
 
 

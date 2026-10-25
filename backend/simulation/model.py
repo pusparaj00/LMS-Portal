@@ -19,6 +19,7 @@ ITEM_A_SCALE = (0.7, 1.3)  # true discrimination = bank prior x U(...)
 ITEM_B_NOISE_SD = 0.4  # true difficulty = bank prior + N(0, sd)
 TRUE_SLIP = 0.15
 TRUE_GUESS = {"mcq": 0.20, "code": 0.08}
+TRUE_GUESS_FROM_OPTIONS = False  # True: a tracing item is guessed right 1 / options of the time
 MASTERY_SCALE = 2.0  # true mastery of a concept = sigmoid(MASTERY_SCALE * ability)
 
 
@@ -40,6 +41,7 @@ def load_bank(bank_dir: Path) -> Bank:
         Item(
             id=n, kind=kind, a=p["discrimination_a"], b=p["difficulty_b"],
             concepts={index[c["name"]]: c["weight"] for c in p["concepts"]},
+            options=len(p["options"]) if kind == "mcq" else None,
         )
         for n, (kind, p) in enumerate(raw)
     ]
@@ -74,6 +76,6 @@ def response_probabilities(
         weights = weights / weights.sum()
         ability = theta[:, list(item.concepts)] @ weights
         link = 1.0 / (1.0 + np.exp(-1.7 * a_true[n] * (ability - b_true[n])))
-        guess = TRUE_GUESS[item.kind]
+        guess = 1.0 / item.options if TRUE_GUESS_FROM_OPTIONS and item.options else TRUE_GUESS[item.kind]
         out[:, n] = guess + (1.0 - TRUE_SLIP - guess) * link
     return out

@@ -139,3 +139,33 @@ def test_the_learner_record_tells_assessed_estimated_and_not_assessed_apart():
     assert assessed.last_assessed.startswith("2026-10-19")
     assert (estimated.status, estimated.evidence_count, estimated.confidence) == ("estimated", 0, None)
     assert (none.status, none.confidence, none.last_assessed) == ("not assessed", None, None)
+
+
+def test_a_tracing_questions_guess_rate_is_one_over_its_options():
+    assert selection.slip_guess("diagnostic_mcq", 3) == (0.1, pytest.approx(1 / 3))
+    assert selection.slip_guess("diagnostic_mcq", 4) == (0.1, pytest.approx(0.25))
+    assert selection.slip_guess("diagnostic_mcq", None) == selection.slip_guess("diagnostic_mcq")
+
+
+def test_the_confidence_variants_and_coding_tasks_keep_their_declared_guess_rates():
+    for evidence in ("diagnostic_mcq_guess", "diagnostic_mcq_dontknow", "diagnostic_code"):
+        assert selection.slip_guess(evidence, 3) == selection.slip_guess(evidence, None)
+
+
+def test_a_right_answer_to_a_three_option_question_is_weaker_evidence_than_to_a_four_option_one():
+    def estimate(options):
+        items = [Item(i, "mcq", 1.0, 0.0, {0: 1.0}, options) for i in range(3)]
+        given = [(i, True, "diagnostic_mcq") for i in range(3)]
+        _, theta, _ = selection.posterior(items, given)
+        return float(theta[0])
+
+    assert estimate(3) < estimate(4)
+
+
+def test_the_option_chance_can_be_switched_off(monkeypatch):
+    monkeypatch.setattr(selection, "USE_OPTION_CHANCE", False)
+    assert selection.slip_guess("diagnostic_mcq", 3) == selection.slip_guess("diagnostic_mcq")
+
+
+def test_the_cover_weight_is_a_declared_positive_constant():
+    assert 0 < selection.COVER_WEIGHT <= 1.5

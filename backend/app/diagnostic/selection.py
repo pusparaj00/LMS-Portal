@@ -26,6 +26,10 @@ MAX_CODE = 6
 MAX_HARD_CODE = 2
 WARMUP_ITEMS = 4  # tracing questions only, so nobody starts by writing code
 NEAR_BEST = 0.9
+# Weight of "concepts with no evidence yet" against the expected shrinkage of the estimate in a question's score.
+# Chosen on training seeds 1-3 only (docs/results/step-68-placement.md).
+COVER_WEIGHT = 0.25
+USE_OPTION_CHANCE = True  # a tracing item's guess rate is 1 / its number of options, not one number for all of them
 EASY_BELOW = -0.5
 HARD_ABOVE = 0.5
 BACKGROUND_PRIOR_MEAN = {"new": -0.7, "some": 0.0, "comfortable": 0.5}
@@ -39,6 +43,7 @@ class Item:
     a: float
     b: float
     concepts: dict[int, float]  # concept id -> weight
+    options: int | None = None  # number of answer options of a tracing item
 
 
 def band(b: float) -> str:
@@ -87,8 +92,17 @@ def concept_index(items: list[Item]) -> dict[int, int]:
     return {c: n for n, c in enumerate(sorted({c for i in items for c in i.concepts}))}
 
 
-def _question(item: Item, index: dict[int, int], evidence: str) -> pooled.Question:
+def slip_guess(evidence: str, options: int | None = None) -> tuple[float, float]:
+    """Slip and guess of an answer. A plain tracing answer is right by chance 1 / options of the time; the confidence
+    variants keep their own declared guess rates."""
     slip, guess = _params(evidence)
+    if USE_OPTION_CHANCE and options and evidence == "diagnostic_mcq":
+        return slip, 1.0 / options
+    return slip, guess
+
+
+def _question(item: Item, index: dict[int, int], evidence: str) -> pooled.Question:
+    slip, guess = slip_guess(evidence, item.options)
     return pooled.Question({index[c]: w for c, w in item.concepts.items()}, item.a, item.b, slip, guess)
 
 
@@ -151,7 +165,7 @@ def select_next(
     gain = np.array([
         pooled.expected_gain(_question(i, index, EVIDENCE_TYPE[i.kind]), theta, covariance, current) for i in candidates
     ])
-    score = cover + gain / (gain.max() or 1.0)
+    score = COVER_WEIGHT * cover + gain / (gain.max() or 1.0)
     near = [i for i, s in zip(candidates, score, strict=True) if s >= NEAR_BEST * score.max()]
     return random.Random(f"{seed}:{len(asked)}").choice(near)
 

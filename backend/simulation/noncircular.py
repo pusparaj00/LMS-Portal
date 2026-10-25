@@ -40,7 +40,7 @@ def load_bank_items(bank_dir: Path, mcq_known: int) -> tuple[list[selection.Item
         items.append(
             selection.Item(
                 len(items), "mcq", m["discrimination_a"], m["difficulty_b"],
-                {index[c["name"]]: c["weight"] for c in m["concepts"]},
+                {index[c["name"]]: c["weight"] for c in m["concepts"]}, len(m["options"]),
             )
         )
     return items, [c["name"] for c in concepts], len(code), len(mcq)
@@ -211,10 +211,15 @@ def main() -> None:
     parser.add_argument("--part", choices=("all", "first", "second"), default="all", help="a half of the students")
     parser.add_argument("--correlation", type=float, default=pooled.CORRELATION)
     parser.add_argument("--prior-sd", type=float, default=pooled.PRIOR_SD)
+    parser.add_argument("--cover-weight", type=float, default=selection.COVER_WEIGHT)
+    parser.add_argument("--no-option-chance", action="store_true",
+                        help="the app assumes one guess rate for every tracing item (the behaviour before step 68)")
     root = Path(__file__).resolve().parents[1]
     default_bank = next(p for p in (root / "data" / "bank", root.parent / "data" / "bank") if p.exists())
     parser.add_argument("--bank", type=Path, default=default_bank)
     args = parser.parse_args()
+    selection.COVER_WEIGHT = args.cover_weight
+    selection.USE_OPTION_CHANCE = not args.no_option_chance
 
     data = json.loads(args.students_json.read_text(encoding="utf-8"))
     answered = {int(k.split(":")[1]) for st in data["students"] for k in st["answers"] if k.startswith("mcq:")}

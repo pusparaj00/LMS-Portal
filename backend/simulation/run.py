@@ -73,7 +73,7 @@ def independent_mastery(items, outcomes: np.ndarray, asked: list[int], concepts:
 def pooled_answers(items, outcomes: np.ndarray, asked: list[int]) -> list[pooled.Answer]:
     out = []
     for i in asked:
-        slip, guess = core.DEFAULT_PARAMS[selection.EVIDENCE_TYPE[items[i].kind]]
+        slip, guess = selection.slip_guess(selection.EVIDENCE_TYPE[items[i].kind], items[i].options)
         out.append(pooled.Answer(items[i].concepts, items[i].a, items[i].b, slip, guess, bool(outcomes[i])))
     return out
 
@@ -93,7 +93,7 @@ def pooled_trace(items, outcomes: np.ndarray, truth: np.ndarray, asked: list[int
 
 def pooled_success(item, theta: np.ndarray, covariance: np.ndarray) -> float:
     """Chance of a right answer to a held-out question, with the spread of the ability estimate taken into account."""
-    slip, guess = core.DEFAULT_PARAMS[selection.EVIDENCE_TYPE[item.kind]]
+    slip, guess = selection.slip_guess(selection.EVIDENCE_TYPE[item.kind], item.options)
     w = np.zeros(len(theta))
     for c, weight in item.concepts.items():
         w[c] = weight
@@ -332,16 +332,28 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--correlation", type=float, default=pooled.CORRELATION)
     parser.add_argument("--prior-sd", type=float, default=pooled.PRIOR_SD)
+    parser.add_argument("--cover-weight", type=float, default=selection.COVER_WEIGHT)
+    parser.add_argument("--true-guess-from-options", action="store_true",
+                        help="simulated students guess a tracing item right 1 / options of the time")
+    parser.add_argument("--no-option-chance", action="store_true",
+                        help="the app assumes one guess rate for every tracing item (the behaviour before step 68)")
     root = Path(__file__).resolve().parents[1]
     default_bank = next(p for p in (root / "data" / "bank", root.parent / "data" / "bank") if p.exists())
     parser.add_argument("--bank", type=Path, default=default_bank)
     args = parser.parse_args()
+    model.TRUE_GUESS_FROM_OPTIONS = args.true_guess_from_options
+    selection.USE_OPTION_CHANCE = not args.no_option_chance
+    selection.COVER_WEIGHT = args.cover_weight
     bank = model.load_bank(args.bank)
     args.items = bank.items
     prior = {"correlation": args.correlation, "sd": args.prior_sd}
     args.prior_flags = (
         "" if (args.correlation, args.prior_sd) == (pooled.CORRELATION, pooled.PRIOR_SD)
         else f" --correlation {args.correlation} --prior-sd {args.prior_sd}"
+    ) + (f" --cover-weight {args.cover_weight}" if args.cover_weight != parser.get_default("cover_weight") else "") + (
+        " --true-guess-from-options" if args.true_guess_from_options else ""
+    ) + (
+        " --no-option-chance" if args.no_option_chance else ""
     )
     sys.stdout.write(report(simulate(args.students, args.seed, bank, prior), args))
 
