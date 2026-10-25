@@ -104,7 +104,7 @@ def test_create_problem_rejects_a_bad_reference_solution(client, course):
         "course_id": course["id"], "title": "Bad", "statement": "s", "difficulty_b": 0,
         "discrimination_a": 1, "concepts": [{**ok, "concept_id": with_concept["concept_id"]}],
         "reference_solution": "print('nope')\n",
-        "test_cases": [{"input": "1\n", "expected": "2\n", "hidden": False, "category": "basic"}],
+        "test_cases": [{"input": "1\n", "expected": "2\n", "hidden": True, "category": "basic"}],
     }
     response = client.post(f"{API}/problems", headers=course["instructor"], json=body)
     assert response.status_code == 422

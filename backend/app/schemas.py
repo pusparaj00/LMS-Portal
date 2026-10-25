@@ -316,6 +316,7 @@ class WorkIn(BaseModel):
 class AssignmentIn(BaseModel):
     title: Text = Field(min_length=1, max_length=200)
     due_at: Annotated[datetime, AfterValidator(_aware)]
+    confirm_past_due: bool = Field(default=False, description="keep a due date that has already passed (G-15)")
     problems: list[AssignmentProblemIn] = Field(default_factory=list, max_length=50)
     quizzes: list[AssignmentQuizIn] = Field(default_factory=list, max_length=50)
     work: WorkIn | None = None

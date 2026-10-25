@@ -32,7 +32,7 @@ def category(client, course, name, weight):
 
 
 def work(client, course, title, points, due=3, **extra):
-    body = {"title": title, "due_at": when(due), "work": {"instructions": "Do it.", "points": points}, **extra}
+    body = {"title": title, "confirm_past_due": True, "due_at": when(due), "work": {"instructions": "Do it.", "points": points}, **extra}
     made = client.post(f"{API}/courses/{course['id']}/assignments", headers=course["teacher"], json=body)
     assert made.status_code == 201, made.text
     return made.json()

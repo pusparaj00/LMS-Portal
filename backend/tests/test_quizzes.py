@@ -144,7 +144,7 @@ def test_review_is_off_by_default_and_waits_for_every_assignment_to_close(client
     mine = f"{API}/courses/{c['id']}/quizzes/{reviewable['id']}/attempts/mine"
     assert client.get(mine, headers=c["student"]).json()["review"] is None
     client.put(f"{API}/courses/{c['id']}/assignments/{made.json()['id']}", headers=c["teacher"], json={
-        "title": "Closed", "due_at": iso(-1), "quizzes": [{"quiz_id": reviewable["id"], "points": 4}]})
+        "title": "Closed", "confirm_past_due": True, "due_at": iso(-1), "quizzes": [{"quiz_id": reviewable["id"], "points": 4}]})
     assert client.get(mine, headers=c["student"]).json()["review"] is not None
 
 
@@ -231,7 +231,7 @@ def test_quiz_points_reach_the_gradebook_by_the_late_rule(client, make_user, cou
     book = client.get(f"{API}/courses/{c['id']}/gradebook", headers=c["teacher"]).json()
     assert book["possible"] == 8 and book["students"][0]["total"] == 8.0
 
-    late = {**assignment, "title": "Quiz late", "due_at": iso(-1)}
+    late = {**assignment, "title": "Quiz late", "confirm_past_due": True, "due_at": iso(-1)}
     made_late = client.post(f"{API}/courses/{c['id']}/assignments", headers=c["teacher"], json=late).json()
     listed = client.get(f"{API}/courses/{c['id']}/assignments", headers=c["student"]).json()
     row = next(a["mine"] for a in listed if a["id"] == made_late["id"])

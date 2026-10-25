@@ -18,6 +18,8 @@ def validate_code_problem(
     errors += [f"unknown concept '{c}'" for c in concept_names if c not in known_concepts]
     if not tests:
         errors.append("has no tests")
+    elif not any(t.get("hidden") for t in tests):
+        errors.append("has no hidden test; add at least one so a student cannot hard-code the visible examples")
     if len(tests) > MAX_TESTS:
         errors.append(f"has {len(tests)} tests; at most {MAX_TESTS} are allowed")
     errors += [f"test {i} has no category" for i, t in enumerate(tests) if not t.get("category")]

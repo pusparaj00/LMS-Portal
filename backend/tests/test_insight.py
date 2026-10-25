@@ -28,7 +28,7 @@ def student(client, make_user, course):
 
 
 def work(client, course, title, due, points=10):
-    body = {"title": title, "due_at": when(due), "work": {"instructions": "Do it.", "points": points}}
+    body = {"title": title, "confirm_past_due": True, "due_at": when(due), "work": {"instructions": "Do it.", "points": points}}
     made = client.post(f"{API}/courses/{course['id']}/assignments", headers=course["teacher"], json=body)
     assert made.status_code == 201, made.text
     return made.json()

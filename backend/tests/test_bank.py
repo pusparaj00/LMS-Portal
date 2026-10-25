@@ -11,7 +11,10 @@ from app.services.validation import validate_code_problem, validate_mcq_item
 ROOT = Path(__file__).resolve().parents[1]
 BANK = next(p for p in (ROOT / "data" / "bank", ROOT.parent / "data" / "bank") if p.exists())
 CONCEPTS = {"loops"}
-GOOD_TESTS = [{"input": "2\n", "expected": "3\n", "hidden": False, "category": "basic"}]
+GOOD_TESTS = [
+    {"input": "2\n", "expected": "3\n", "hidden": False, "category": "basic"},
+    {"input": "9\n", "expected": "10\n", "hidden": True, "category": "basic"},
+]
 
 
 @pytest.fixture(scope="module")
@@ -52,7 +55,7 @@ def test_rejects_wrong_reference_solution():
         concept_names=["loops"], known_concepts=CONCEPTS,
         reference_solution="print(int(input()))\n", tests=GOOD_TESTS,
     )
-    assert len(errors) == 1 and errors[0].startswith("reference solution fails test 1 (basic): it printed ")
+    assert len(errors) == 2 and errors[0].startswith("reference solution fails test 1 (basic): it printed ")
     assert "but the test expects" in errors[0]
 
 

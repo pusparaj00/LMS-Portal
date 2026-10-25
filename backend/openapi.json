@@ -224,6 +224,12 @@
             "description": "the grade category it counts in",
             "title": "Category Id"
           },
+          "confirm_past_due": {
+            "default": false,
+            "description": "keep a due date that has already passed (G-15)",
+            "title": "Confirm Past Due",
+            "type": "boolean"
+          },
           "due_at": {
             "format": "date-time",
             "title": "Due At",

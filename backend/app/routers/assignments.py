@@ -1,4 +1,5 @@
 """Assignments with due dates and the gradebook (F-04)."""
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -209,6 +210,16 @@ def _owned(conn: Connection, course_id: int, assignment_id: int) -> None:
         raise HTTPException(404, "assignment not found")
 
 
+def _confirm_past_due(body: AssignmentIn, current: datetime | None = None) -> None:
+    """A due date that has already passed makes every student late at once; the teacher has to say that is meant (G-15).
+    An edit that leaves the stored date as it is does not ask again."""
+    if body.confirm_past_due or body.due_at >= datetime.now(UTC) or body.due_at == current:
+        return
+    raise HTTPException(
+        422, "the due date has already passed, so every student would be late at once; send confirm_past_due to keep it"
+    )
+
+
 @router.get("/assignments", response_model=list[AssignmentOut])
 def list_assignments(course_id: int, user: Member, conn: Conn):
     """Every assignment in the course by due date; a student also gets their own score for each."""
@@ -232,6 +243,7 @@ def list_assignments(course_id: int, user: Member, conn: Conn):
 @router.post("/assignments", response_model=AssignmentOut, status_code=201)
 def create_assignment(course_id: int, body: AssignmentIn, user: Instructor, conn: Conn):
     _check(conn, user, course_id)
+    _confirm_past_due(body)
     assignment_id = conn.execute(
         text("INSERT INTO assignments (course_id, title, due_at) VALUES (:c, :t, :d) RETURNING id"),
         {"c": course_id, "t": body.title, "d": body.due_at},
@@ -248,6 +260,9 @@ def update_assignment(course_id: int, assignment_id: int, body: AssignmentIn, us
     """Changing the problems or the due date changes every score at once: scores are computed, not stored."""
     _check(conn, user, course_id)
     _owned(conn, course_id, assignment_id)
+    _confirm_past_due(body, conn.execute(
+        text("SELECT due_at FROM assignments WHERE id = :a"), {"a": assignment_id}
+    ).scalar_one())
     conn.execute(
         text("UPDATE assignments SET title = :t, due_at = :d WHERE id = :a"),
         {"t": body.title, "d": body.due_at, "a": assignment_id},

@@ -204,7 +204,17 @@ export function AssignmentsPage({ session, courseId }: { session: Session; cours
     };
     try {
       const path = `/courses/${courseId}/assignments${draft.id ? `/${draft.id}` : ""}`;
-      await api(path, session, { method: draft.id ? "PUT" : "POST", body });
+      const send = (extra: object) => api(path, session, { method: draft.id ? "PUT" : "POST", body: { ...body, ...extra } });
+      try {
+        await send({});
+      } catch (e) {
+        if (!(e instanceof ApiError && e.status === 422 && e.message.includes("confirm_past_due"))) throw e;
+        if (!window.confirm("This due date has already passed, so every student will count as late at once. Save it anyway?")) {
+          setError("Choose a due date that has not passed, or confirm that every student should count as late.");
+          return;
+        }
+        await send({ confirm_past_due: true });
+      }
       setDraft(EMPTY);
       await load();
     } catch (e) {

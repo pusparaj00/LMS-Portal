@@ -30,7 +30,7 @@ def course(client, make_user):
 
 
 def make_assignment(client, course, due=2, points=10, **work):
-    body = {"title": "Essay", "due_at": iso(due),
+    body = {"title": "Essay", "confirm_past_due": True, "due_at": iso(due),
             "work": {"instructions": "Write about loops.", "points": points, **work}}
     made = client.post(f"{API}/courses/{course['id']}/assignments", headers=course["teacher"], json=body)
     assert made.status_code == 201, made.text

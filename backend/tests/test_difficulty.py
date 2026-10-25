@@ -30,7 +30,7 @@ def create(client, teacher, course_id, concept, **changes):
     body = {"course_id": course_id, "title": "Add one", "statement": "Read n, print n + 1.", "difficulty_b": None,
             "discrimination_a": 1, "concepts": [{"concept_id": concept, "name": "loops", "weight": 1}],
             "reference_solution": ONE_LINER,
-            "test_cases": [{"input": "1\n", "expected": "2\n", "hidden": False, "category": "basic"}], **changes}
+            "test_cases": [{"input": "1\n", "expected": "2\n", "hidden": True, "category": "basic"}], **changes}
     return client.post(f"{API}/problems", headers=teacher, json=body)
 
 

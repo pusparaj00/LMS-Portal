@@ -61,7 +61,7 @@ def attempt(owner, user_id, problem_id, at: datetime, passed: int, failed: int) 
 
 def create(client, course, due: datetime, problems, title="Week 1"):
     return client.post(f"{API}/courses/{course['id']}/assignments", headers=course["instructor"],
-                       json={"title": title, "due_at": iso(due), "problems": problems})
+                       json={"title": title, "confirm_past_due": True, "due_at": iso(due), "problems": problems})
 
 
 def cell(book, student_id, assignment_id):
@@ -227,7 +227,10 @@ def test_a_hint_never_shows_the_solution_of_a_problem_set_in_an_assignment(clien
             "course_id": course_id, "title": title, "statement": "s", "difficulty_b": difficulty, "discrimination_a": 1,
             "concepts": [{"concept_id": concept["concept_id"], "name": "loops", "weight": 1}],
             "reference_solution": reference,
-            "test_cases": [{"input": "3\n", "expected": expected, "hidden": False, "category": "basic"}],
+            "test_cases": [
+                {"input": "3\n", "expected": expected, "hidden": False, "category": "basic"},
+                {"input": "3\n", "expected": expected, "hidden": True, "category": "basic"},
+            ],
         })
         assert made.status_code == 201, made.text
         return made.json()["id"]

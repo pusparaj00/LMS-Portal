@@ -54,7 +54,7 @@ def test_recommend_says_so_when_everything_is_solved(client, make_user, world, o
 
 def make_assignment(client, world, title, due, problems):
     made = client.post(f"{API}/courses/{world['course']}/assignments", headers=world["instructor"], json={
-        "title": title, "due_at": due.isoformat(), "problems": [{"problem_id": p, "points": 2} for p in problems]})
+        "title": title, "confirm_past_due": True, "due_at": due.isoformat(), "problems": [{"problem_id": p, "points": 2} for p in problems]})
     assert made.status_code == 201, made.text
     return made.json()
 

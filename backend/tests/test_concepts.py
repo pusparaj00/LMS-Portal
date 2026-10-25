@@ -94,7 +94,10 @@ def test_a_second_problem_with_the_same_title_is_refused_and_the_first_is_kept(c
             "course_id": teacher["course"], "title": "Same title", "statement": statement,
             "difficulty_b": 0, "discrimination_a": 1, "reference_solution": reference,
             "concepts": [{"concept_id": concept["concept_id"], "name": "titles", "weight": 1.0}],
-            "test_cases": [{"input": "1\n", "expected": expected, "hidden": False, "category": "basic"}],
+            "test_cases": [
+                {"input": "1\n", "expected": expected, "hidden": False, "category": "basic"},
+                {"input": "1\n", "expected": expected, "hidden": True, "category": "basic"},
+            ],
         })
 
     first = create("Print n + 1.", "print(int(input()) + 1)\n", "2\n")
