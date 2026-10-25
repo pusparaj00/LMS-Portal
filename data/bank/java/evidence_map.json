@@ -1,0 +1,10 @@
+[
+  { "category": "*", "error": "syntax_error", "concept": "variables_io", "weight": 1.0 },
+  { "category": "*", "error": "time_limit", "concept": "loops", "weight": 1.0 },
+  { "category": "*", "error": "memory_limit", "concept": "loops", "weight": 1.0 },
+  { "category": "*", "error": "output_limit", "concept": "loops", "weight": 1.0 },
+  { "category": "boundary", "error": "*", "concept": "conditionals", "weight": 1.0 },
+  { "category": "base_case", "error": "*", "concept": "recursion", "weight": 1.0 },
+  { "category": "invalid_token", "error": "*", "concept": "exceptions", "weight": 1.0 },
+  { "category": "out_of_range", "error": "*", "concept": "arrays", "weight": 1.0 }
+]

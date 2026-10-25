@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Sum of the numbers",
+    "statement": "Read an integer n, then n integers. Print their sum (0 if n is 0).",
+    "concepts": [ { "name": "arrays", "weight": 1.0 } ],
+    "difficulty_b": -0.7,
+    "discrimination_a": 1.0,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int total = 0;\n        for (int i = 0; i < n; i++) {\n            total += sc.nextInt();\n        }\n        System.out.println(total);\n    }\n}\n",
+    "tests": [
+      { "input": "3\n1 2 3\n", "expected": "6\n", "hidden": false, "category": "basic" },
+      { "input": "1\n5\n", "expected": "5\n", "hidden": false, "category": "basic" },
+      { "input": "4\n1 1 1 1\n", "expected": "4\n", "hidden": true, "category": "basic" },
+      { "input": "0\n", "expected": "0\n", "hidden": true, "category": "boundary" },
+      { "input": "3\n-1 2 3\n", "expected": "4\n", "hidden": true, "category": "basic" }
+    ]
+  },
+  {
+    "title": "The largest number",
+    "statement": "Read an integer n, then n integers. Print the largest of them.",
+    "concepts": [ { "name": "arrays", "weight": 1.0 }, { "name": "loops", "weight": 0.5 } ],
+    "difficulty_b": -0.4,
+    "discrimination_a": 1.0,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int max = Integer.MIN_VALUE;\n        for (int i = 0; i < n; i++) {\n            int v = sc.nextInt();\n            if (v > max) {\n                max = v;\n            }\n        }\n        System.out.println(max);\n    }\n}\n",
+    "tests": [
+      { "input": "3\n1 2 3\n", "expected": "3\n", "hidden": false, "category": "basic" },
+      { "input": "1\n5\n", "expected": "5\n", "hidden": false, "category": "boundary" },
+      { "input": "4\n9 1 5 3\n", "expected": "9\n", "hidden": true, "category": "basic" },
+      { "input": "2\n-5 -2\n", "expected": "-2\n", "hidden": true, "category": "basic" },
+      { "input": "1\n-100\n", "expected": "-100\n", "hidden": true, "category": "boundary" }
+    ]
+  }
+]

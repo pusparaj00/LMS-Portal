@@ -1,0 +1,30 @@
+[
+  {
+    "title": "How long is it",
+    "statement": "Read a single word (no spaces). Print its length.",
+    "concepts": [ { "name": "strings", "weight": 1.0 } ],
+    "difficulty_b": -1.0,
+    "discrimination_a": 1.1,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        System.out.println(s.length());\n    }\n}\n",
+    "tests": [
+      { "input": "hello\n", "expected": "5\n", "hidden": false, "category": "basic" },
+      { "input": "a\n", "expected": "1\n", "hidden": false, "category": "basic" },
+      { "input": "abcd\n", "expected": "4\n", "hidden": true, "category": "basic" },
+      { "input": "programming\n", "expected": "11\n", "hidden": true, "category": "basic" }
+    ]
+  },
+  {
+    "title": "First and last",
+    "statement": "Read a single word. Print its first character, a space, then its last character.",
+    "concepts": [ { "name": "strings", "weight": 1.0 } ],
+    "difficulty_b": -0.6,
+    "discrimination_a": 1.0,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        System.out.println(s.charAt(0) + \" \" + s.charAt(s.length() - 1));\n    }\n}\n",
+    "tests": [
+      { "input": "hello\n", "expected": "h o\n", "hidden": false, "category": "basic" },
+      { "input": "a\n", "expected": "a a\n", "hidden": false, "category": "boundary" },
+      { "input": "ab\n", "expected": "a b\n", "hidden": true, "category": "boundary" },
+      { "input": "code\n", "expected": "c e\n", "hidden": true, "category": "basic" }
+    ]
+  }
+]

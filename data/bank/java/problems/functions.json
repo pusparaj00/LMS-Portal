@@ -1,0 +1,16 @@
+[
+  {
+    "title": "Double it",
+    "statement": "Read an integer. Print twice that integer. Do the doubling inside a method of your own.",
+    "concepts": [ { "name": "functions", "weight": 1.0 } ],
+    "difficulty_b": -0.9,
+    "discrimination_a": 1.0,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    static int doubleIt(int x) {\n        return x * 2;\n    }\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        System.out.println(doubleIt(sc.nextInt()));\n    }\n}\n",
+    "tests": [
+      { "input": "21\n", "expected": "42\n", "hidden": false, "category": "basic" },
+      { "input": "0\n", "expected": "0\n", "hidden": false, "category": "boundary" },
+      { "input": "-3\n", "expected": "-6\n", "hidden": true, "category": "basic" },
+      { "input": "100\n", "expected": "200\n", "hidden": true, "category": "basic" }
+    ]
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Sum from 1 to n",
+    "statement": "Read an integer n. Print the sum 1 + 2 + ... + n (0 if n is 0).",
+    "concepts": [ { "name": "loops", "weight": 1.0 } ],
+    "difficulty_b": -1.0,
+    "discrimination_a": 1.1,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int total = 0;\n        for (int i = 1; i <= n; i++) {\n            total += i;\n        }\n        System.out.println(total);\n    }\n}\n",
+    "tests": [
+      { "input": "5\n", "expected": "15\n", "hidden": false, "category": "basic" },
+      { "input": "1\n", "expected": "1\n", "hidden": false, "category": "basic" },
+      { "input": "10\n", "expected": "55\n", "hidden": true, "category": "basic" },
+      { "input": "0\n", "expected": "0\n", "hidden": true, "category": "boundary" },
+      { "input": "1000\n", "expected": "500500\n", "hidden": true, "category": "basic" }
+    ]
+  },
+  {
+    "title": "Count the evens",
+    "statement": "Read an integer n. Print how many of the numbers 1..n are even.",
+    "concepts": [ { "name": "loops", "weight": 1.0 } ],
+    "difficulty_b": -0.6,
+    "discrimination_a": 1.0,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int count = 0;\n        for (int i = 1; i <= n; i++) {\n            if (i % 2 == 0) {\n                count++;\n            }\n        }\n        System.out.println(count);\n    }\n}\n",
+    "tests": [
+      { "input": "5\n", "expected": "2\n", "hidden": false, "category": "basic" },
+      { "input": "1\n", "expected": "0\n", "hidden": false, "category": "basic" },
+      { "input": "10\n", "expected": "5\n", "hidden": true, "category": "basic" },
+      { "input": "0\n", "expected": "0\n", "hidden": true, "category": "boundary" },
+      { "input": "7\n", "expected": "3\n", "hidden": true, "category": "basic" }
+    ]
+  }
+]

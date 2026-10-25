@@ -1,0 +1,12 @@
+[
+  { "name": "variables_io", "parents": [] },
+  { "name": "conditionals", "parents": ["variables_io"] },
+  { "name": "loops", "parents": ["conditionals"] },
+  { "name": "strings", "parents": ["variables_io"] },
+  { "name": "arrays", "parents": ["loops"] },
+  { "name": "collections", "parents": ["arrays"] },
+  { "name": "functions", "parents": ["variables_io"] },
+  { "name": "recursion", "parents": ["functions"] },
+  { "name": "exceptions", "parents": ["functions"] },
+  { "name": "classes", "parents": ["functions"] }
+]

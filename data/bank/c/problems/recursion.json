@@ -1,0 +1,17 @@
+[
+  {
+    "title": "Factorial, recursively",
+    "statement": "Read an integer n from 0 to 12. Print n! (0! is 1). Compute it with a recursive function.",
+    "concepts": [ { "name": "recursion", "weight": 1.0 } ],
+    "difficulty_b": -0.3,
+    "discrimination_a": 1.1,
+    "reference_solution": "#include <stdio.h>\n\nlong fact(int n) {\n    return n <= 1 ? 1 : (long)n * fact(n - 1);\n}\n\nint main(void) {\n    int n;\n    scanf(\"%d\", &n);\n    printf(\"%ld\\n\", fact(n));\n    return 0;\n}\n",
+    "tests": [
+      { "input": "5\n", "expected": "120\n", "hidden": false, "category": "basic" },
+      { "input": "0\n", "expected": "1\n", "hidden": false, "category": "boundary" },
+      { "input": "1\n", "expected": "1\n", "hidden": true, "category": "boundary" },
+      { "input": "10\n", "expected": "3628800\n", "hidden": true, "category": "basic" },
+      { "input": "12\n", "expected": "479001600\n", "hidden": true, "category": "basic" }
+    ]
+  }
+]

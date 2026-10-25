@@ -1,0 +1,30 @@
+[
+  {
+    "title": "Safe parse",
+    "statement": "Read one line. If it is a whole number, print twice that number. If it is not, print invalid. Use a try and catch block.",
+    "concepts": [ { "name": "exceptions", "weight": 1.0 } ],
+    "difficulty_b": 0.2,
+    "discrimination_a": 1.0,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine();\n        try {\n            System.out.println(Integer.parseInt(line) * 2);\n        } catch (NumberFormatException e) {\n            System.out.println(\"invalid\");\n        }\n    }\n}\n",
+    "tests": [
+      { "input": "21\n", "expected": "42\n", "hidden": false, "category": "basic" },
+      { "input": "abc\n", "expected": "invalid\n", "hidden": false, "category": "invalid_token" },
+      { "input": "-5\n", "expected": "-10\n", "hidden": true, "category": "basic" },
+      { "input": "3.5\n", "expected": "invalid\n", "hidden": true, "category": "invalid_token" }
+    ]
+  },
+  {
+    "title": "Safe division",
+    "statement": "Read two integers a and b. Print a divided by b (integer division). If b is zero, print divide by zero instead of crashing.",
+    "concepts": [ { "name": "exceptions", "weight": 1.0 } ],
+    "difficulty_b": 0.3,
+    "discrimination_a": 1.0,
+    "reference_solution": "import java.util.Scanner;\npublic class Main {\n    public static void main(String[] a) {\n        Scanner sc = new Scanner(System.in);\n        int x = sc.nextInt();\n        int y = sc.nextInt();\n        try {\n            System.out.println(x / y);\n        } catch (ArithmeticException e) {\n            System.out.println(\"divide by zero\");\n        }\n    }\n}\n",
+    "tests": [
+      { "input": "10 2\n", "expected": "5\n", "hidden": false, "category": "basic" },
+      { "input": "7 0\n", "expected": "divide by zero\n", "hidden": false, "category": "invalid_token" },
+      { "input": "-9 3\n", "expected": "-3\n", "hidden": true, "category": "basic" },
+      { "input": "0 5\n", "expected": "0\n", "hidden": true, "category": "boundary" }
+    ]
+  }
+]

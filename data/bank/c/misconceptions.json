@@ -1,0 +1,147 @@
+[
+  {
+    "name": "off_by_one_loop",
+    "concept": "loops",
+    "description": "Believes a for loop over i < n runs n+1 times, or that i <= n is needed to reach n."
+  },
+  {
+    "name": "loop_includes_last",
+    "concept": "loops",
+    "description": "Believes a loop that steps by one skips the last item or runs one extra time."
+  },
+  {
+    "name": "counter_vs_sum",
+    "concept": "loops",
+    "description": "Confuses the count of iterations with the accumulated total."
+  },
+  {
+    "name": "comparison_is_assignment",
+    "concept": "conditionals",
+    "description": "Reads == (compare) as = (assign) in a condition."
+  },
+  {
+    "name": "else_if_confusion",
+    "concept": "conditionals",
+    "description": "Believes separate if statements are mutually exclusive, or that else pairs with the first if."
+  },
+  {
+    "name": "int_division",
+    "concept": "variables_io",
+    "description": "Believes dividing two ints always gives a fractional result, or that / truncates."
+  },
+  {
+    "name": "scanf_format_mismatch",
+    "concept": "variables_io",
+    "description": "Believes scanf reads a value into a variable without the & address."
+  },
+  {
+    "name": "string_length_off_by_one",
+    "concept": "strings",
+    "description": "Believes strlen counts one fewer or one more than the string has."
+  },
+  {
+    "name": "missing_null_terminator",
+    "concept": "strings",
+    "description": "Forgets that a char array needs a trailing NUL byte to be a string."
+  },
+  {
+    "name": "array_index_off_by_one",
+    "concept": "arrays",
+    "description": "Believes the first element of an array has index 1, or that index length is valid."
+  },
+  {
+    "name": "array_bound_no_check",
+    "concept": "arrays",
+    "description": "Believes reading past the end of an array is safe or returns 0."
+  },
+  {
+    "name": "pointer_offset_vs_value",
+    "concept": "pointers",
+    "description": "Confuses the value a pointer holds with the value at the address it points to."
+  },
+  {
+    "name": "uninitialized_pointer",
+    "concept": "pointers",
+    "description": "Dereferences a pointer before it points anywhere."
+  },
+  {
+    "name": "pass_by_value",
+    "concept": "functions",
+    "description": "Believes a function can rebind the caller's variable by reassigning its argument."
+  },
+  {
+    "name": "return_vs_print",
+    "concept": "functions",
+    "description": "Confuses printing a value with returning it to the caller."
+  },
+  {
+    "name": "missing_base_case",
+    "concept": "recursion",
+    "description": "Forgets the base case, so a recursive function never stops."
+  },
+  {
+    "name": "missing_recursive_return",
+    "concept": "recursion",
+    "description": "Forgets to return the value of the recursive call."
+  },
+  {
+    "name": "struct_copy_by_value",
+    "concept": "structs",
+    "description": "Does not realise that assigning a struct copies all its fields."
+  },
+  {
+    "name": "dot_vs_arrow",
+    "concept": "structs",
+    "description": "Confuses . (on a struct) with -> (through a pointer to a struct)."
+  },
+  {
+    "name": "use_after_free",
+    "concept": "memory",
+    "description": "Reads a pointer after the memory it pointed to has been freed."
+  },
+  {
+    "name": "double_free",
+    "concept": "memory",
+    "description": "Frees the same pointer twice."
+  },
+  {
+    "name": "struct_copy_is_alias",
+    "concept": "structs",
+    "description": "Believes assigning one struct to another makes both names refer to the same data."
+  },
+  {
+    "name": "struct_member_needs_pointer",
+    "concept": "structs",
+    "description": "Believes a struct member can only be reached through a pointer."
+  },
+  {
+    "name": "malloc_counts_bytes_as_items",
+    "concept": "memory",
+    "description": "Believes malloc(n) gives room for n integers rather than n bytes."
+  },
+  {
+    "name": "use_after_free",
+    "concept": "memory",
+    "description": "Believes memory is still safe to use after free, or that free clears the pointer."
+  },
+  {
+    "name": "struct_init_ignored",
+    "concept": "structs",
+    "description": "Believes a struct's initial values are ignored and its members start at zero."
+  },
+  {
+    "name": "compound_update_resets",
+    "concept": "structs",
+    "description": "Believes updating a member through a pointer sets it to the increment."
+  },
+  {
+    "name": "sizeof_is_one_item",
+    "concept": "memory",
+    "description": "Believes n * sizeof(int) is the size of a single int."
+  },
+  {
+    "name": "comparison_prints_word",
+    "concept": "memory",
+    "description": "Believes printing a comparison shows the word it compares against."
+  }
+]

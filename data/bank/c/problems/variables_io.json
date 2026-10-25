@@ -1,0 +1,30 @@
+[
+  {
+    "title": "Sum of two",
+    "statement": "Read two integers separated by a space or a line break. Print their sum.",
+    "concepts": [ { "name": "variables_io", "weight": 1.0 } ],
+    "difficulty_b": -1.5,
+    "discrimination_a": 1.0,
+    "reference_solution": "#include <stdio.h>\nint main(void) {\n    int x, y;\n    scanf(\"%d %d\", &x, &y);\n    printf(\"%d\\n\", x + y);\n    return 0;\n}\n",
+    "tests": [
+      { "input": "2 3\n", "expected": "5\n", "hidden": false, "category": "basic" },
+      { "input": "0 0\n", "expected": "0\n", "hidden": false, "category": "boundary" },
+      { "input": "-4 9\n", "expected": "5\n", "hidden": true, "category": "basic" },
+      { "input": "1000000 2000000\n", "expected": "3000000\n", "hidden": true, "category": "basic" }
+    ]
+  },
+  {
+    "title": "Truncated average",
+    "statement": "Read two integers. Print their average as an integer, dropping any fraction (use integer division of the sum by 2).",
+    "concepts": [ { "name": "variables_io", "weight": 1.0 } ],
+    "difficulty_b": -0.6,
+    "discrimination_a": 1.0,
+    "reference_solution": "#include <stdio.h>\nint main(void) {\n    int x, y;\n    scanf(\"%d %d\", &x, &y);\n    printf(\"%d\\n\", (x + y) / 2);\n    return 0;\n}\n",
+    "tests": [
+      { "input": "3 4\n", "expected": "3\n", "hidden": false, "category": "basic" },
+      { "input": "10 20\n", "expected": "15\n", "hidden": false, "category": "basic" },
+      { "input": "-4 -6\n", "expected": "-5\n", "hidden": true, "category": "basic" },
+      { "input": "1 0\n", "expected": "0\n", "hidden": true, "category": "boundary" }
+    ]
+  }
+]

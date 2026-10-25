@@ -1,0 +1,16 @@
+[
+  {
+    "title": "How long is it",
+    "statement": "Read a single word (no spaces). Print its length.",
+    "concepts": [ { "name": "strings", "weight": 1.0 } ],
+    "difficulty_b": -0.9,
+    "discrimination_a": 1.0,
+    "reference_solution": "#include <stdio.h>\n#include <string.h>\n\nint main(void) {\n    char s[100];\n    scanf(\"%99s\", s);\n    printf(\"%d\\n\", (int)strlen(s));\n    return 0;\n}\n",
+    "tests": [
+      { "input": "hello\n", "expected": "5\n", "hidden": false, "category": "basic" },
+      { "input": "a\n", "expected": "1\n", "hidden": false, "category": "basic" },
+      { "input": "abcd\n", "expected": "4\n", "hidden": true, "category": "basic" },
+      { "input": "programming\n", "expected": "11\n", "hidden": true, "category": "basic" }
+    ]
+  }
+]
