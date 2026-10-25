@@ -74,7 +74,20 @@ def test_an_exhausted_connection_pool_answers_503_with_retry_after(make_user):
 def test_the_pool_covers_the_servers_worker_threads_and_fails_fast():
     settings = get_settings()
     pool = get_engine().pool
-    assert pool.size() + pool._max_overflow >= 40
+    assert pool.size() + pool._max_overflow >= settings.server_threads
     assert pool.timeout() == settings.db_pool_timeout_s <= 10
     chat_pool = get_chat_engine().pool
-    assert chat_pool.size() + chat_pool._max_overflow >= 40  # a chat request holds a connection from each pool
+    assert chat_pool.size() + chat_pool._max_overflow >= settings.server_threads  # a chat request holds one from each
+
+
+def test_the_server_starts_with_the_configured_number_of_worker_threads():
+    import anyio
+    import anyio.to_thread
+
+    from app.main import app, lifespan
+
+    async def started() -> int:
+        async with lifespan(app):
+            return anyio.to_thread.current_default_thread_limiter().total_tokens
+
+    assert anyio.run(started) == get_settings().server_threads == 70

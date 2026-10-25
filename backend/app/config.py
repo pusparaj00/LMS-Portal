@@ -17,9 +17,11 @@ class Settings(BaseSettings):
     mastery_service_token: str
     jwt_expire_minutes: int = 60
     # One request holds one connection for its whole run (a chat request holds one from each of two pools), so each pool
-    # must cover the server's worker threads (40). Postgres is started with max_connections=200 to fit both.
-    db_pool_size: int = 30
-    db_max_overflow: int = 10
+    # must cover the server's worker threads. Postgres is started with max_connections=200: 70 + 70 here and about 15
+    # for the mastery service and the worker. Measured in docs/results/step-70-small-fixes.md.
+    server_threads: int = 70  # requests running at once
+    db_pool_size: int = 45
+    db_max_overflow: int = 25
     db_pool_timeout_s: float = 10
     retention_days: int = 0  # erase a student's data after this many days without activity; 0 keeps it
     audit_retention_days: int = 0  # remove audit events older than this; 0 keeps them

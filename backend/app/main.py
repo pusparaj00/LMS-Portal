@@ -1,7 +1,9 @@
 import logging
 import time
 import uuid
+from contextlib import asynccontextmanager
 
+import anyio.to_thread
 from fastapi import FastAPI, Request
 from starlette.concurrency import run_in_threadpool
 
@@ -47,7 +49,16 @@ configure_logging()
 get_settings()  # read and checked now, so weak production secrets stop the process at start (TR-O-04)
 log = logging.getLogger("app.request")
 
-app = FastAPI(title="Adaptive AI-Powered LMS API", version="1.0.0")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """How many requests may run at once: every plain `def` endpoint runs in one of these worker threads (G-3)."""
+    anyio.to_thread.current_default_thread_limiter().total_tokens = get_settings().server_threads
+    yield
+
+
+app = FastAPI(title="Adaptive AI-Powered LMS API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(BodySizeLimit)
 install_error_handlers(app)
 
