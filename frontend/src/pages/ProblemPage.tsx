@@ -192,7 +192,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
               maxLength={10000}
               rows={3}
               spellCheck={false}
-              placeholder="Type what the program should read with input(), one line per call"
+              placeholder="Type what the program should read from standard input, one line per read"
               onChange={(e) => setStdin(e.target.value)}
             />
           </label>
