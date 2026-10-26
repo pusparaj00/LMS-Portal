@@ -2,8 +2,9 @@
 
   python -m evaluation.rating_sheet generate SHEET.csv KEY.csv   # needs the model; run in the api container
   python -m evaluation.rating_sheet compute SHEET.csv KEY.csv    # after two reviewers have filled the sheet
-  python -m evaluation.rating_sheet llm-rate SHEET.csv OUT.csv groq,mistral   # stand-in panel of two LLM providers,
-                                                                              # labelled in `notes`; not human reviewers
+  python -m evaluation.rating_sheet llm-rate SHEET.csv OUT.csv groq,mistral   # stand-in panel of two LLM raters
+                                                                              # (provider or provider:model), labelled in
+                                                                              # `notes`; not human reviewers
 
 generate: for 20 failing submissions it collects (A) the explanation a student would see from the verified flow and
 (B) an explanation from a plain LLM call given the same problem, code and run result, with no verifier and no guard. For each
@@ -203,8 +204,9 @@ def llm_rate(sheet_path: str, out_path: str, providers: list[str]) -> None:
 
     settings = get_settings()
     raters = []
-    for provider in providers:
-        model = getattr(settings, OPENAI_COMPATIBLE[provider][2])
+    for entry in providers:
+        provider, _, model = entry.partition(":")
+        model = model or getattr(settings, OPENAI_COMPATIBLE[provider][2])
         raters.append(build_adapter(settings.model_copy(
             update={"llm_provider": provider, "llm_model": model, "llm_fallback": ""})))
     with open(sheet_path, encoding="utf-8", newline="") as handle:
@@ -217,6 +219,8 @@ def llm_rate(sheet_path: str, out_path: str, providers: list[str]) -> None:
                 problem=row["problem"], statement=row["statement"], code=row["student_code"],
                 error=row["error_type"] or "none", failed=row["failed_categories"], explanation=row[f"explanation_{slot}"])
             for number, rater in enumerate(raters, 1):
+                if row[f"r{number}_exp{slot}"]:
+                    continue  # rated on an earlier pass; running again on the output only fills the gaps
                 try:
                     match = re.match(r"\s*\**RATING:\s*([01])", rater.complete(RATER_SYSTEM, prompt))
                 except LLMError as exc:

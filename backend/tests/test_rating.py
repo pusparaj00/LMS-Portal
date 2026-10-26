@@ -78,15 +78,15 @@ def test_llm_panel_fills_the_columns_labels_the_rows_and_leaves_unreadable_answe
 
     from app.llm import adapter
 
-    raters = [FakeRater("groq", ["RATING: 1 fine", "**RATING: 0** wrong"]), FakeRater("mistral", ["RATING: 1", "I think it is ok"])]
+    raters = [FakeRater("groq", ["RATING: 1 fine"]), FakeRater("mistral", ["RATING: 1", "I think it is ok"])]
     monkeypatch.setattr(adapter, "build_adapter", lambda settings: raters.pop(0))
     sheet = tmp_path / "s.csv"
     with open(sheet, "w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=rs.SHEET_FIELDS)
         writer.writeheader()
-        writer.writerow({f: "x" for f in rs.SHEET_FIELDS} | {"r1_exp1": "", "r1_exp2": "", "r2_exp1": "", "r2_exp2": "", "notes": ""})
+        writer.writerow({f: "x" for f in rs.SHEET_FIELDS} | {"r1_exp1": "0", "r1_exp2": "", "r2_exp1": "", "r2_exp2": "", "notes": ""})
     out = tmp_path / "o.csv"
     rs.llm_rate(str(sheet), str(out), ["groq", "mistral"])
     row = next(csv.DictReader(open(out, encoding="utf-8", newline="")))
-    assert (row["r1_exp1"], row["r1_exp2"], row["r2_exp1"], row["r2_exp2"]) == ("1", "0", "1", "")
+    assert (row["r1_exp1"], row["r1_exp2"], row["r2_exp1"], row["r2_exp2"]) == ("0", "1", "1", "")
     assert row["notes"].startswith("LLM-rated, not human") and "groq:m" in row["notes"]
