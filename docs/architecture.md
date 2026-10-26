@@ -210,5 +210,27 @@ Status after steps 68 to 70 (2026-10-25; numbers in `docs/results/step-68-placem
   fails because their mastery hardly varies. All of this is simulated; only a pilot can settle it.
 - G-14: a problem without a hidden test is refused. G-15: a past due date needs the teacher's confirmation.
 
+Status after steps 71 to 78 (2026-10-26; numbers and limits in `docs/results/step-72-targets.md` to
+`step-78-adversarial-coverage.md`):
+- Verifier (G-1): the rate quoted for step 71 (93%) was measured when the verifier checked a claim's shape only. Step 75 made it
+  test the claim against the sandbox (a claim needs an example input and a prediction of the student's output; a wrong
+  prediction rejects it). The verify rate with the new rules has not been measured under a healthy provider: five runs on
+  2026-10-26 ranged from 21% to 75% while Gemini's latency rose from 1.6 s to 16 to 23 s per call and the PC went into standby.
+- G-4: the PRD and TRD placement target is now what the simulator can reach (step 72). Everything is still synthetic.
+- G-5: still open. A stand-in panel of two LLM raters (labelled, not human) scored the verified flow below the plain call
+  (12 of 20 against 17 of 20 correct by both raters) on the sheet from before step 75; it has not been re-run.
+- G-6: open; no real student has used the system.
+- G-7: decided by limiting scope. Open chat answers carry a label saying they are not from the notes and not checked, and the
+  model is told not to diagnose a student's own program (step 76). Their claims are not verified.
+- G-8: HSTS and a CSP are served by Caddy and were checked in Chromium on the local production rehearsal with 0 violations
+  (step 77); `scripts/offsite-copy.sh` copies a dump away and checks it by checksum (folder target tested; the `scp` branch
+  was not run). The real server, a measured peak memory and a real certificate are still open.
+- G-10, G-11, G-13: dropped from scope by the owner on 2026-10-26 and kept here as future work.
+- G-12: open; it needs the institution's data-protection contact.
+- G-16: done. 522 test accounts and 54 test courses were removed on 2026-10-26 (559 to 37 users, 64 to 10 courses; step 73);
+  `main` exists and was fast-forwarded to the step 77 tip; CI passed on the step branches.
+- G-17: unchanged; the harness stays outside the repository (AGPL) until the owner decides.
+- G-18: a 32-student, 30-step run found 0 server errors (step 78); requests for the full solution are still barely exercised.
+
 Fixed in steps 58 to 62 (so the table above does not list them): the code editor loading from a CDN (the student's address went to a third party; it is now bundled); short reference solutions leaking through the guard; weak production secrets not stopping the API at start; the proxy sharing one rate-limit bucket on non-172 Docker networks; the database connection pool exhaustion and the starvation of cheap requests under concurrent model-backed requests; concept hints served from notes without a leak check.
 

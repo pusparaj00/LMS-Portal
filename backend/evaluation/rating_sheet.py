@@ -21,6 +21,7 @@ import csv
 import os
 import random
 import sys
+import time
 from collections import Counter
 from datetime import UTC, datetime
 
@@ -32,6 +33,9 @@ SHEET_FIELDS = [
 ]
 KEY_FIELDS = ["id", "explanation_1_is", "explanation_2_is", "verified_status", "verified_attempts", "provider"]
 SEED = 2026
+# Seconds between submissions, to stay under a free tier's per-minute limit (Groq's is 8000 tokens a minute, which
+# allows about three explanation calls); RATING_PAUSE_SECONDS raises it.
+PAUSE_SECONDS = float(os.environ.get("RATING_PAUSE_SECONDS", "8"))
 PLAIN_SYSTEM = "You are a helpful Python tutor for students."
 
 # (problem title, wrong code). The first ten reuse the Step 4 submissions; ten more cover other concepts and mistakes.
@@ -102,6 +106,9 @@ def generate(sheet_path: str, key_path: str) -> None:
             print(f"skipped {title}: the code passed", file=sys.stderr)
             continue
         reply = client.post(f"{api}/submissions/{submitted['submission_id']}/explain", headers=headers).json()
+        if "status" not in reply:
+            print(f"skipped {title}: the explain request returned {str(reply)[:80]}", file=sys.stderr)
+            continue
         shown = f"{reply['explanation']['claim']} (line {reply['explanation']['line']})" if reply["explanation"] else reply["fallback_text"]
         failed = ", ".join(submitted["failed_categories"]) or "none"
         run_result = f"status {submitted['status']}, error type {submitted['error_type'] or 'none'}, failed test categories: {failed}"
@@ -125,6 +132,7 @@ def generate(sheet_path: str, key_path: str) -> None:
             "verified_status": reply["status"], "verified_attempts": reply["attempts"], "provider": plain.config.provider,
         })
         print(f"{number}. {title}: verified flow {reply['status']} ({reply['attempts']} attempts)", file=sys.stderr)
+        time.sleep(PAUSE_SECONDS)
     for path, fields, rows in ((sheet_path, SHEET_FIELDS, sheet), (key_path, KEY_FIELDS, key)):
         with open(path, "w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=fields)
