@@ -61,3 +61,32 @@ def test_an_empty_sheet_says_there_are_no_ratings_instead_of_inventing_numbers()
     result = rs.compute([row(1)], [key(1, "verified")])
     assert result["verified"]["r1"] == "no ratings yet" and result["agreement"] is None
     assert "n/a" in rs.report(result)
+
+
+class FakeRater:
+    def __init__(self, provider, answers):
+        self.config = type("C", (), {"provider": provider, "model": "m"})()
+        self.answers, self.seen = answers, []
+
+    def complete(self, system, user, json_schema=None):
+        self.seen.append(user)
+        return self.answers.pop(0)
+
+
+def test_llm_panel_fills_the_columns_labels_the_rows_and_leaves_unreadable_answers_blank(tmp_path, monkeypatch):
+    import csv
+
+    from app.llm import adapter
+
+    raters = [FakeRater("groq", ["RATING: 1 fine", "**RATING: 0** wrong"]), FakeRater("mistral", ["RATING: 1", "I think it is ok"])]
+    monkeypatch.setattr(adapter, "build_adapter", lambda settings: raters.pop(0))
+    sheet = tmp_path / "s.csv"
+    with open(sheet, "w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=rs.SHEET_FIELDS)
+        writer.writeheader()
+        writer.writerow({f: "x" for f in rs.SHEET_FIELDS} | {"r1_exp1": "", "r1_exp2": "", "r2_exp1": "", "r2_exp2": "", "notes": ""})
+    out = tmp_path / "o.csv"
+    rs.llm_rate(str(sheet), str(out), ["groq", "mistral"])
+    row = next(csv.DictReader(open(out, encoding="utf-8", newline="")))
+    assert (row["r1_exp1"], row["r1_exp2"], row["r2_exp1"], row["r2_exp2"]) == ("1", "0", "1", "")
+    assert row["notes"].startswith("LLM-rated, not human") and "groq:m" in row["notes"]
