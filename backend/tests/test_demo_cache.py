@@ -79,7 +79,7 @@ def test_different_code_gets_the_live_flow_not_the_cache(client, make_user, worl
     cache(entry())
     _, headers = new_student(client, make_user, world)
     sid = failed_submission(client, world, headers, code="print('something else')\n")
-    fake = llm(FakeLLM(good_reply(owner, sid, world)))
+    fake = llm(FakeLLM(good_reply(owner, sid, world, predicted_output="something else")))
     body = explain(client, headers, sid).json()
     assert body["cached"] is False and len(fake.calls) == 1
 

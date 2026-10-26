@@ -127,6 +127,7 @@ def good_reply(owner, submission_id, world, **changes):
     reply = {
         "failing_test_id": failing, "line": 1, "concept_id": world["loops"], "source_chunk_ids": [],
         "claim": "Your program prints a fixed word instead of using the number it reads.", "hint_level": 2,
+        "example_input": "5", "predicted_output": "wrong",  # what WRONG really prints on 5
     }
     return json.dumps({**reply, **changes})
 
@@ -157,7 +158,7 @@ def test_a_verified_explanation_is_returned_and_every_check_is_logged(client, ma
     assert {r["check_name"] for r in rows} >= {"json_valid", "test_exists", "line_exists", "concept_matches",
                                                 "sources_real", "no_code_leak", "final"}
     assert all(r["passed"] for r in rows)
-    assert {(r["model"], r["prompt_version"]) for r in rows} == {("fake-model", "explain-v3")}
+    assert {(r["model"], r["prompt_version"]) for r in rows} == {("fake-model", "explain-v4")}
 
 
 def test_the_prompt_carries_the_evidence_and_treats_student_text_as_data(client, make_user, world, owner, llm):

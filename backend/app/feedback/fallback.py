@@ -30,10 +30,30 @@ CONCEPT_TEMPLATES = {
 }
 
 
+# What to look at for a failing test category that says what kind of input broke the program. A category with a sentence
+# here replaces the concept sentence, which is about the whole topic and can point at something the code already does.
+CATEGORY_TEMPLATES = {
+    "boundary": "Look at the values exactly on the edge between two cases: does each comparison include or exclude "
+    "the edge value?",
+    "zero": "Try the program by hand with the input 0 and follow what each line does with it.",
+    "negative_numbers": "Try the program by hand with a negative number and follow what each line does with it.",
+    "empty_input": "Try the program by hand with nothing to process and follow what each line does with it.",
+    "single_item": "Try the program by hand with just one item and follow what each line does with it.",
+    "large_input": "Think about how much work your program does when the input is very large.",
+    "duplicates": "Try the program by hand with the same value appearing twice and follow what each line does with it.",
+    "base_case": "Check what your program does for the smallest possible input before any repeating step starts.",
+}
+
+
 def template_hint(error_type: str | None, concept_name: str | None, failed_categories: list[str]) -> str:
     parts = [ERROR_TEMPLATES.get(error_type, ERROR_TEMPLATES["runtime_error"])]
     if error_type is None and failed_categories:
         parts.append("Failing categories: " + ", ".join(c.replace("_", " ") for c in failed_categories) + ".")
-    if concept_name in CONCEPT_TEMPLATES:
+    specific = [CATEGORY_TEMPLATES[c] for c in failed_categories if c in CATEGORY_TEMPLATES]
+    if error_type is not None:
+        specific = []
+    if specific:
+        parts.append(specific[0])
+    elif concept_name in CONCEPT_TEMPLATES:
         parts.append(CONCEPT_TEMPLATES[concept_name])
     return " ".join(parts)

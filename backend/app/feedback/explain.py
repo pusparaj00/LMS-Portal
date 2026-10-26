@@ -17,6 +17,7 @@ from app.feedback.verifier import JSON_SCHEMA, Check, Evidence, Explanation, all
 from app.llm.adapter import MIN_USEFUL_SECONDS, LLMAdapter, LLMError, deadline_within
 from app.retrieval import store
 from app.retrieval.store import Source
+from app.sandbox import SandboxUnavailable, run_batch
 
 log = logging.getLogger("app.feedback")
 MAX_ATTEMPTS = 2  # one try and one retry (TR-L-04, TR-P-08)
@@ -49,6 +50,26 @@ def retrieve(conn: Connection, ctx: ExplainContext, min_score: float) -> list[So
     return []
 
 
+MAX_OBSERVED_CHARS = 200
+
+
+def observe(ctx: ExplainContext) -> dict[int, str]:
+    """What the student's program prints on each visible failed test, so the model starts from what the code really
+    does (the student sees these outputs on the results page). Nothing is observed if the sandbox is unavailable."""
+    visible = [t for t in ctx.failed_tests if not t.hidden]
+    if not visible:
+        return {}
+    try:
+        outcomes = run_batch(ctx.code, [t.input if t.input.endswith("\n") else t.input + "\n" for t in visible])
+    except SandboxUnavailable:
+        return {}
+    return {
+        t.id: o.stdout.strip()[:MAX_OBSERVED_CHARS] if o.status == "ok"
+        else f"(stopped with a {o.status.replace('_', ' ')}; printed {o.stdout.strip()[:MAX_OBSERVED_CHARS]!r} before)"
+        for t, o in zip(visible, outcomes, strict=True)
+    }
+
+
 def log_checks(
     conn: Connection, submission_id: int, attempt: int, adapter: LLMAdapter, checks: list[Check]
 ) -> None:
@@ -75,11 +96,14 @@ def run_explain(
     evidence = Evidence(
         code=ctx.code, reference_solution=ctx.reference_solution, failed_tests=ctx.failed_tests,
         error_concept_ids=ctx.error_concept_ids, retrieved_chunk_ids=frozenset(s.chunk_id for s in sources),
-        hidden_inputs=ctx.hidden_inputs, error_type=ctx.error_type, leak_threshold=ctx.leak_threshold,
+        hidden_inputs=ctx.hidden_inputs, visible_texts=ctx.visible_texts, error_type=ctx.error_type,
+        leak_threshold=ctx.leak_threshold,
+        require_example=True, require_prediction=True,
     )
+    observed = observe(ctx)
     previous: list[Check] | None = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        system, user = build_prompt(ctx, sources, previous)
+        system, user = build_prompt(ctx, sources, previous, observed)
         explanation: Explanation | None = None
         example: ExampleRun | None = None
         left = budget_s - (time.monotonic() - started) - CHECK_RESERVE_S

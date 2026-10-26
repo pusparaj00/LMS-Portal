@@ -38,6 +38,7 @@ JSON_SCHEMA = {
         "source_chunk_ids": {"type": "array", "items": {"type": "integer"}},
         "hint_level": {"type": "integer"},
         "example_input": {"type": "string"},
+        "predicted_output": {"type": "string"},
     },
     "required": list(REQUIRED),
 }
@@ -63,8 +64,14 @@ class Evidence:
     error_concept_ids: frozenset[int]  # concepts linked to the run's error type, if it had one
     retrieved_chunk_ids: frozenset[int]
     hidden_inputs: frozenset[str] = frozenset()  # every hidden test input of the problem, passed or failed
+    # Inputs and outputs of the visible tests. A value the student already sees is not secret, even when a hidden test
+    # happens to expect the same word (such as "even"), so a claim may use it.
+    visible_texts: frozenset[str] = frozenset()
     error_type: str | None = None  # the run's error_type, used to keep syntax errors on the syntax concept
     leak_threshold: float = leak.SIMILARITY_THRESHOLD  # the problem's leak policy (F-62)
+    # A claim that can be tried must be tried (TR-L-05). A syntax error stops the program, so there is nothing to try.
+    require_example: bool = False  # the reply must name an input the sandbox can run
+    require_prediction: bool = False  # and say what the student's program prints on it, which the sandbox compares
 
 
 @dataclass(frozen=True)
@@ -82,7 +89,8 @@ class Explanation:
     claim: str
     source_chunk_ids: list[int]
     hint_level: int
-    example_input: str = ""  # optional: an input on which the claim says the program goes wrong (TR-L-05)
+    example_input: str = ""  # an input on which the claim says the program goes wrong (TR-L-05)
+    predicted_output: str | None = None  # what the model says the student's program prints on that input
 
 
 def parse(raw: str) -> tuple[Explanation | None, Check]:
@@ -101,7 +109,11 @@ def parse(raw: str) -> tuple[Explanation | None, Check]:
     example = data.get("example_input")
     if example is not None and not isinstance(example, str):
         return None, Check("json_valid", False, "field 'example_input' must be text")
-    return Explanation(**{k: data[k] for k in REQUIRED}, example_input=example or ""), Check("json_valid", True)
+    predicted = data.get("predicted_output")
+    if predicted is not None and not isinstance(predicted, str):
+        return None, Check("json_valid", False, "field 'predicted_output' must be text")
+    explanation = Explanation(**{k: data[k] for k in REQUIRED}, example_input=example or "", predicted_output=predicted)
+    return explanation, Check("json_valid", True)
 
 
 def _squash(text: str) -> str:
@@ -143,6 +155,7 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
         if t.hidden:
             hidden_secrets.update(s.strip() for s in (t.input, t.expected))
     hidden_secrets = {s for s in hidden_secrets if len(s) >= MIN_HIDDEN_TEXT}
+    hidden_secrets -= {v.strip() for v in evidence.visible_texts}
     leaked = [s for s in hidden_secrets if s in explanation.claim]
     example = explanation.example_input.strip()
     if example and example in hidden_secrets:
@@ -181,6 +194,13 @@ def verify(raw: str, evidence: Evidence) -> tuple[Explanation | None, list[Check
             "" if example_ok else f"example_input is longer than {MAX_EXAMPLE_CHARS} characters or holds a NUL",
         ),
     ]
+    if evidence.require_example and evidence.error_type != "syntax_error":
+        missing = []
+        if not example:
+            missing.append("example_input")
+        if evidence.require_prediction and explanation.predicted_output is None:
+            missing.append("predicted_output")
+        checks.append(Check("claim_testable", not missing, f"missing: {', '.join(missing)}" if missing else ""))
     return explanation, checks
 
 

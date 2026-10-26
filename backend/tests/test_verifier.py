@@ -171,3 +171,56 @@ def test_code_the_claim_quotes_may_come_from_the_students_program_or_plain_pytho
 ])
 def test_code_the_claim_quotes_that_is_not_in_the_students_program_is_rejected(claim):
     assert failed_checks(reply(claim=claim)) == {"quoted_code_is_theirs"}
+
+
+def testable(error_type=None, prediction=True) -> Evidence:
+    return Evidence(
+        code=CODE, reference_solution=REFERENCE, failed_tests=EVIDENCE.failed_tests, error_concept_ids=frozenset(),
+        retrieved_chunk_ids=frozenset({7, 8}), error_type=error_type, require_example=True, require_prediction=prediction,
+    )
+
+
+def test_a_claim_without_an_example_and_a_prediction_is_not_testable_when_they_are_required():
+    _, checks = verify(reply(), testable())
+    missing = next(c for c in checks if c.name == "claim_testable")
+    assert not missing.passed and missing.detail == "missing: example_input, predicted_output"
+    _, checks = verify(reply(example_input="5"), testable())
+    assert next(c for c in checks if c.name == "claim_testable").detail == "missing: predicted_output"
+
+
+def test_an_empty_prediction_is_a_prediction_the_program_prints_nothing():
+    _, checks = verify(reply(example_input="5", predicted_output=""), testable())
+    assert all_passed(checks)
+
+
+def test_a_cached_claim_needs_an_example_but_no_prediction():
+    _, checks = verify(reply(example_input="5"), testable(prediction=False))
+    assert all_passed(checks)
+    _, checks = verify(reply(), testable(prediction=False))
+    assert "claim_testable" in {c.name for c in checks if not c.passed}
+
+
+def test_a_syntax_error_needs_no_example_because_no_program_runs():
+    _, checks = verify(reply(), testable(error_type="syntax_error"))
+    assert "claim_testable" not in {c.name for c in checks}
+
+
+def test_the_check_is_not_added_when_nothing_is_required():
+    _, checks = verify(reply(), EVIDENCE)
+    assert "claim_testable" not in {c.name for c in checks}
+
+
+def test_a_prediction_that_is_not_text_is_rejected():
+    assert failed_checks(reply(predicted_output=5)) == {"json_valid"}
+
+
+def test_a_value_the_student_can_already_see_is_not_a_hidden_value_but_a_hidden_input_still_is():
+    evidence = Evidence(
+        code=CODE, reference_solution=REFERENCE, failed_tests=EVIDENCE.failed_tests, error_concept_ids=frozenset(),
+        retrieved_chunk_ids=frozenset({7, 8}), visible_texts=frozenset({"5000050000"}),
+    )
+    seen = reply(claim="A sum such as 5000050000 needs the loop to reach the last number.")
+    assert all_passed(verify(seen, evidence)[1])
+    assert not all_passed(verify(seen, EVIDENCE)[1])  # without the visible texts the same claim is held back
+    _, checks = verify(reply(claim="It breaks for the input 100000."), evidence)
+    assert "no_hidden_test_leak" in {c.name for c in checks if not c.passed}

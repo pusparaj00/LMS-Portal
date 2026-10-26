@@ -27,6 +27,7 @@ class ExplainContext:
     concepts: dict[int, str]  # every concept an explanation may legitimately name
     primary_concept_id: int | None
     hidden_inputs: frozenset[str] = frozenset()
+    visible_texts: frozenset[str] = frozenset()  # inputs and outputs of the visible tests: the student sees them
     leak_threshold: float = 0.7  # the problem's leak policy, or the tuned default (F-62)
 
     @property
@@ -99,6 +100,13 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
             text("SELECT input FROM test_cases WHERE problem_id = :p AND hidden"), {"p": row.problem_id}
         ).scalars()
     )
+    visible_texts = frozenset(
+        value.strip()
+        for row_ in conn.execute(
+            text("SELECT input, expected FROM test_cases WHERE problem_id = :p AND NOT hidden"), {"p": row.problem_id}
+        )
+        for value in row_
+    )
     candidate_ids = set(problem) | set(error_concepts).union(*(t.concept_ids for t in failed_tests))
     names = dict(
         conn.execute(text("SELECT id, name FROM concepts WHERE id = ANY(:ids)"), {"ids": list(candidate_ids)}).all()
@@ -111,6 +119,6 @@ def load_context(conn: Connection, submission_id: int, user_id: int) -> ExplainC
         reference_solution=row.reference_solution or "", status=row.status, error_type=row.error_type,
         stderr=row.stderr or "", failed_categories=list(row.failed_categories), failed_tests=failed_tests,
         error_concept_ids=error_concepts, concepts=names, primary_concept_id=primary,
-        hidden_inputs=hidden_inputs,
+        hidden_inputs=hidden_inputs, visible_texts=visible_texts,
         leak_threshold=row.leak_threshold if row.leak_threshold is not None else leak.SIMILARITY_THRESHOLD,
     )

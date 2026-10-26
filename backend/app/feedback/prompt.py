@@ -5,7 +5,7 @@ from app.feedback.context import ExplainContext
 from app.feedback.verifier import Check
 from app.retrieval.store import Source
 
-PROMPT_VERSION = "explain-v3"
+PROMPT_VERSION = "explain-v4"
 MAX_STDERR_CHARS = 500
 # Every data block any prompt uses; student text must never be able to open or close one.
 TAGS = (
@@ -30,9 +30,16 @@ Rules:
 4. concept_id must be one of the ids listed in <concept>.
 5. source_chunk_ids may only contain ids from <course_notes>. Use an empty list if none of them applies.
 6. hint_level: 1 = a hint about the concept, 2 = a hint that points at the place in the code.
-7. example_input is optional. If your claim says the program goes wrong on a specific input, give that input exactly
-   as it would be typed, and it must be an input on which the program really prints something different from the
-   correct program. Never use an input from a hidden test. Otherwise leave example_input empty.
+7. example_input and predicted_output are required, except when the error type is a syntax error (then leave both
+   empty). Choose a short input, typed exactly as a student would type it, on which the student's program prints
+   something different from the correct program and which shows your claim. In predicted_output write exactly what
+   the STUDENT's program prints for that input: only the text its print calls write, exactly as written. An error
+   message or a traceback is not printed output, so a program that crashes before it prints anything gives an empty
+   string. Never describe the output in words. Work it out by tracing the student's code line by line. Where
+   <run_result> says what the student's program printed on a visible test, use it: it shows what the code really
+   does. Your prediction is run in the sandbox, and the claim is rejected if the program prints something else.
+   Never use an input from a hidden test. The usual textbook values (the edge of a range, 0, 1, a famous year) are
+   often hidden tests, so prefer an input of your own that still shows the claim.
 8. Reply with JSON only, matching the schema."""
 
 
@@ -49,12 +56,20 @@ FIXES = {
     "quoted_code_is_theirs": "Put in backticks only an expression copied exactly from <student_code>. Describe any "
                              "change in words and do not put suggested code in backticks.",
     "no_code_leak": "Do not write code that solves the problem. Describe the idea in words only.",
-    "no_hidden_test_leak": "Do not state any specific input or output value from the tests. Describe the kind of "
-                           "input in words (for example 'a year divisible by 100' or 'an empty list') and leave "
-                           "example_input empty.",
-    "example_input_ok": "Leave example_input empty, or give a short input of at most 300 characters.",
-    "claimed_input": "If you cannot name an input on which the correct program runs and the student's program prints "
-                     "something different, leave example_input empty and do not mention a specific input in the claim.",
+    "no_hidden_test_leak": "Do not state any specific input or output value from the tests, in the claim or in "
+                           "example_input. Describe the kind of input in words in the claim. If your example_input "
+                           "was the cause, choose a different input of your own, with other digits or values and not "
+                           "a textbook one.",
+    "example_input_ok": "Give a short example_input of at most 300 characters.",
+    "claim_testable": "Fill example_input with an input on which the student's program prints something different "
+                      "from the correct program, and predicted_output with exactly what the student's program prints "
+                      "for it.",
+    "predicted_output": "Your prediction of the student's output was wrong, so your idea of what the code does is "
+                        "wrong. predicted_output is only the text the print calls write, and is empty when the "
+                        "program crashes before printing. Trace the student's code again line by line on your "
+                        "example, then rewrite the claim so that it matches what the program really does.",
+    "claimed_input": "Name an input on which the correct program runs and the student's program prints something "
+                     "different from it.",
 }
 
 
@@ -77,13 +92,17 @@ def _numbered(code: str) -> str:
 
 
 def build_prompt(
-    ctx: ExplainContext, sources: list[Source], previous_failures: list[Check] | None = None
+    ctx: ExplainContext, sources: list[Source], previous_failures: list[Check] | None = None,
+    observed: dict[int, str] | None = None,
 ) -> tuple[str, str]:
+    """`observed` maps a visible failed test id to what the student's program really printed on it."""
     failed = []
     for t in ctx.failed_tests:
         line = f"- test {t.id}, category {t.category}, {'hidden' if t.hidden else 'visible'}"
         if not t.hidden:
             line += f", input {t.input.strip()!r}, expected output {t.expected.strip()!r}"
+            if observed and t.id in observed:
+                line += f", the student's program printed {neutralise(observed[t.id])!r}"
         failed.append(line)
     stderr = neutralise(ctx.stderr.strip()[-MAX_STDERR_CHARS:]) or "(none)"
     concepts = "\n".join(

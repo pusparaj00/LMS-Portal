@@ -29,7 +29,14 @@ def _shown(outcome) -> str:
     return (text[:MAX_SHOWN_OUTPUT] + "...") if len(text) > MAX_SHOWN_OUTPUT else text or "(nothing was printed)"
 
 
-def run_claim(code: str, reference_solution: str, example_input: str) -> tuple[Check, ExampleRun | None]:
+PREDICTION_CHECK_NAME = "predicted_output"
+# A program stopped for time, memory or output has no stable output to compare a prediction with.
+PREDICTABLE = ("ok", "runtime_error")
+
+
+def run_claim(
+    code: str, reference_solution: str, example_input: str, predicted_output: str | None = None
+) -> tuple[Check, ExampleRun | None]:
     if not reference_solution.strip():
         return Check(CHECK_NAME, False, "there is no reference solution to compare with"), None
     stdin = example_input if example_input.endswith("\n") else example_input + "\n"
@@ -43,6 +50,14 @@ def run_claim(code: str, reference_solution: str, example_input: str) -> tuple[C
     if student.status == "ok" and normalise(student.stdout) == normalise(reference.stdout):
         same = "the student's program prints the same output as the correct program on the example input"
         return Check(CHECK_NAME, False, same), None
+    if (
+        predicted_output is not None and student.status in PREDICTABLE
+        and normalise(student.stdout) != normalise(predicted_output)
+    ):
+        really = student.stdout.strip()[:MAX_SHOWN_OUTPUT]
+        detail = (f"on that input the student's program really prints {really!r} (status {student.status}), "
+                  f"but you predicted {predicted_output.strip()[:MAX_SHOWN_OUTPUT]!r}")
+        return Check(PREDICTION_CHECK_NAME, False, detail), None
     return Check(CHECK_NAME, True), ExampleRun(input=example_input.strip("\n"), student_output=_shown(student))
 
 
@@ -51,6 +66,8 @@ def verify_with_example(raw: str, evidence: Evidence) -> tuple[Explanation | Non
     explanation, checks = verify(raw, evidence)
     example = None
     if explanation is not None and all_passed(checks) and explanation.example_input.strip():
-        check, example = run_claim(evidence.code, evidence.reference_solution, explanation.example_input)
+        check, example = run_claim(
+            evidence.code, evidence.reference_solution, explanation.example_input, explanation.predicted_output
+        )
         checks.append(check)
     return explanation, checks, example

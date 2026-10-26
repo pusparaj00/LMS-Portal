@@ -74,7 +74,7 @@ def test_an_explanation_quoting_part_of_the_solution_obeys_the_problems_policy(
     try:
         _, headers = new_student(client, make_user, world)
         sid = failed_submission(client, world, headers, code=P_STUDENT)
-        reply = good_reply(owner, sid, world, claim=P_CLAIM)
+        reply = good_reply(owner, sid, world, claim=P_CLAIM, predicted_output="6\n0")
         llm(FakeLLM(reply, reply, reply))
         body = explain(client, headers, sid).json()
         assert body["status"] == expected

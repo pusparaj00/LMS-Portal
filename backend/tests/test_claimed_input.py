@@ -52,7 +52,7 @@ def test_an_input_on_which_the_program_really_differs_is_verified_and_shown_with
     assert len(sandbox_calls) == 2  # the student's program and the reference, each once
     rows = check_rows(owner, sid)
     assert any(r["check_name"] == "claimed_input" and r["passed"] for r in rows)
-    assert {r["prompt_version"] for r in rows} == {"explain-v3"}
+    assert {r["prompt_version"] for r in rows} == {"explain-v4"}
 
 
 def test_an_input_on_which_the_program_already_gives_the_right_answer_is_rejected_then_retried(
@@ -60,7 +60,8 @@ def test_an_input_on_which_the_program_already_gives_the_right_answer_is_rejecte
 ):
     _, headers = new_student(client, make_user, world)
     sid = failed_submission(client, world, headers, code=PRINTS_TWO)
-    fake = llm(FakeLLM(good_reply(owner, sid, world, example_input="1"), good_reply(owner, sid, world, example_input="5")))
+    fake = llm(FakeLLM(good_reply(owner, sid, world, example_input="1", predicted_output="2"),
+                       good_reply(owner, sid, world, example_input="5", predicted_output="2")))
     body = explain(client, headers, sid).json()
     assert body["status"] == "verified" and body["attempts"] == 2 and body["explanation"]["example_input"] == "5"
     assert "same output as the correct program" in failures(owner, sid)["claimed_input"]
@@ -81,7 +82,7 @@ def test_an_example_that_is_a_hidden_test_input_is_never_shown(client, make_user
 def test_a_program_that_crashes_on_the_example_counts_and_says_so(client, make_user, world, owner, llm):  # noqa: F811
     _, headers = new_student(client, make_user, world)
     sid = failed_submission(client, world, headers, code="n = int(input())\nprint(missing_name)\n")
-    llm(FakeLLM(good_reply(owner, sid, world, example_input="5")))
+    llm(FakeLLM(good_reply(owner, sid, world, example_input="5", predicted_output="")))
     body = explain(client, headers, sid).json()
     assert body["status"] == "verified"
     assert body["explanation"]["example_output"].startswith("(no output: the program stopped with a ")
@@ -96,20 +97,29 @@ def test_an_input_the_correct_program_cannot_read_is_rejected(client, make_user,
     assert "does not run on the example input" in failures(owner, sid)["claimed_input"]
 
 
-def test_without_an_example_input_nothing_is_run_and_the_flow_is_unchanged(
+def test_a_reply_without_an_example_is_not_shown_and_nothing_is_run(
     client, make_user, world, owner, llm, sandbox_calls  # noqa: F811
 ):
     _, headers = new_student(client, make_user, world)
     sid = failed_submission(client, world, headers)
-    llm(FakeLLM(good_reply(owner, sid, world)))
+    bad = good_reply(owner, sid, world, example_input="", predicted_output=None)
+    fake = llm(FakeLLM(bad, bad))
     body = explain(client, headers, sid).json()
-    assert body["status"] == "verified" and body["explanation"]["example_input"] is None
-    assert body["explanation"]["example_output"] is None and sandbox_calls == []
-    assert llm_checks(owner, sid) == set()
+    assert body["status"] == "fallback" and body["explanation"] is None and sandbox_calls == []
+    assert failures(owner, sid)["claim_testable"] == "missing: example_input, predicted_output"
+    assert "claim_testable" in fake.calls[1][1]  # the retry says what to add
 
 
-def llm_checks(owner, sid):
-    return {r["check_name"] for r in check_rows(owner, sid) if r["check_name"] == "claimed_input"}
+def test_a_wrong_prediction_of_the_output_is_rejected_and_the_retry_is_told_what_the_program_prints(
+    client, make_user, world, owner, llm  # noqa: F811
+):
+    _, headers = new_student(client, make_user, world)
+    sid = failed_submission(client, world, headers)  # prints 'wrong'
+    fake = llm(FakeLLM(good_reply(owner, sid, world, predicted_output="5"), good_reply(owner, sid, world)))
+    body = explain(client, headers, sid).json()
+    assert body["status"] == "verified" and body["attempts"] == 2
+    assert "really prints 'wrong'" in failures(owner, sid)["predicted_output"]
+    assert "predicted_output" in fake.calls[1][1] and "really prints 'wrong'" in fake.calls[1][1]
 
 
 @pytest.mark.parametrize(
@@ -204,5 +214,17 @@ def test_the_example_is_part_of_the_reply_format_the_model_is_asked_for():
     from app.feedback.prompt import SYSTEM
     from app.feedback.verifier import JSON_SCHEMA
 
-    assert "example_input" in JSON_SCHEMA["properties"] and "example_input" not in JSON_SCHEMA["required"]
-    assert "hidden test" in SYSTEM and "example_input" in SYSTEM
+    for field in ("example_input", "predicted_output"):
+        assert field in JSON_SCHEMA["properties"] and field not in JSON_SCHEMA["required"]  # a syntax error needs neither
+        assert field in SYSTEM
+    assert "hidden test" in SYSTEM
+
+
+def test_the_prompt_tells_the_model_what_the_students_program_really_printed(
+    client, make_user, world, owner, llm  # noqa: F811
+):
+    _, headers = new_student(client, make_user, world)
+    sid = failed_submission(client, world, headers)  # prints 'wrong'
+    fake = llm(FakeLLM(good_reply(owner, sid, world)))
+    explain(client, headers, sid)
+    assert "the student's program printed 'wrong'" in fake.calls[0][1]
