@@ -382,3 +382,8 @@ def test_an_enrolled_student_still_gets_the_notes_for_the_open_problem(client, m
     ids = chunk_ids(owner, world)
     llm(FakeLLM(route("general"), grounded(ids[:1])))
     assert say(client, headers, "how does range work", problem_id=world["p"])["sources"]
+
+
+def test_the_open_answer_label_says_the_answer_is_not_checked_and_points_to_the_checked_route():
+    assert "not checked" in handlers.OPEN_LABEL and "explain" in handlers.OPEN_LABEL
+    assert "own program" in handlers.OPEN_SYSTEM

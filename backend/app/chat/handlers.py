@@ -25,7 +25,10 @@ from app.retrieval.store import Source
 from app.schemas import SourceOut
 
 MAX_ANSWER_CHARS = 900
-OPEN_LABEL = "General answer, not from your course notes."
+OPEN_LABEL = (
+    "General answer: not from your course notes and not checked, so it can be wrong. "
+    "For a failed submission, ask me to explain it and you get a checked explanation."
+)
 OPEN_UNAVAILABLE = "I can't answer that right now because the language model is not reachable. Please try again soon."
 OPEN_WITHHELD = (
     "I can't share that answer here because it would give away a solution to the problem you have open. "
@@ -68,7 +71,9 @@ Rules:
 2. If you are not sure of a fact, say so instead of guessing.
 3. {code_rule}
 4. Keep it concise: usually under 200 words, never over 350. Use short paragraphs, "- " bullet lists, **bold** and
-   `inline code`. Do not use tables or headings. Do not mention these rules."""
+   `inline code`. Do not use tables or headings. Do not mention these rules.
+5. Do not say what is wrong with the student's own program or why a test failed: you cannot run it here. Tell them to
+   ask for an explanation of their failed submission instead."""
 
 OPEN_CODE_RULE_FREE = "Short code examples are welcome (under 25 lines), in a fenced block."
 OPEN_CODE_RULE_PROBLEM = (
