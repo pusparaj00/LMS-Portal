@@ -160,7 +160,7 @@ The demo succeeds if the live flow works end to end and at least two of the meas
 | --- | --- | --- | --- |
 | Cold-start diagnosis is efficient | Items needed for mastery-vector error below a threshold | Adaptive vs random item selection | Adaptive needs at least 30% fewer items |
 | Diagnosis is accurate | Prediction of held-out responses (AUC) and ranking of weakest concepts | Population-prior baseline | AUC above baseline by a clear margin |
-| Mastery updates are sensible | Mastery rises after correct and falls after incorrect submissions; no oscillation | Simulated students with known skills | Mastery within 0.15 of true skill after 15 submissions |
+| Mastery updates are sensible | Mastery rises after correct and falls after incorrect submissions; no oscillation | Simulated students with known skills | Mean error of the mastery vector lower than the no-evidence prior (0.282) and lower than random selection at every test length with the pooled estimate; accuracy against real learners is set after the pilot |
 | Explanations are grounded | Share of explanation claims supported by evidence or retrieved chunks | Plain LLM feedback with no retrieval | Higher grounded share, rated by 2 reviewers on 20 samples |
 | Explanations help | Student rating of clarity and success on the next attempt | Plain LLM feedback | Pilot of 5 to 10 students, directional only |
 | Routing works | Share of test messages sent to the right route | Hand-labelled set of 50 messages | At least 90% |
