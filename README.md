@@ -103,7 +103,10 @@ docker compose -f docker-compose.yml -f compose.prod.yml up -d --build --wait
 Only ports 80 and 443 are published, by Caddy. Browsers warn about the certificate, which Caddy signs with its own
 authority; install its root (`caddy_data` volume, `pki/authorities/local/root.crt`) on the machines that use the system, or
 replace the certificate when the institution has a domain name. Back up with `scripts/backup.sh` (daily from cron, keeps
-`BACKUP_KEEP_DAYS` days, default 14) and prove a dump restores with `scripts/restore-check.sh`.
+`BACKUP_KEEP_DAYS` days, default 14) and prove a dump restores with `scripts/restore-check.sh`. A dump on the same
+server is lost with the server: `OFFSITE_TARGET=user@host:folder scripts/offsite-copy.sh` (or a folder on another disk)
+copies the newest dump away and keeps the copy only if its checksum matches. Caddy sends HSTS and a Content-Security-Policy
+that allows only this origin.
 
 ## Accounts (F-01)
 
