@@ -150,3 +150,30 @@ def test_deleting_a_concept_removes_it_from_the_prerequisites_of_others(client, 
     assert client.delete(f"{API}/courses/{course}/concepts/{lonely}", headers=teacher).status_code == 204
     listed = {c["name"]: c["prerequisite_ids"] for c in client.get(f"{API}/courses/{course}/concepts", headers=teacher).json()}
     assert listed["lists"] == [ids["loops"]]
+
+
+def add_problem(owner, chain, concept, title, difficulty):
+    with owner.begin() as conn:
+        pid = conn.execute(
+            text(
+                "INSERT INTO problems (course_id, title, statement, kind, difficulty_b, discrimination_a)"
+                " VALUES (:c, :t, 's', 'code', :b, 1) RETURNING id"
+            ),
+            {"c": chain["course"], "t": title, "b": difficulty},
+        ).scalar_one()
+        conn.execute(text("INSERT INTO problem_concepts VALUES (:p, :k, 1.0)"), {"p": pid, "k": chain["ids"][concept]})
+    return pid
+
+
+def test_the_next_problem_fits_the_level_instead_of_being_the_easiest(client, make_user, owner, chain):
+    easy = add_problem(owner, chain, "variables", "easy", -1.5)
+    near = add_problem(owner, chain, "variables", "near", 0.2)
+    hard = add_problem(owner, chain, "variables", "hard", 2.0)
+    # mastery 0.7: logit 0.85, minus logit(0.7) = 0, so the problem with difficulty nearest 0 is chosen
+    _, headers = student_with(client, make_user, owner, chain, {"variables": 0.7, "loops": 0.9, "lists": 0.9})
+    assert dashboard(client, headers, chain)["recommended"]["problem_id"] in (near, chain["problems"]["variables"])
+    # mastery 0.2: aim for difficulty -2.2, so the easiest problem is nearest
+    _, weak = student_with(client, make_user, owner, chain, {"variables": 0.2, "loops": 0.9, "lists": 0.9})
+    assert dashboard(client, weak, chain)["recommended"]["problem_id"] == easy
+    assert hard not in {dashboard(client, headers, chain)["recommended"]["problem_id"],
+                        dashboard(client, weak, chain)["recommended"]["problem_id"]}
