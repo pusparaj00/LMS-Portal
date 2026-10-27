@@ -6,6 +6,7 @@ import { recordRecent } from "../design/recent";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { HelpPolicy } from "./HelpPolicy";
 import { withoutFences } from "../statement";
+import { Protected, Watermark } from "./ProtectedContent";
 
 const STARTER = "# Read from input(), print the answer.\n";
 
@@ -146,6 +147,8 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
       </p>
       <div className="workspace">
         <section className="statement">
+          <Watermark session={session} />
+          <Protected session={session}>
           <h1>{problem.title}</h1>
           <p>{withoutFences(problem.statement)}</p>
           <span className="tags">
@@ -168,6 +171,7 @@ export function ProblemPage({ session, problemId }: { session: Session; problemI
               </div>
             </div>
           ))}
+          </Protected>
         </section>
 
         <section className="solve">

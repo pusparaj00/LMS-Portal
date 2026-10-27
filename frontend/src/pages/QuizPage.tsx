@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, Session, api } from "../api";
+import { Protected, Watermark } from "./ProtectedContent";
 import { AttemptResult, MyAttempts, Quiz, QuizSummary, ReviewItem } from "./quizTypes";
 
 const percent = (f: number) => `${Math.round(f * 100)}%`;
@@ -92,6 +93,7 @@ export function QuizPage({ session, courseId, quizId }: { session: Session; cour
         <a href={`#/course/${courseId}`}>Back to the course</a>
       </p>
       <h1>{quiz?.title ?? "Quiz"}</h1>
+      <Watermark session={session} />
       {error && (
         <p role="alert" className="error">
           {error}
@@ -116,7 +118,9 @@ export function QuizPage({ session, courseId, quizId }: { session: Session; cour
               <legend>
                 Question {n + 1} ({q.weight} {q.weight === 1 ? "point" : "points"})
               </legend>
-              <p>{q.prompt}</p>
+              <Protected session={session}>
+                <p>{q.prompt}</p>
+              </Protected>
               {q.kind === "short" ? (
                 <input
                   value={answer(q.id).text}
@@ -134,7 +138,7 @@ export function QuizPage({ session, courseId, quizId }: { session: Session; cour
                         checked={answer(q.id).choices.includes(i)}
                         onChange={() => pick(q.id, i, q.kind === "single")}
                       />
-                      {o}
+                      <Protected session={session}>{o}</Protected>
                     </label>
                   </div>
                 ))

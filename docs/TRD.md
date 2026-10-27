@@ -155,6 +155,8 @@ India's data-protection rules were notified on 13 Nov 2025. Law-firm summaries s
 | TR-S-08 | Logs shall be sufficient to detect and report a personal data breach, and a written procedure shall cover reporting to the regulator and affected users, which law-firm summaries describe as within 72 hours | P1 | R11 |
 | TR-S-09 | The full demo flow shall be shown working with a local model so that student code can stay inside the institution | P1 | D |
 | TR-S-10 | The deployment shall confirm that users are adults, or add a verified parental-consent step before any use by learners under 18 | P2 | R11 |
+| TR-S-11 | Pages that show test content to a student (placement, quiz and problem statements, probe questions) shall block selecting, copying, cutting, dragging, the context menu and printing of the question text, and shall show a faint watermark with the student's name and the time; the code editor and answer boxes stay usable. These are deterrents: a browser cannot prevent a screenshot or photograph | P1 | F-44 |
+| TR-S-12 | Hidden test inputs and expected outputs shall never appear in any response a student can request | P0 | TR-X-07 |
 
 ## 9. Performance, reliability and capacity requirements
 

@@ -1750,3 +1750,39 @@ a.button.primary {
     color: lch(from var(--cell) calc((l - 49.6) * -100000) 0 0);
   }
 }
+
+/* TR-S-11: question text cannot be selected, copied or printed; a name and time lie over the page. */
+.protected {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: space-around;
+  justify-content: space-around;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  transform: rotate(-20deg) scale(1.4);
+  color: var(--ink);
+  opacity: 0.07;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.watermark span {
+  padding: 1.2rem 1.6rem;
+}
+
+@media print {
+  .protected,
+  .watermark {
+    display: none;
+  }
+}

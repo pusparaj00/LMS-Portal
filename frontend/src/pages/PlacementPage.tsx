@@ -5,6 +5,7 @@ import { ApiError, BUSY_RETRIES, Session, api } from "../api";
 import { DiagnosticItem, DiagnosticResult, DiagnosticStart, DiagnosticStep } from "../types";
 import { MasteryBars, Misconceptions } from "./MasteryBars";
 import { withoutFences } from "../statement";
+import { Protected, Watermark } from "./ProtectedContent";
 
 const STARTER = "# Read from input(), print the answer.\n";
 
@@ -154,16 +155,21 @@ export function PlacementPage({ session, courseId, recheck = false }: { session:
       <h1>
         Question {number} of up to {max}
       </h1>
+      <Watermark session={session} />
       <progress value={number - 1} max={max} aria-label="Progress" />
-      <h2>{item.title}</h2>
-      <pre className="statement-block">{withoutFences(item.statement)}</pre>
+      <Protected session={session}>
+        <h2>{item.title}</h2>
+        <pre className="statement-block">{withoutFences(item.statement)}</pre>
+      </Protected>
       {item.kind === "mcq" ? (
         <fieldset className="options">
           <legend>Choose one answer</legend>
           {item.options.map((o) => (
             <label key={o.id} className="option">
               <input type="radio" name="option" checked={option === o.id} onChange={() => setOption(o.id)} />
-              <pre>{o.text}</pre>
+              <Protected session={session}>
+                <pre>{o.text}</pre>
+              </Protected>
             </label>
           ))}
         </fieldset>

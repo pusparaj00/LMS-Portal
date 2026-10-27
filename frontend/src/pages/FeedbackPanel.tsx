@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { ApiError, BUSY_RETRIES, Session, api } from "../api";
 import { withoutFences } from "../statement";
+import { Protected } from "./ProtectedContent";
 
 type Source = { chunk_id: number; title: string; section: string; text: string };
 type Probe = {
@@ -242,7 +243,9 @@ function ProbeCard({ session, submissionId, probe }: { session: Session; submiss
       <p>
         <strong>{probe.title}</strong>
       </p>
-      <pre className="statement-block">{withoutFences(probe.statement)}</pre>
+      <Protected session={session}>
+        <pre className="statement-block">{withoutFences(probe.statement)}</pre>
+      </Protected>
       {!result && (
         <>
           {probe.kind === "mcq" ? (
