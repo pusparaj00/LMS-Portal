@@ -28,11 +28,10 @@ from app.feedback.prompt import build_prompt, neutralise
 from app.feedback.verifier import MIN_HIDDEN_TEXT, Evidence, verify
 from app.llm.adapter import LLMError, build_adapter
 from evaluation.explain_rate import cases
+from evaluation.rating_sheet import HINT_SYSTEM
 from evaluation.real_feedback import API, PAUSE_SECONDS, problem_ids, session
 
 PLAIN_SYSTEM = "You are a Python tutor. Explain to a student why their program is wrong."
-HINT_SYSTEM = ("You are a Python tutor. Give the student a hint about why their program is wrong. "
-               "Do not give the solution or write the corrected code.")
 
 
 def free_text_prompt(ctx) -> str:
