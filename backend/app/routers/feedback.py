@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
-from app import ratelimit
+from app import ratelimit, recommend
 from app.auth import Conn, CurrentUser, can_access_course, require_role
 from app.config import get_settings
 from app.consent import consented_student
@@ -24,6 +24,7 @@ from app.schemas import (
     ProbeResult,
     ProblemPolicy,
     ProblemPolicyOut,
+    RecommendedProblem,
     StoredExplanation,
 )
 
@@ -105,7 +106,9 @@ def answer_probe(problem_id: int, body: ProbeAnswerRequest, user: Student, conn:
         )
     except mastery.MasteryUnavailable:
         raise HTTPException(503, "mastery service unavailable, try again shortly") from None
-    return ProbeResult(correct=correct, mastery_changes=changes)
+    step = recommend.next_step(conn, user.id, ctx.course_id)
+    next_step = RecommendedProblem(problem_id=step.problem_id, title=step.title, reason=step.reason) if step else None
+    return ProbeResult(correct=correct, mastery_changes=changes, next_step=next_step)
 
 
 def _policy(conn, user: CurrentUser, problem_id: int) -> ProblemPolicyOut:

@@ -4584,6 +4584,17 @@
             },
             "title": "Mastery Changes",
             "type": "array"
+          },
+          "next_step": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecommendedProblem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The recommended next problem, chosen after this answer updated mastery"
           }
         },
         "required": [

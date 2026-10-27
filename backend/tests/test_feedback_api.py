@@ -341,6 +341,7 @@ def test_a_probe_from_the_bank_moves_the_mastery_bar(client, make_user, world, o
     assert change["concept"] == "loops" and change["after"] > change["before"]
     after = client.get(f"{API}/students/me/mastery", headers=headers, params={"course_id": world["course"]})
     assert next(c["p_known"] for c in after.json()["concepts"] if c["name"] == "loops") > before
+    assert result.json()["next_step"] == after.json()["recommended"] is not None  # the dashboard's rule, after this update
     with owner.connect() as conn:
         refs = conn.execute(
             text("SELECT evidence_ref, evidence_type FROM mastery_events WHERE user_id = :u AND evidence_ref LIKE 'probe:%'"),

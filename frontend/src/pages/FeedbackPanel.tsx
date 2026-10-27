@@ -37,7 +37,11 @@ type Hint = {
   example_title: string | null;
   example_solution: string | null;
 };
-type ProbeResult = { correct: boolean; mastery_changes: { concept: string; before: number; after: number }[] };
+type ProbeResult = {
+  correct: boolean;
+  mastery_changes: { concept: string; before: number; after: number }[];
+  next_step: { problem_id: number; title: string; reason: string } | null;
+};
 
 const HINT_TITLES: Record<string, string> = {
   concept: "Concept hint",
@@ -290,6 +294,13 @@ function ProbeCard({ session, submissionId, probe }: { session: Session; submiss
                 </li>
               ))}
             </ul>
+          )}
+          {result.next_step && (
+            <p>
+              Next: <a href={`#/problem/${result.next_step.problem_id}`}>{result.next_step.title}</a>
+              <br />
+              <small>{result.next_step.reason}</small>
+            </p>
           )}
         </div>
       )}

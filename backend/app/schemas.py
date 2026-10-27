@@ -889,6 +889,9 @@ class ProbeAnswerRequest(BaseModel):
 class ProbeResult(BaseModel):
     correct: bool
     mastery_changes: list[MasteryChange]
+    next_step: RecommendedProblem | None = Field(
+        default=None, description="The recommended next problem, chosen after this answer updated mastery"
+    )
 
 
 class ProblemPolicy(BaseModel):
