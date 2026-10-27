@@ -1,0 +1,13 @@
+assist09: 283105 answers, 4163 students, 149 skills, 0.658 correct
+fold 1: lms 0.6835, global 0.5000, skill 0.6329, pybkt 0.7245
+fold 2: lms 0.6815, global 0.5000, skill 0.6243, pybkt 0.7210
+fold 3: lms 0.6658, global 0.5000, skill 0.6264, pybkt 0.7044
+fold 4: lms 0.6897, global 0.5000, skill 0.6385, pybkt 0.7288
+fold 5: lms 0.6826, global 0.5000, skill 0.6197, pybkt 0.7187
+| Model | Mean AUC | Std over folds |
+| --- | --- | --- |
+| LMS mastery rule (nothing fitted) | 0.6806 | 0.0079 |
+| global mean (constant) | 0.5000 | 0.0000 |
+| per-skill mean | 0.6284 | 0.0066 |
+| pyBKT, standard BKT per skill | 0.7195 | 0.0083 |
+pyBKT returned no prediction for 42 test answers; they were given the training mean.

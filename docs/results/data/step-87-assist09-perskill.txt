@@ -1,0 +1,12 @@
+assist09: 283105 answers, 4163 students, 149 skills, 0.658 correct
+fold 1: lms 0.6835, global 0.5000, skill 0.6329, lms_per_skill 0.7228
+fold 2: lms 0.6815, global 0.5000, skill 0.6243, lms_per_skill 0.7204
+fold 3: lms 0.6658, global 0.5000, skill 0.6264, lms_per_skill 0.7048
+fold 4: lms 0.6897, global 0.5000, skill 0.6385, lms_per_skill 0.7281
+fold 5: lms 0.6826, global 0.5000, skill 0.6197, lms_per_skill 0.7176
+| Model | Mean AUC | Std over folds |
+| --- | --- | --- |
+| LMS mastery rule (nothing fitted) | 0.6806 | 0.0079 |
+| global mean (constant) | 0.5000 | 0.0000 |
+| per-skill mean | 0.6284 | 0.0066 |
+| LMS rule, numbers fitted per skill (with learning step) | 0.7188 | 0.0078 |

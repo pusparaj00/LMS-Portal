@@ -1,0 +1,19 @@
+# Baselines vs verified flow
+
+Run 2026-10-27 15:09 UTC; provider chain `gemini_pro` then `groq,mistral,openai,local`; 28 failed submissions, one reply per flow each.
+
+| Flow | Replies | Shows solution code | Repeats hidden test data |
+| --- | --- | --- | --- |
+| plain | 22 | 19 (86%) | 2 (9%) |
+| hint-only | 28 | 1 (4%) | 1 (4%) |
+| verified, first attempt, before the checks | 26 | 0 (0%) | 0 (0%) |
+
+In the verified row these are replies the checks would have rejected; none of them reaches a student.
+
+First-attempt replies that passed every static check: 21 of 26.
+Replies that gave a worked example: 24; its predicted output was false in the sandbox for 10 of them.
+Replies that were not valid JSON in the required shape: 2.
+Provider errors: {'plain': 6, 'verified': 2}.
+
+Static checks that rejected a first attempt: quoted_code_is_theirs x2, json_valid x2, sources_real x1
+done
