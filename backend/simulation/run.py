@@ -15,8 +15,18 @@ from simulation import model
 
 BKT_LEARN = 0.1  # BKT's transition probability: the one thing that distinguishes it from the update rule
 ECE_BINS = 10
-POLICIES = ("adaptive", "random", "bkt", "irt_only")
+POLICIES = ("adaptive", "random", "bkt", "irt_only", "cat_info", "fixed")
 POOLED = ("adaptive_pooled", "random_pooled")  # the same questions, estimated with the pooled model
+
+
+def most_informative(pool: list[selection.Item], ability: float) -> selection.Item:
+    """The textbook adaptive test (TR-V-05): the question with the largest 2PL Fisher information a^2 P (1 - P) at the
+    current one-number ability estimate, with no concept coverage term. Ties go to the lowest id."""
+    def information(item: selection.Item) -> float:
+        p = selection.prob_correct(ability, item.a, item.b)
+        return item.a ** 2 * p * (1.0 - p)
+
+    return max(sorted(pool, key=lambda i: i.id), key=information)
 
 
 def predict_from_mastery(item: selection.Item, mastery: dict[int, float]) -> float:
@@ -41,6 +51,10 @@ def run_student(
     for _ in range(selection.max_questions(items)):
         if policy == "adaptive":
             item = selection.select_next(items, given, seed, **(prior or {}))
+        elif policy == "cat_info":
+            item = most_informative(selection.allowed(items, asked), selection.eap_theta(responses))
+        elif policy == "fixed":
+            item = min(selection.allowed(items, asked), key=lambda i: i.id)
         else:
             pool = selection.allowed(items, asked)
             item = pool[rng.integers(len(pool))]
@@ -241,15 +255,25 @@ def report(result: dict, args: argparse.Namespace) -> str:
         "",
         "## Error of the mastery vector (mean absolute error against true mastery)",
         "",
-        "| Items asked | adaptive | random | BKT (random order) | adaptive + pooled | random + pooled |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| Items asked | adaptive | random | BKT (random order) | max-information adaptive | fixed order |"
+        " adaptive + pooled | random + pooled |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for n in sorted({1, 3, 5, 8, 10, 16, length}):
         lines.append(
             f"| {n} | {curves['adaptive'][n - 1]:.3f} | {curves['random'][n - 1]:.3f} | {curves['bkt'][n - 1]:.3f} |"
+            f" {curves['cat_info'][n - 1]:.3f} | {curves['fixed'][n - 1]:.3f} |"
             f" {curves['adaptive_pooled'][n - 1]:.3f} | {curves['random_pooled'][n - 1]:.3f} |"
         )
+    reach = {p: items_to_reach(curves[p], threshold) for p in ("adaptive", "cat_info", "fixed", "bkt")}
     lines += [
+        "",
+        f"Items needed to reach random selection's final error ({threshold:.3f}), out of {length}: "
+        + ", ".join(
+            f"{name} {reach[key] if reach[key] else 'not reached'}"
+            for key, name in (("adaptive", "adaptive"), ("cat_info", "max-information adaptive"),
+                              ("fixed", "fixed order"), ("bkt", "BKT in random order"))
+        ) + ".",
         "",
         f"Threshold = the error random selection reaches after {length} items ({threshold:.3f}). "
         + (
@@ -272,7 +296,8 @@ def report(result: dict, args: argparse.Namespace) -> str:
         "| --- | --- | --- |",
         *[
             f"| {name} | {result['coverage'][key]:.1f} | {result['correlation'][key]:.3f} |"
-            for key, name in (("adaptive", "adaptive"), ("random", "random"), ("bkt", "BKT (random order)"))
+            for key, name in (("adaptive", "adaptive"), ("random", "random"), ("bkt", "BKT (random order)"),
+                              ("cat_info", "max-information adaptive"), ("fixed", "fixed order"))
         ],
         *[
             f"| {name} | {result['coverage'][key]:.1f} | {result['correlation'][key + '_pooled']:.3f} |"
@@ -308,6 +333,8 @@ def report(result: dict, args: argparse.Namespace) -> str:
         "random": "Random selection + mastery update",
         "bkt": "BKT baseline (random order, learning rate 0.1)",
         "irt_only": "Ability-only 2PL baseline (random order)",
+        "cat_info": "Max-information adaptive selection + mastery update",
+        "fixed": "Fixed order + mastery update",
         "adaptive_pooled": "Adaptive selection + pooled estimate",
         "random_pooled": "Random selection + pooled estimate",
         "prior_only": "No evidence (every concept at its prior)",

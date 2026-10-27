@@ -61,3 +61,42 @@ def test_a_strong_student_ends_above_a_weak_one_on_every_seed():
             _, _, abilities, _ = run.run_student("adaptive", bank.items, answers, truth, rng, len(bank.concepts), f"s{seed}")
             ends[name] = abilities[-1]
         assert ends["strong"] > 1.0 > -1.0 > ends["weak"], (seed, ends)
+
+
+def test_the_textbook_adaptive_test_picks_the_item_with_the_most_information_at_the_ability():
+    from app.diagnostic import selection
+
+    near = selection.Item(1, "mcq", a=1.0, b=0.0, concepts={0: 1.0})
+    far = selection.Item(2, "mcq", a=1.0, b=3.0, concepts={0: 1.0})
+    sharp = selection.Item(3, "mcq", a=2.0, b=0.2, concepts={0: 1.0})
+    assert run.most_informative([far, near, sharp], 0.0).id == 3
+    assert run.most_informative([far, near], 0.0).id == 1
+    assert run.most_informative([far, near], 3.0).id == 2
+    assert run.most_informative([near, selection.Item(4, "mcq", a=1.0, b=0.0, concepts={0: 1.0})], 0.0).id == 1
+
+
+def test_the_new_baselines_ask_the_full_allowed_test_without_repeats_and_fixed_order_is_by_id():
+    bank = model.load_bank(BANK)
+    answers = np.ones(len(bank.items))
+    truth = np.full(len(bank.concepts), 0.5)
+    from app.diagnostic import selection
+
+    length = selection.max_questions(bank.items)
+    for policy in ("cat_info", "fixed"):
+        rng = np.random.default_rng(1)
+        errors, _, _, asked = run.run_student(policy, bank.items, answers, truth, rng, len(bank.concepts), "s")
+        assert len(asked) == length and len(set(asked)) == length and len(errors) == length
+    _, _, _, asked = run.run_student("fixed", bank.items, answers, truth, np.random.default_rng(1), len(bank.concepts), "s")
+    tracing = [i for i in asked if bank.items[i].kind == "mcq"]
+    assert tracing == sorted(tracing)
+
+
+def test_every_policy_appears_in_the_simulated_curves_and_the_report():
+    bank = model.load_bank(BANK)
+    result = run.simulate(20, 3, bank)
+    assert {"cat_info", "fixed"} <= set(result["curves"]) and {"cat_info", "fixed"} <= set(result["auc"])
+    import argparse
+
+    args = argparse.Namespace(students=20, seed=3, items=bank.items, prior_flags="")
+    text = run.report(result, args)
+    assert "max-information adaptive" in text and "fixed order" in text and "Items needed to reach" in text
