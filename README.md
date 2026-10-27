@@ -108,6 +108,15 @@ server is lost with the server: `OFFSITE_TARGET=user@host:folder scripts/offsite
 copies the newest dump away and keeps the copy only if its checksum matches. Caddy sends HSTS and a Content-Security-Policy
 that allows only this origin.
 
+### Hosting on a Windows PC behind a tunnel (TR-O-02, TR-O-05, TR-O-06)
+
+Set `CADDY_BIND=127.0.0.1` in `.env` so only this PC reaches the proxy; a tunnel connector running on the PC (or as a
+service in the same Compose network) carries the public traffic, so no router port is opened. Run
+`scripts\windows-setup.ps1` once in an administrator PowerShell: it stops the PC from sleeping on mains power and schedules
+`backup.sh` (02:00) and, with `-OffsiteTarget /d/folder`, `offsite-copy.sh` (02:30) through Git Bash. Give the target as a
+Git Bash path: a Windows path such as `D:\folder` contains a colon and is read as `user@host:folder`. Set Docker Desktop to
+start at sign-in; the containers restart by themselves.
+
 ## Accounts (F-01)
 
 Everyone can set a display name and change their password under **Account**. An admin manages people under **Users**:
