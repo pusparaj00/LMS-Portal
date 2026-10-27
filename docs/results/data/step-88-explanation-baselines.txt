@@ -1,0 +1,37 @@
+repeat 1 of 3 done
+repeat 2 of 3 done
+repeat 3 of 3 done
+# Baselines vs verified flow
+
+Run 2026-10-27 19:16 UTC; provider chain `gemini_pro` then `groq,mistral,openai,local`; strong model `groq:openai/gpt-oss-120b`; 3 repeat(s) of 28 failures.
+Intervals: 95%, bootstrap over failures.
+
+| Flow | Shows solution code | Repeats hidden test data |
+| --- | --- | --- |
+| plain | 73% (62% to 85%), 71 replies | 10% (0% to 22%), 71 replies |
+| hint-only | 5% (1% to 10%), 83 replies | 1% (0% to 4%), 83 replies |
+| plain-strong | 100% (100% to 100%), 84 replies | 10% (1% to 20%), 84 replies |
+| verified, first attempt, before the checks | 0% (0% to 0%), 82 replies | 5% (0% to 13%), 82 replies |
+
+In the verified row these are replies the checks would have rejected; none reaches a student.
+
+## Verified flow, first attempt
+
+- Passed every static check: 87% (77% to 94%), 82 replies
+- Not valid JSON in the required shape: 1% (0% to 4%), 82 replies
+- Worked example whose predicted output was false in the sandbox, among replies that gave one: 17% (10% to 23%), 78 replies
+
+## Ablation: what each static check rejected
+
+| Check | First attempts rejected | Rejected by this check alone |
+| --- | --- | --- |
+| no_hidden_test_leak | 4 | 4 |
+| quoted_code_is_theirs | 3 | 3 |
+| claim_testable | 1 | 1 |
+| sources_real | 1 | 1 |
+| json_valid | 1 | 1 |
+| concept_matches | 1 | 1 |
+
+The sandbox check of the worked example runs after the static ones, so it is counted above only among replies that gave an example, not in this table.
+
+Provider errors (no reply): {'plain': 13, 'hint-only': 1, 'plain-strong': 0, 'verified': 2}.

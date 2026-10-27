@@ -2,11 +2,12 @@
 
 The rule with its default numbers ranks answers well but is badly calibrated (ECE about 0.14). Here a monotone map from
 the rule's prediction to the observed rate of correct answers is fitted on N training students and applied to the test
-students; the rule itself is not changed. Two maps: Platt (a logistic fit on the logit of the prediction, which keeps the
-ranking and so the AUC) and isotonic regression (which can merge ranks and so lose a little AUC).
+students; the rule itself is not changed. Two maps: Platt (a logistic fit on the logit of the prediction, which keeps
+the ranking and so the AUC) and isotonic regression (which merges close predictions into ties, so the AUC can move
+either way).
 
-Success rule, fixed before the run: a map counts as a success on a dataset if, averaged over the folds with every training
-student, the calibrated ECE is at most 0.05 and the AUC is at most 0.005 below the uncalibrated rule's.
+Success rule, fixed before the run: a map counts as a success on a dataset if, averaged over the folds with every
+training student, the calibrated ECE is at most 0.05 and the AUC is at most 0.005 below the uncalibrated rule's.
 
     python calibration.py assist09 [--folds 3]
     python calibration.py ednet [--students 1500] [--folds 3]

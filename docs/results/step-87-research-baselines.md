@@ -23,6 +23,10 @@ baseline. Correctness and helpfulness are not measured (G-5 needs human raters).
 verified 24 of 28 (86%); the four fallbacks were three `no_hidden_test_leak` (the model chose a hidden test input, for
 example `Racecar` and `1900`, as its worked example) and one `quoted_code_is_theirs`.
 
+Correction (step 88, `docs/results/step-88-research-strength.md`): the "10 of 24" false worked examples above came from one
+run. Three repeats of the same 28 failures gave 17% (95% interval 10% to 23%) of 78 worked examples with a false predicted
+output; use that figure, not 42%.
+
 ## 2. Mastery rule as a next-answer predictor (TR-M-01)
 
 `research/kt_comparison/compare.py` calls `app.mastery.core.bayes_update` with the LMS defaults (prior 0.5, slip 0.10,
