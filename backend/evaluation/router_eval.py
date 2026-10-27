@@ -41,16 +41,20 @@ def header(title: str) -> None:
           f"Run {datetime.now(UTC):%Y-%m-%d %H:%M UTC}\n")
 
 
-def routing_test() -> None:
+def routing_test(file: str = "router_messages.csv") -> None:
     settings = get_settings()
     adapter = build_adapter(settings)
-    rows = list(csv.DictReader((EVAL_DIR / "router_messages.csv").open(encoding="utf-8")))
-    header(f"Routing test: {len(rows)} hand-labelled messages")
+    rows = list(csv.DictReader((EVAL_DIR / file).open(encoding="utf-8")))
+    header(f"Routing test: {len(rows)} hand-labelled messages from {file}")
     results = []
+    seconds = []
     for row in rows:
+        started = time.perf_counter()
         decision = routing.classify(adapter, row["message"], settings.router_min_confidence)
+        seconds.append(time.perf_counter() - started)
         results.append((row["label"], decision, adapter.config.provider))
-        time.sleep(PAUSE_SECONDS)
+        if decision.how != "shortcut":
+            time.sleep(PAUSE_SECONDS)
     total = len(results)
     correct = sum(label == d.route for label, d, _ in results)
     keyword_only = sum(label == routing.keyword_route(row["message"]) for (label, _, _), row in zip(results, rows, strict=True))
@@ -62,6 +66,11 @@ def routing_test() -> None:
     print(f"| Messages routed to the right route (overall) | {correct} of {total} = {correct / total:.0%} |")
     print(f"| Of those the model answered itself (no fallback) | "
           f"{sum(label == d.route for label, d in llm_answers)} of {len(llm_answers)} |")
+    shortcuts = [(label, d) for label, d, _ in results if d.how == "shortcut"]
+    print(f"| Routed by the shortcut rules (no model call) | {len(shortcuts)} of {total}, of which right "
+          f"{sum(label == d.route for label, d in shortcuts)} |")
+    print(f"| Model calls | {total - len(shortcuts)} of {total} |")
+    print(f"| Seconds per message, median / max | {sorted(seconds)[len(seconds) // 2]:.2f} / {max(seconds):.2f} |")
     print(f"| Fell back to keyword rules | {len(fallbacks)} of {total} = {len(fallbacks) / total:.0%} |")
     print(f"| Keyword rules alone (no model), for comparison | {keyword_only} of {total} = {keyword_only / total:.0%} |")
     print(f"| Providers that answered | {dict(collections.Counter(p for _, d, p in results if d.how == 'llm'))} |")
@@ -127,4 +136,6 @@ def injection_test() -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["routing", "injection"])
-    {"routing": routing_test, "injection": injection_test}[parser.parse_args().command]()
+    parser.add_argument("--file", default="router_messages.csv")
+    args = parser.parse_args()
+    routing_test(args.file) if args.command == "routing" else injection_test()

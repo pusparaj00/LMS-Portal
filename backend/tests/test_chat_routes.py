@@ -103,7 +103,7 @@ def test_lms_announcements_come_only_from_the_students_courses(client, make_user
 def test_both_routes_work_with_the_model_switched_off(client, make_user, world, llm):
     _, headers = new_student(client, make_user, world)
     llm(FakeLLM(LLMError("every provider failed"), LLMError("every provider failed")))
-    grades = say(client, headers, "what are my grades")
+    grades = say(client, headers, "show me the grades")
     nextup = say(client, headers, "what should I practise next")
     assert grades["route"] == "lms" and grades["router"]["how"] == "keyword" and "on-time scores" in grades["reply"]
     assert nextup["route"] == "recommend" and "weakest area" in nextup["reply"]

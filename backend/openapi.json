@@ -5985,6 +5985,7 @@
           "how": {
             "enum": [
               "llm",
+              "shortcut",
               "keyword",
               "student"
             ],

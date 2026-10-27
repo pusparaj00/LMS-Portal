@@ -72,11 +72,47 @@ KEYWORD_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
+# Phrases that name one route unmistakably. A message that matches exactly one of these is routed without a model
+# call (F-51); anything else, including a message that matches two, goes to the model. Narrower than KEYWORD_RULES
+# on purpose: those only run when the model cannot, and may be wrong more often.
+SHORTCUT_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("hint", re.compile(r"\bhints?\b", re.I)),
+    (
+        "recommend",
+        re.compile(
+            r"\bshould i (practi[sc]e|study|solve|work on)\b.{0,30}\bnext\b|\bnext (problem|exercise)\b", re.I
+        ),
+    ),
+    (
+        "lms",
+        re.compile(
+            r"\bmy (grades?|scores?|deadlines?|due dates?)\b|\bannouncements?\b|\bwhen is .{0,30}\bdue\b|"
+            r"\bdue dates?\b|\bdeadlines? (do i have|this week)\b",
+            re.I,
+        ),
+    ),
+    (
+        "progress",
+        re.compile(
+            r"\bmy (mastery|progress|level|strengths?|weakest|weaknesses)\b|\bhow am i doing\b|\bam i ready for\b",
+            re.I,
+        ),
+    ),
+    (
+        "explain",
+        re.compile(
+            r"\bwhy (did|does|is) my (last |latest )?(submission|code|program|solution|run|loop|function)\b", re.I
+        ),
+    ),
+)
+SHORTCUT_MAX_CHARS = 200
+
+
 @dataclass(frozen=True)
 class Decision:
     route: str
     confidence: float | None
-    how: str  # "llm", "keyword" or "student"
+    how: str  # "llm", "shortcut", "keyword" or "student"
     reason: str = ""
 
 
@@ -85,6 +121,13 @@ def keyword_route(message: str) -> str:
         if pattern.search(message):
             return route
     return "general"
+
+
+def shortcut_route(message: str) -> str | None:
+    if len(message) > SHORTCUT_MAX_CHARS:
+        return None
+    routes = {route for route, pattern in SHORTCUT_RULES if pattern.search(message)}
+    return routes.pop() if len(routes) == 1 else None
 
 
 def build_prompt(message: str) -> tuple[str, str]:
@@ -102,6 +145,9 @@ def _validate(raw: str) -> tuple[str, float]:
 
 
 def classify(adapter: LLMAdapter, message: str, min_confidence: float) -> Decision:
+    quick = shortcut_route(message)
+    if quick is not None:
+        return Decision(quick, None, "shortcut", "one unmistakable phrase")
     fallback = keyword_route(message)
     try:
         system, user = build_prompt(message)

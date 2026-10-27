@@ -45,7 +45,7 @@ def test_keyword_rules(message, route):
 
 def test_a_valid_answer_is_used():
     adapter = Scripted(answer("progress", 0.8))
-    decision = routing.classify(adapter, "how am I doing", 0.6)
+    decision = routing.classify(adapter, "where do I stand in this course", 0.6)
     assert (decision.route, decision.how, decision.confidence) == ("progress", "llm", 0.8)
     assert adapter.calls[0][2] == routing.SCHEMA  # the fixed schema is sent with every call
 
@@ -65,7 +65,7 @@ def test_a_valid_answer_is_used():
     ],
 )
 def test_invalid_output_falls_back_to_keyword_rules(raw, reason):
-    decision = routing.classify(Scripted(raw), "why did my program fail", 0.6)
+    decision = routing.classify(Scripted(raw), "my program is not working", 0.6)
     assert (decision.route, decision.how) == ("explain", "keyword")
     assert reason in decision.reason
 
@@ -81,7 +81,7 @@ def test_confidence_exactly_at_the_threshold_is_accepted():
 
 
 def test_a_model_failure_falls_back_to_keyword_rules():
-    decision = routing.classify(Scripted(LLMError("HTTP 429 from the model")), "give me a hint", 0.6)
+    decision = routing.classify(Scripted(LLMError("HTTP 429 from the model")), "I am stuck, point me somewhere", 0.6)
     assert (decision.route, decision.how) == ("hint", "keyword") and "unavailable" in decision.reason
 
 
@@ -106,3 +106,40 @@ def test_overlong_messages_are_truncated_for_the_model():
     adapter = Scripted(answer("general"))
     routing.classify(adapter, "x" * 5000, 0.6)
     assert adapter.calls[0][1].count("x") == routing.MAX_MESSAGE_CHARS
+
+
+@pytest.mark.parametrize(
+    "message,route",
+    [
+        ("Give me a hint for the Fibonacci problem", "hint"),
+        ("What should I practise next?", "recommend"),
+        ("Which problem should I solve next?", "recommend"),
+        ("What are my grades so far?", "lms"),
+        ("When is the next assignment due?", "lms"),
+        ("How am I doing in this course so far?", "progress"),
+        ("What is my mastery of loops?", "progress"),
+        ("Why did my submission for Factorial fail?", "explain"),
+    ],
+)
+def test_one_unmistakable_phrase_is_routed_without_a_model_call(message, route):
+    adapter = Scripted()
+    decision = routing.classify(adapter, message, 0.6)
+    assert (decision.route, decision.how, decision.confidence) == (route, "shortcut", None)
+    assert adapter.calls == []
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Explain recursion to me",
+        "What is the due diligence process in a company merger?",
+        "What is a ValueError in Python?",
+        "Any tip for learning Python faster?",
+        "I want a hint about my grades",  # two routes named: the model decides
+        "x" * 300 + " give me a hint",  # too long to trust a phrase
+    ],
+)
+def test_anything_else_still_goes_to_the_model(message):
+    adapter = Scripted(answer("general", 0.9))
+    decision = routing.classify(adapter, message, 0.6)
+    assert (decision.how, len(adapter.calls)) == ("llm", 1)

@@ -62,7 +62,7 @@ def test_explain_runs_the_verified_flow_and_logs_the_route_tools_and_router(clie
     user_id, headers = new_student(client, make_user, world)
     sid = failed_submission(client, world, headers)
     fake = llm(FakeLLM(route("explain"), good_reply(owner, sid, world)))
-    body = say(client, headers, "why did my last submission fail", problem_id=world["p"])
+    body = say(client, headers, "can you look at my last submission, it failed", problem_id=world["p"])
     assert body["route"] == "explain" and body["router"]["how"] == "llm" and body["router"]["confidence"] == 0.95
     assert "fixed word" in body["reply"] and "verified_explanation" in body["tools"]
     assert len(fake.calls) == 2  # one routing call, one explanation call
@@ -126,7 +126,7 @@ def test_the_router_is_skipped_when_the_student_corrects_the_route(client, make_
 def test_a_low_confidence_answer_uses_keyword_rules_and_says_so(client, make_user, world, llm):
     user_id, headers = new_student(client, make_user, world)
     llm(FakeLLM(route("hint", 0.2)))
-    body = say(client, headers, "show me my mastery")
+    body = say(client, headers, "show me where I am weakest")
     assert body["route"] == "progress" and body["router"]["how"] == "keyword"
     assert "below" in body["router"]["reason"]
 
@@ -136,7 +136,7 @@ def test_a_model_outage_still_routes_by_keywords(client, make_user, world, llm):
 
     _, headers = new_student(client, make_user, world)
     llm(FakeLLM(LLMError("every provider failed")))
-    body = say(client, headers, "how am i doing")
+    body = say(client, headers, "tell me about my improvement")
     assert (body["route"], body["router"]["how"]) == ("progress", "keyword") and body["reply"]
 
 
@@ -387,3 +387,11 @@ def test_an_enrolled_student_still_gets_the_notes_for_the_open_problem(client, m
 def test_the_open_answer_label_says_the_answer_is_not_checked_and_points_to_the_checked_route():
     assert "not checked" in handlers.OPEN_LABEL and "explain" in handlers.OPEN_LABEL
     assert "own program" in handlers.OPEN_SYSTEM
+
+
+def test_a_clear_phrase_is_routed_without_a_model_call_and_says_so(client, make_user, world, llm):
+    _, headers = new_student(client, make_user, world)
+    fake = llm(FakeLLM())
+    body = say(client, headers, "how am i doing")
+    assert (body["route"], body["router"]["how"], body["router"]["confidence"]) == ("progress", "shortcut", None)
+    assert body["reply"] and fake.calls == []

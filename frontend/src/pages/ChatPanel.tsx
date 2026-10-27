@@ -9,7 +9,7 @@ type ChatReply = {
   message_id: number;
   reply: string;
   route: Route;
-  router: { how: "llm" | "keyword" | "student"; confidence: number | null; reason: string };
+  router: { how: "llm" | "shortcut" | "keyword" | "student"; confidence: number | null; reason: string };
   tools: string[];
   sources: Source[];
 };
@@ -26,6 +26,7 @@ const ROUTE_LABELS: Record<Route, string> = {
 
 const HOW_LABELS = {
   llm: "chosen by the assistant",
+  shortcut: "chosen by a clear phrase",
   keyword: "chosen by keyword rules",
   student: "chosen by you",
 };

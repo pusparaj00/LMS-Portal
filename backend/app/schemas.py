@@ -785,7 +785,7 @@ class ChatRequest(BaseModel):
 
 
 class RouterInfo(BaseModel):
-    how: Literal["llm", "keyword", "student"]
+    how: Literal["llm", "shortcut", "keyword", "student"]
     confidence: float | None
     reason: str
     provider: str | None
