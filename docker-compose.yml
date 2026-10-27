@@ -90,8 +90,12 @@ services:
     cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID, KILL]
     security_opt: ["no-new-privileges:true"]
     pids_limit: 256
-    mem_limit: 512m
-    cpus: 1.0
+    # SANDBOX_WORKERS jobs run at once; each run may use 256 MiB of address space and 2 s of CPU, so these two limits
+    # are sized for four at a time.
+    mem_limit: 1536m
+    cpus: 4.0
+    environment:
+      SANDBOX_WORKERS: 4
     tmpfs:
       - /work:size=64m,mode=0711,noexec,nosuid,nodev
       - /tmp:size=8m,noexec,nosuid,nodev

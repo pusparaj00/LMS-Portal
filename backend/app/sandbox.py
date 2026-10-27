@@ -15,7 +15,7 @@ from app.logging import request_id_var
 POLL_SECONDS = 0.05
 SECONDS_PER_RUN = 12  # the runner stops a run after 10 s wall time, plus startup
 SLACK_SECONDS = 15
-MAX_QUEUED_JOBS = 20  # the runner takes one job at a time; this many waiting means a wait of many seconds (TR-P-05)
+MAX_QUEUED_JOBS = 20  # waiting jobs, not running ones: the runner works on SANDBOX_WORKERS (4) at a time (TR-P-05)
 QUEUE_WAIT_SECONDS = 3  # a short queue is waited out before the caller is told to retry
 RETRY_AFTER_SECONDS = 2
 

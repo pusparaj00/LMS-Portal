@@ -26,8 +26,9 @@ def test_runner_reports_every_explicit_limit(config):
     assert config["limits"]["wall_seconds"] > config["limits"]["cpu_seconds"]
 
 
-def test_student_code_runs_as_an_unprivileged_uid(config):
-    assert config["run_uid"] == 10002
+def test_student_code_runs_as_unprivileged_uids_one_per_worker(config):
+    assert config["workers"] == 4
+    assert config["run_uids"] == [10002, 10003, 10004, 10005]
 
 
 def test_the_sandbox_has_no_listening_interface():

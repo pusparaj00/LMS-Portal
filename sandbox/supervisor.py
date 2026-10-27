@@ -4,8 +4,13 @@ The container has no network interface besides loopback, a read-only root filesy
 listening port, so the only way in is a job file written by the submission service.
 Every limit below is explicit (TR-X-05). Student code runs as an unprivileged uid in a
 per-run directory on a tmpfs and is killed, with every process of that uid, when the run ends.
+
+Several jobs run at once (TR-P-04, TR-P-05), one in each of WORKERS worker processes, and each worker has a uid of its
+own. A worker's run directory is private to its uid, its process limit counts only its own processes, and ending a run
+kills only that uid's processes, so one student's code cannot read, signal or starve another's.
 """
 import json
+import multiprocessing
 import os
 import re
 import resource
@@ -19,10 +24,13 @@ from pathlib import Path
 
 JOBS = Path(os.environ.get("JOBS_DIR", "/jobs"))
 WORK = Path("/work")
+CLAIMED = JOBS / "claimed"
 PYTHON = "/usr/local/bin/python3"
 
 API_UID = API_GID = 10001
-RUN_UID = RUN_GID = 10002
+RUN_UID_BASE = RUN_GID = 10002
+WORKERS = int(os.environ.get("SANDBOX_WORKERS", "4"))
+RUN_UIDS = [RUN_UID_BASE + slot for slot in range(WORKERS)]
 
 LIMITS = {
     "cpu_seconds": 2,
@@ -40,7 +48,7 @@ ORPHAN_RESULT_SECONDS = 120
 REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")  # the API's own rule; anything else is logged as "-"
 
 
-def _demote() -> None:
+def _demote(uid: int) -> None:
     os.setsid()
     cpu = LIMITS["cpu_seconds"]
     resource.setrlimit(resource.RLIMIT_CPU, (cpu, cpu + 1))
@@ -51,7 +59,7 @@ def _demote() -> None:
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     os.setgroups([])
     os.setgid(RUN_GID)
-    os.setuid(RUN_UID)
+    os.setuid(uid)
 
 
 def _kill_user_processes(uid: int) -> None:
@@ -94,14 +102,14 @@ def _read_capped(path: Path) -> str:
         return handle.read(LIMITS["result_text_bytes"]).decode("utf-8", errors="replace")
 
 
-def run_once(code: str, stdin: str) -> dict:
+def run_once(code: str, stdin: str, uid: int) -> dict:
     run_dir = WORK / uuid.uuid4().hex
     run_dir.mkdir(mode=0o700)
-    os.chown(run_dir, RUN_UID, RUN_GID)
+    os.chown(run_dir, uid, RUN_GID)
     try:
         main = run_dir / "main.py"
         main.write_text(code)
-        os.chown(main, RUN_UID, RUN_GID)
+        os.chown(main, uid, RUN_GID)
         (run_dir / "stdin").write_text(stdin)
         with (
             open(run_dir / "stdin", "rb") as in_f,
@@ -116,7 +124,7 @@ def run_once(code: str, stdin: str) -> dict:
                 stdout=out_f,
                 stderr=err_f,
                 env={"PATH": "/usr/local/bin:/usr/bin", "PYTHONDONTWRITEBYTECODE": "1"},
-                preexec_fn=_demote,
+                preexec_fn=lambda: _demote(uid),
                 close_fds=True,
             )
             timed_out = False
@@ -124,7 +132,7 @@ def run_once(code: str, stdin: str) -> dict:
                 proc.wait(timeout=LIMITS["wall_seconds"])
             except subprocess.TimeoutExpired:
                 timed_out = True
-            _kill_user_processes(RUN_UID)
+            _kill_user_processes(uid)
             proc.wait()
             runtime_ms = int((time.monotonic() - started) * 1000)
         stdout_size = (run_dir / "stdout").stat().st_size
@@ -177,14 +185,14 @@ def _log(job_id: str, request_id: object, payload: dict, started: float) -> None
     }), flush=True)
 
 
-def handle(job_path: Path) -> None:
+def handle(job_path: Path, uid: int) -> None:
     job_id = job_path.stem
     started = time.monotonic()
     job: object = None
     try:
         job = json.loads(job_path.read_text())
         if _valid(job):
-            payload = {"runs": [run_once(job["code"], r["stdin"]) for r in job["runs"]]}
+            payload = {"runs": [run_once(job["code"], r["stdin"], uid) for r in job["runs"]]}
         else:
             payload = {"error": "invalid_job"}
     except Exception as exc:
@@ -207,9 +215,13 @@ def _ensure(path: Path, uid: int, gid: int, mode: int) -> None:
 def setup() -> None:
     (JOBS / "in").mkdir(exist_ok=True)
     (JOBS / "out").mkdir(exist_ok=True)
+    CLAIMED.mkdir(exist_ok=True)
     _ensure(JOBS, 0, 0, 0o711)
     _ensure(JOBS / "in", API_UID, API_GID, 0o711)
     _ensure(JOBS / "out", 0, API_GID, 0o770)
+    _ensure(CLAIMED, 0, 0, 0o700)
+    for stale in CLAIMED.glob("*.json"):  # a job that was running when the container stopped has no one waiting for it
+        stale.unlink(missing_ok=True)
     report_config()
 
 
@@ -225,7 +237,8 @@ def report_config() -> None:
         rootfs_writable = False
     report = {
         "limits": LIMITS,
-        "run_uid": RUN_UID,
+        "run_uids": RUN_UIDS,
+        "workers": WORKERS,
         "network_interfaces": sorted(os.listdir("/sys/class/net")),
         "root_filesystem_writable": rootfs_writable,
         "supervisor_effective_capabilities": cap_eff,
@@ -243,11 +256,43 @@ def _mtime(path: Path) -> float | None:
         return None
 
 
+def _claim() -> Path | None:
+    """Take the oldest waiting job. The rename is atomic, so two workers never take the same job."""
+    pending = sorted((m, p) for p in (JOBS / "in").glob("*.json") if (m := _mtime(p)) is not None)
+    for _, path in pending:
+        target = CLAIMED / path.name
+        try:
+            os.rename(path, target)
+        except FileNotFoundError:
+            continue
+        return target
+    return None
+
+
+def _work(uid: int) -> None:
+    while True:
+        job = _claim()
+        if job is None:
+            time.sleep(0.05)
+        else:
+            handle(job, uid)
+
+
+def _start(uid: int) -> multiprocessing.Process:
+    worker = multiprocessing.get_context("fork").Process(target=_work, args=(uid,), daemon=True)
+    worker.start()
+    return worker
+
+
 def main() -> None:
     setup()
+    workers = {uid: _start(uid) for uid in RUN_UIDS}
     last_beat = 0.0
     while True:
         now = time.time()
+        for uid, worker in workers.items():
+            if not worker.is_alive():
+                workers[uid] = _start(uid)
         if now - last_beat >= 1:
             (JOBS / "heartbeat").write_text(str(now))
             last_beat = now
@@ -255,11 +300,7 @@ def main() -> None:
             mtime = _mtime(orphan)
             if mtime is not None and now - mtime > ORPHAN_RESULT_SECONDS:
                 orphan.unlink(missing_ok=True)
-        pending = [(m, p) for p in (JOBS / "in").glob("*.json") if (m := _mtime(p)) is not None]
-        if pending:
-            handle(min(pending)[1])
-        else:
-            time.sleep(0.05)
+        time.sleep(0.2)
 
 
 if __name__ == "__main__":

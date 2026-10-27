@@ -2,6 +2,9 @@
 
 Run with `pytest -s tests/test_sandbox_adversarial.py` to print the result table.
 """
+import threading
+import time
+
 import pytest
 
 from app.sandbox import run_batch
@@ -44,6 +47,9 @@ ATTACKS = {
     ),
     "list the job directories": (
         "import os\nprint(os.listdir('/jobs/in'))\n", "", "runtime_error", "Permission",
+    ),
+    "list the claimed jobs": (
+        "import os\nprint(os.listdir('/jobs/claimed'))\n", "", "runtime_error", "Permission",
     ),
     "write outside the temp directory": (
         "open('/etc/pwned', 'w').write('x')\n", "", "runtime_error", "Read-only",
@@ -94,7 +100,8 @@ def test_student_process_runs_unprivileged_with_no_capabilities():
     code = "import os\nprint(os.getuid(), os.getgid(), open('/proc/self/status').read())\n"
     (run,) = run_batch(code, [""])
     first, *_ = run.stdout.split("\n", 1)
-    assert first.startswith("10002 10002")
+    uid, gid = first.split()[:2]
+    assert int(uid) in range(10002, 10006) and gid == "10002"
     assert "CapEff:\t0000000000000000" in run.stdout
 
 
@@ -130,3 +137,65 @@ def test_sandbox_survives_jobs_withdrawn_while_queued():
         path.unlink(missing_ok=True)
     (run,) = run_batch("print('alive')\n", [""])
     assert (run.status, run.stdout.strip()) == ("ok", "alive")
+
+
+def run_together(*jobs):
+    """Starts each job at once from its own thread, as concurrent requests would, and returns their outcomes in order."""
+    outcomes = [None] * len(jobs)
+
+    def go(n, code):
+        (outcomes[n],) = run_batch(code, [""])
+
+    threads = [threading.Thread(target=go, args=(n, code)) for n, code in enumerate(jobs)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    return outcomes
+
+
+WAIT_THEN_SAY = "import time\ntime.sleep(4)\nprint('first finished')\n"
+
+PROBE_OTHER_JOBS = """
+import os, signal, time
+time.sleep(1)
+mine = os.getuid()
+others = []
+for pid in filter(str.isdigit, os.listdir("/proc")):
+    try:
+        uid = int(next(l for l in open(f"/proc/{pid}/status") if l.startswith("Uid:")).split()[1])
+    except (OSError, StopIteration):
+        continue
+    if uid not in (0, mine):
+        others.append(int(pid))
+denied = 0
+for pid in others:
+    for attempt in (lambda: os.readlink(f"/proc/{pid}/cwd"), lambda: open(f"/proc/{pid}/environ").read(),
+                    lambda: os.kill(pid, signal.SIGKILL)):
+        try:
+            attempt()
+        except PermissionError:
+            denied += 1
+print(len(others), denied)
+"""
+
+
+def test_a_job_running_beside_it_cannot_be_read_or_signalled():
+    first, probe = run_together(WAIT_THEN_SAY, PROBE_OTHER_JOBS)
+    found, denied = map(int, probe.stdout.split())
+    assert found >= 1 and denied == 3 * found, probe.stdout
+    assert first.stdout.strip() == "first finished"  # the probe's SIGKILL attempts did not reach it
+
+
+def test_ending_one_run_does_not_kill_a_run_beside_it():
+    first, spinner = run_together(WAIT_THEN_SAY, "while True:\n    pass\n")
+    assert spinner.status == "time_limit"
+    assert (first.status, first.stdout.strip()) == ("ok", "first finished")
+
+
+def test_four_jobs_run_at_the_same_time():
+    started = time.monotonic()
+    outcomes = run_together(*["import time\ntime.sleep(2)\nprint('done')\n"] * 4)
+    elapsed = time.monotonic() - started
+    assert [o.stdout.strip() for o in outcomes] == ["done"] * 4
+    assert elapsed < 5, elapsed  # one after another would take at least 8 s
