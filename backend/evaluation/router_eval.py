@@ -50,7 +50,9 @@ def routing_test(file: str = "router_messages.csv") -> None:
     seconds = []
     for row in rows:
         started = time.perf_counter()
-        decision = routing.classify(adapter, row["message"], settings.router_min_confidence)
+        decision = routing.classify(
+            adapter, row["message"], settings.router_min_confidence, settings.router_budget_s
+        )
         seconds.append(time.perf_counter() - started)
         results.append((row["label"], decision, adapter.config.provider))
         if decision.how != "shortcut":

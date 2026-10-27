@@ -1,10 +1,11 @@
 """TR-A-06, F-51, F-53, TR-L-08: the router's schema validation, keyword fallback and handling of hostile text."""
 import json
+import time
 
 import pytest
 
 from app.chat import routing
-from app.llm.adapter import LLMConfig, LLMError
+from app.llm.adapter import LLMConfig, LLMError, _deadline
 
 
 class Scripted:
@@ -143,3 +144,22 @@ def test_anything_else_still_goes_to_the_model(message):
     adapter = Scripted(answer("general", 0.9))
     decision = routing.classify(adapter, message, 0.6)
     assert (decision.how, len(adapter.calls)) == ("llm", 1)
+
+
+def test_the_routing_call_runs_under_a_time_budget_and_the_budget_is_lifted_after():
+    seen = []
+
+    class Watching(Scripted):
+        def complete(self, system, user, json_schema=None):
+            seen.append(_deadline.get())
+            return super().complete(system, user, json_schema)
+
+    before = time.monotonic()
+    routing.classify(Watching(answer("general", 0.9)), "what is a tuple", 0.6, budget_s=3)
+    assert seen[0] is not None and seen[0] - before <= 3.5
+    assert _deadline.get() is None
+
+
+def test_a_spent_budget_routes_by_keywords_instead_of_waiting_for_the_slowest_provider():
+    decision = routing.classify(Scripted(LLMError("time budget used up")), "show me where I am weakest", 0.6)
+    assert (decision.route, decision.how) == ("progress", "keyword") and "unavailable" in decision.reason

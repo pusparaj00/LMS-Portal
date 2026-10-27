@@ -10,7 +10,7 @@ import re
 from dataclasses import dataclass
 
 from app.feedback.prompt import neutralise
-from app.llm.adapter import LLMAdapter, LLMError
+from app.llm.adapter import LLMAdapter, LLMError, deadline_within
 
 log = logging.getLogger("app.chat")
 
@@ -144,14 +144,15 @@ def _validate(raw: str) -> tuple[str, float]:
     return route, float(confidence)
 
 
-def classify(adapter: LLMAdapter, message: str, min_confidence: float) -> Decision:
+def classify(adapter: LLMAdapter, message: str, min_confidence: float, budget_s: float = 3) -> Decision:
     quick = shortcut_route(message)
     if quick is not None:
         return Decision(quick, None, "shortcut", "one unmistakable phrase")
     fallback = keyword_route(message)
     try:
         system, user = build_prompt(message)
-        route, confidence = _validate(adapter.complete(system, user, SCHEMA))
+        with deadline_within(budget_s):
+            route, confidence = _validate(adapter.complete(system, user, SCHEMA))
     except LLMError as exc:
         return Decision(fallback, None, "keyword", f"model unavailable: {exc}"[:200])
     except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:

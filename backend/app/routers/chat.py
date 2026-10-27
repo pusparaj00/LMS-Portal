@@ -44,7 +44,7 @@ def chat(
     if body.route is not None:
         decision = routing.Decision(body.route, None, "student", "chosen by the student")
     else:
-        decision = routing.classify(adapter, body.message, settings.router_min_confidence)
+        decision = routing.classify(adapter, body.message, settings.router_min_confidence, settings.router_budget_s)
     provider = getattr(adapter.config, "provider", None)
 
     turn = handlers.Turn(

@@ -173,7 +173,7 @@ def test_code_the_claim_quotes_that_is_not_in_the_students_program_is_rejected(c
     assert failed_checks(reply(claim=claim)) == {"quoted_code_is_theirs"}
 
 
-def testable(error_type=None, prediction=True) -> Evidence:
+def evidence_with_claim(error_type=None, prediction=True) -> Evidence:
     return Evidence(
         code=CODE, reference_solution=REFERENCE, failed_tests=EVIDENCE.failed_tests, error_concept_ids=frozenset(),
         retrieved_chunk_ids=frozenset({7, 8}), error_type=error_type, require_example=True, require_prediction=prediction,
@@ -181,27 +181,27 @@ def testable(error_type=None, prediction=True) -> Evidence:
 
 
 def test_a_claim_without_an_example_and_a_prediction_is_not_testable_when_they_are_required():
-    _, checks = verify(reply(), testable())
+    _, checks = verify(reply(), evidence_with_claim())
     missing = next(c for c in checks if c.name == "claim_testable")
     assert not missing.passed and missing.detail == "missing: example_input, predicted_output"
-    _, checks = verify(reply(example_input="5"), testable())
+    _, checks = verify(reply(example_input="5"), evidence_with_claim())
     assert next(c for c in checks if c.name == "claim_testable").detail == "missing: predicted_output"
 
 
 def test_an_empty_prediction_is_a_prediction_the_program_prints_nothing():
-    _, checks = verify(reply(example_input="5", predicted_output=""), testable())
+    _, checks = verify(reply(example_input="5", predicted_output=""), evidence_with_claim())
     assert all_passed(checks)
 
 
 def test_a_cached_claim_needs_an_example_but_no_prediction():
-    _, checks = verify(reply(example_input="5"), testable(prediction=False))
+    _, checks = verify(reply(example_input="5"), evidence_with_claim(prediction=False))
     assert all_passed(checks)
-    _, checks = verify(reply(), testable(prediction=False))
+    _, checks = verify(reply(), evidence_with_claim(prediction=False))
     assert "claim_testable" in {c.name for c in checks if not c.passed}
 
 
 def test_a_syntax_error_needs_no_example_because_no_program_runs():
-    _, checks = verify(reply(), testable(error_type="syntax_error"))
+    _, checks = verify(reply(), evidence_with_claim(error_type="syntax_error"))
     assert "claim_testable" not in {c.name for c in checks}
 
 

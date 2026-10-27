@@ -337,6 +337,7 @@ class FallbackChain:
                 share = left / min(len(ordered) - position, MAX_SHARE_DIVISOR)
                 last = position == len(ordered) - 1
                 share_ends = time.monotonic() + share
+                attempt_started = time.monotonic()
                 try:
                     with deadline_within(left if last or share < MIN_USEFUL_SECONDS else share):
                         reply = adapter.complete(system, user, json_schema)
@@ -350,7 +351,8 @@ class FallbackChain:
                     log.warning(
                         "provider failed, trying the next",
                         extra={"fields": {"provider": adapter.config.provider, "model": adapter.config.model,
-                                          "cooldown_s": cooldown_s}},
+                                          "cooldown_s": cooldown_s,
+                                          "ms": round((time.monotonic() - attempt_started) * 1000)}},
                     )
                     continue
                 _cooling.pop(_key(adapter), None)

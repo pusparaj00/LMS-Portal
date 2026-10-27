@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     llm_model_openrouter: str = "nvidia/nemotron-3-super-120b-a12b:free"
     chat_database_url: str = ""
     router_min_confidence: float = 0.6
+    # The routing call, retries and fallback providers included. Past it the keyword rules route, so a student whose
+    # providers are all rate-limited is not left waiting for the slowest model in the chain.
+    router_budget_s: float = 3
     chat_history_turns: int = 6
     retrieval_min_score: float = 0.67
 
