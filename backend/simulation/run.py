@@ -16,7 +16,9 @@ from simulation import model
 BKT_LEARN = 0.1  # BKT's transition probability: the one thing that distinguishes it from the update rule
 ECE_BINS = 10
 POLICIES = ("adaptive", "random", "bkt", "irt_only", "cat_info", "fixed")
-POOLED = ("adaptive_pooled", "random_pooled")  # the same questions, estimated with the pooled model
+SELECTORS = ("adaptive", "random", "cat_info", "fixed")  # ways of choosing questions, each also estimated pooled
+HELD = ("adaptive", "random", "bkt", "irt_only")  # predictors scored on held-out responses
+POOLED = tuple(f"{p}_pooled" for p in SELECTORS)  # the same questions, estimated with the pooled model
 
 
 def most_informative(pool: list[selection.Item], ability: float) -> selection.Item:
@@ -165,7 +167,7 @@ def simulate(students: int, seed: int, bank: model.Bank, prior: dict | None = No
 
     length = selection.max_questions(items)
     curves = {p: np.zeros((students, length)) for p in (*POLICIES, *POOLED)}
-    held_scores = {p: [] for p in (*POLICIES, *POOLED, "prior_only")}
+    held_scores = {p: [] for p in (*HELD, "adaptive_pooled", "random_pooled", "prior_only")}
     held_labels: list[int] = []
     coverage = {p: [] for p in POLICIES}
     correlation = {p: [] for p in (*POLICIES, *POOLED)}
@@ -183,7 +185,7 @@ def simulate(students: int, seed: int, bank: model.Bank, prior: dict | None = No
             coverage[policy].append(len({c for i in asked for c in items[i].concepts}))
             estimate = [mastery[c] for c in range(k)]
             correlation[policy].append(float(np.corrcoef(estimate, mastery_true[s])[0, 1]))
-            if policy in ("adaptive", "random"):
+            if policy in SELECTORS:
                 errors, after_five, theta_hat, covariance = pooled_trace(
                     items, outcomes[s], mastery_true[s], asked, k, **prior
                 )
@@ -205,7 +207,7 @@ def simulate(students: int, seed: int, bank: model.Bank, prior: dict | None = No
         seen = set(asked_by_policy["adaptive"][2]) | set(asked_by_policy["random"][2])
         held = [i for i in items if i.id not in seen]
         held_labels += [int(outcomes[s][i.id]) for i in held]
-        for policy in POLICIES:
+        for policy in HELD:
             mastery, ability, _ = asked_by_policy[policy]
             if policy == "irt_only":
                 held_scores[policy] += [
@@ -255,25 +257,15 @@ def report(result: dict, args: argparse.Namespace) -> str:
         "",
         "## Error of the mastery vector (mean absolute error against true mastery)",
         "",
-        "| Items asked | adaptive | random | BKT (random order) | max-information adaptive | fixed order |"
-        " adaptive + pooled | random + pooled |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Items asked | adaptive | random | BKT (random order) | adaptive + pooled | random + pooled |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for n in sorted({1, 3, 5, 8, 10, 16, length}):
         lines.append(
             f"| {n} | {curves['adaptive'][n - 1]:.3f} | {curves['random'][n - 1]:.3f} | {curves['bkt'][n - 1]:.3f} |"
-            f" {curves['cat_info'][n - 1]:.3f} | {curves['fixed'][n - 1]:.3f} |"
             f" {curves['adaptive_pooled'][n - 1]:.3f} | {curves['random_pooled'][n - 1]:.3f} |"
         )
-    reach = {p: items_to_reach(curves[p], threshold) for p in ("adaptive", "cat_info", "fixed", "bkt")}
     lines += [
-        "",
-        f"Items needed to reach random selection's final error ({threshold:.3f}), out of {length}: "
-        + ", ".join(
-            f"{name} {reach[key] if reach[key] else 'not reached'}"
-            for key, name in (("adaptive", "adaptive"), ("cat_info", "max-information adaptive"),
-                              ("fixed", "fixed order"), ("bkt", "BKT in random order"))
-        ) + ".",
         "",
         f"Threshold = the error random selection reaches after {length} items ({threshold:.3f}). "
         + (
@@ -290,18 +282,39 @@ def report(result: dict, args: argparse.Namespace) -> str:
             else "Adaptive selection does not reach it within the test length."
         ),
         "",
+        "## Selection baselines, all with the pooled estimate (TR-V-05)",
+        "",
+        "The same estimator for every way of choosing questions, so the comparison is about the choice alone. "
+        "Max-information adaptive is the textbook adaptive test: the question with the largest 2PL information at the "
+        "current ability estimate, with no concept coverage term. Fixed order asks the allowed questions in id order.",
+        "",
+        "| Items asked | adaptive | max-information adaptive | random | fixed order |",
+        "| --- | --- | --- | --- | --- |",
+        *[
+            f"| {n} | " + " | ".join(f"{curves[key][n - 1]:.3f}" for key in (
+                "adaptive_pooled", "cat_info_pooled", "random_pooled", "fixed_pooled")) + " |"
+            for n in sorted({1, 3, 5, 8, 10, 16, length})
+        ],
+        "",
+        f"Items needed to reach random selection's final pooled error ({pooled_threshold:.3f}), out of {length}: "
+        + ", ".join(
+            f"{name} {reach if (reach := items_to_reach(curves[key], pooled_threshold)) else 'not reached'}"
+            for key, name in (("adaptive_pooled", "adaptive"), ("cat_info_pooled", "max-information adaptive"),
+                              ("fixed_pooled", "fixed order"))
+        ) + ".",
+        "",
         "## Coverage and ranking after the whole test",
         "",
         "| Policy | Concepts touched (of 12) | Correlation of estimate with true mastery |",
         "| --- | --- | --- |",
         *[
             f"| {name} | {result['coverage'][key]:.1f} | {result['correlation'][key]:.3f} |"
-            for key, name in (("adaptive", "adaptive"), ("random", "random"), ("bkt", "BKT (random order)"),
-                              ("cat_info", "max-information adaptive"), ("fixed", "fixed order"))
+            for key, name in (("adaptive", "adaptive"), ("random", "random"), ("bkt", "BKT (random order)"))
         ],
         *[
             f"| {name} | {result['coverage'][key]:.1f} | {result['correlation'][key + '_pooled']:.3f} |"
-            for key, name in (("adaptive", "adaptive + pooled"), ("random", "random + pooled"))
+            for key, name in (("adaptive", "adaptive + pooled"), ("random", "random + pooled"),
+                              ("cat_info", "max-information adaptive + pooled"), ("fixed", "fixed order + pooled"))
         ],
         "",
         "## Five-item sanity test (TR-V-06)",
@@ -333,8 +346,6 @@ def report(result: dict, args: argparse.Namespace) -> str:
         "random": "Random selection + mastery update",
         "bkt": "BKT baseline (random order, learning rate 0.1)",
         "irt_only": "Ability-only 2PL baseline (random order)",
-        "cat_info": "Max-information adaptive selection + mastery update",
-        "fixed": "Fixed order + mastery update",
         "adaptive_pooled": "Adaptive selection + pooled estimate",
         "random_pooled": "Random selection + pooled estimate",
         "prior_only": "No evidence (every concept at its prior)",

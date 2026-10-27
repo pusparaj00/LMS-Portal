@@ -94,7 +94,9 @@ def test_the_new_baselines_ask_the_full_allowed_test_without_repeats_and_fixed_o
 def test_every_policy_appears_in_the_simulated_curves_and_the_report():
     bank = model.load_bank(BANK)
     result = run.simulate(20, 3, bank)
-    assert {"cat_info", "fixed"} <= set(result["curves"]) and {"cat_info", "fixed"} <= set(result["auc"])
+    assert {"cat_info", "fixed", "cat_info_pooled", "fixed_pooled"} <= set(result["curves"])
+    # their answers can overlap the held-out items, so they are not scored on held-out responses
+    assert not {"cat_info", "fixed"} & set(result["auc"])
     import argparse
 
     args = argparse.Namespace(students=20, seed=3, items=bank.items, prior_flags="")
