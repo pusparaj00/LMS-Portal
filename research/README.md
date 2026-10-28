@@ -38,6 +38,7 @@ set `KT_DATA_DIR`:
 
     Datasets/ASSISTments2009/skill_builder_data.csv     corrected skill-builder file (346,860 rows)
     Datasets/EdNet/EdNet-KT1.zip  and  Datasets/EdNet/contents/questions.csv
+    Datasets/CSEDM/Data/MainTable.csv                   (step 91 only; first run of each student on each problem)
 
 EdNet is CC BY-NC 4.0 (attribution, non-commercial). Check each dataset's terms before sharing anything derived from it.
 
@@ -46,6 +47,8 @@ EdNet is CC BY-NC 4.0 (attribution, non-commercial). Check each dataset's terms 
     python cold_start.py assist09 --folds 3                           # AUC and calibration against training size
     python calibration.py assist09 --folds 3                          # Platt and isotonic maps, pre-set success rule
     python significance.py assist09 --folds 5 --bkt --fit-skill       # student bootstrap, paired differences
+    python cold_start_plus.py --folds 5 --bootstrap 100               # step 91: stack started from other datasets' weights
+    python test_cold_start_plus.py                                    # checks of its core functions
     (the same with `ednet --students 1500` for EdNet)
 
 `kt_comparison.ipynb` is a self-contained version for Kaggle: upload `skill_builder_data.csv` as a private dataset, add it

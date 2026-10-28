@@ -37,7 +37,7 @@ def load_assist09() -> pd.DataFrame:
     raw = pd.read_csv(DATA / "ASSISTments2009" / "skill_builder_data.csv", encoding="latin-1", low_memory=False)
     raw = raw.dropna(subset=["skill_id"])
     frame = pd.DataFrame({
-        "user_id": raw["user_id"], "skill_name": raw["skill_id"].astype(str),
+        "user_id": raw["user_id"], "skill_name": raw["skill_id"].astype(str), "item_id": raw["problem_id"].astype(str),
         "correct": raw["correct"].astype(int), "order_id": raw["order_id"],
     })
     return frame.sort_values("order_id").reset_index(drop=True)
@@ -59,7 +59,8 @@ def load_ednet(students: int, seed: int = 0) -> pd.DataFrame:
     raw["correct"] = (raw["user_answer"] == raw["correct_answer"]).astype(int)
     raw = raw.sort_values(["timestamp", "solving_id"]).reset_index(drop=True)
     raw["order_id"] = np.arange(len(raw))
-    return raw[["user_id", "skill_name", "correct", "order_id"]]
+    raw["item_id"] = raw["question_id"].astype(str)
+    return raw[["user_id", "skill_name", "item_id", "correct", "order_id"]]
 
 
 def predict_lms(test: pd.DataFrame) -> np.ndarray:
