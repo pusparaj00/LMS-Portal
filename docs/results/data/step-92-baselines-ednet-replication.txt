@@ -2,53 +2,53 @@
 ## ednet
 
 ednet: 176783 answers, 1500 students
-fold 1 N=30: lms_default 0.6179, pfa 0.6124, rasch 0.6691, gbdt 0.6640, stack_transfer 0.6742, hybrid 0.6742  alpha 0.0
-fold 1 N=100: lms_default 0.6179, pfa 0.6389, rasch 0.6937, gbdt 0.6919, stack_transfer 0.6975, hybrid 0.6987  alpha 0.25
-fold 1 N=300: lms_default 0.6179, pfa 0.6401, rasch 0.7133, gbdt 0.7092, stack_transfer 0.7107, hybrid 0.7120  alpha 0.5
-fold 1 N=all: lms_default 0.6179, pfa 0.6505, rasch 0.7367, gbdt 0.7285, stack_transfer 0.7267, hybrid 0.7292  alpha 0.5
-fold 2 N=30: lms_default 0.5922, pfa 0.5906, rasch 0.6498, gbdt 0.6371, stack_transfer 0.6594, hybrid 0.6594  alpha 0.0
-fold 2 N=100: lms_default 0.5922, pfa 0.5997, rasch 0.6627, gbdt 0.6616, stack_transfer 0.6692, hybrid 0.6692  alpha 0.0
-fold 2 N=300: lms_default 0.5922, pfa 0.6133, rasch 0.6938, gbdt 0.6899, stack_transfer 0.6908, hybrid 0.6924  alpha 0.25
-fold 2 N=all: lms_default 0.5922, pfa 0.6306, rasch 0.7241, gbdt 0.7153, stack_transfer 0.7144, hybrid 0.7161  alpha 0.75
-fold 3 N=30: lms_default 0.5881, pfa 0.5708, rasch 0.6427, gbdt 0.6257, stack_transfer 0.6564, hybrid 0.6564  alpha 0.0
-fold 3 N=100: lms_default 0.5881, pfa 0.5988, rasch 0.6710, gbdt 0.6637, stack_transfer 0.6744, hybrid 0.6744  alpha 0.0
-fold 3 N=300: lms_default 0.5881, pfa 0.6128, rasch 0.6937, gbdt 0.6862, stack_transfer 0.6900, hybrid 0.6914  alpha 0.25
-fold 3 N=all: lms_default 0.5881, pfa 0.6272, rasch 0.7268, gbdt 0.7161, stack_transfer 0.7156, hybrid 0.7173  alpha 0.5
-fold 4 N=30: lms_default 0.6229, pfa 0.5393, rasch 0.6527, gbdt 0.5895, stack_transfer 0.6638, hybrid 0.6630  alpha 0.25
-fold 4 N=100: lms_default 0.6229, pfa 0.6019, rasch 0.6810, gbdt 0.6720, stack_transfer 0.6874, hybrid 0.6869  alpha 0.25
-fold 4 N=300: lms_default 0.6229, pfa 0.6374, rasch 0.7090, gbdt 0.7029, stack_transfer 0.7068, hybrid 0.7079  alpha 0.25
-fold 4 N=all: lms_default 0.6229, pfa 0.6451, rasch 0.7407, gbdt 0.7296, stack_transfer 0.7299, hybrid 0.7312  alpha 0.5
-fold 5 N=30: lms_default 0.5932, pfa 0.5813, rasch 0.6376, gbdt 0.6207, stack_transfer 0.6489, hybrid 0.6480  alpha 0.25
-fold 5 N=100: lms_default 0.5932, pfa 0.5969, rasch 0.6607, gbdt 0.6594, stack_transfer 0.6673, hybrid 0.6678  alpha 0.25
-fold 5 N=300: lms_default 0.5932, pfa 0.5992, rasch 0.6799, gbdt 0.6746, stack_transfer 0.6776, hybrid 0.6790  alpha 0.25
-fold 5 N=all: lms_default 0.5932, pfa 0.6228, rasch 0.7095, gbdt 0.6988, stack_transfer 0.6974, hybrid 0.6997  alpha 0.5
+fold 1 N=30: lms_default 0.6179, pfa 0.6124, rasch 0.6691, gbdt 0.6640, stack_transfer 0.6742, hybrid 0.6742, sakt 0.5044, sakt_item 0.5668, akt_lite 0.5427  alpha 0.0
+fold 1 N=100: lms_default 0.6179, pfa 0.6389, rasch 0.6937, gbdt 0.6919, stack_transfer 0.6975, hybrid 0.6987, sakt 0.5643, sakt_item 0.5931, akt_lite 0.5760  alpha 0.25
+fold 1 N=300: lms_default 0.6179, pfa 0.6401, rasch 0.7133, gbdt 0.7092, stack_transfer 0.7107, hybrid 0.7120, sakt 0.6252, sakt_item 0.6098, akt_lite 0.6457  alpha 0.5
+fold 1 N=all: lms_default 0.6179, pfa 0.6505, rasch 0.7367, gbdt 0.7285, stack_transfer 0.7267, hybrid 0.7292, sakt 0.6596, sakt_item 0.6685, akt_lite 0.6902  alpha 0.5
+fold 2 N=30: lms_default 0.5922, pfa 0.5906, rasch 0.6498, gbdt 0.6371, stack_transfer 0.6594, hybrid 0.6594, sakt 0.5876, sakt_item 0.5819, akt_lite 0.5371  alpha 0.0
+fold 2 N=100: lms_default 0.5922, pfa 0.5997, rasch 0.6627, gbdt 0.6616, stack_transfer 0.6692, hybrid 0.6692, sakt 0.6147, sakt_item 0.5944, akt_lite 0.6162  alpha 0.0
+fold 2 N=300: lms_default 0.5922, pfa 0.6133, rasch 0.6938, gbdt 0.6899, stack_transfer 0.6908, hybrid 0.6924, sakt 0.6255, sakt_item 0.5900, akt_lite 0.6450  alpha 0.25
+fold 2 N=all: lms_default 0.5922, pfa 0.6306, rasch 0.7241, gbdt 0.7153, stack_transfer 0.7144, hybrid 0.7161, sakt 0.6477, sakt_item 0.6608, akt_lite 0.6952  alpha 0.75
+fold 3 N=30: lms_default 0.5881, pfa 0.5708, rasch 0.6427, gbdt 0.6257, stack_transfer 0.6564, hybrid 0.6564, sakt 0.5361, sakt_item 0.5537, akt_lite 0.5436  alpha 0.0
+fold 3 N=100: lms_default 0.5881, pfa 0.5988, rasch 0.6710, gbdt 0.6637, stack_transfer 0.6744, hybrid 0.6744, sakt 0.5604, sakt_item 0.5611, akt_lite 0.5567  alpha 0.0
+fold 3 N=300: lms_default 0.5881, pfa 0.6128, rasch 0.6937, gbdt 0.6862, stack_transfer 0.6900, hybrid 0.6914, sakt 0.6028, sakt_item 0.5989, akt_lite 0.6081  alpha 0.25
+fold 3 N=all: lms_default 0.5881, pfa 0.6272, rasch 0.7268, gbdt 0.7161, stack_transfer 0.7156, hybrid 0.7173, sakt 0.6386, sakt_item 0.6726, akt_lite 0.6861  alpha 0.5
+fold 4 N=30: lms_default 0.6229, pfa 0.5393, rasch 0.6527, gbdt 0.5895, stack_transfer 0.6638, hybrid 0.6630, sakt 0.5448, sakt_item 0.5738, akt_lite 0.5408  alpha 0.25
+fold 4 N=100: lms_default 0.6229, pfa 0.6019, rasch 0.6810, gbdt 0.6720, stack_transfer 0.6874, hybrid 0.6869, sakt 0.5862, sakt_item 0.6038, akt_lite 0.5911  alpha 0.25
+fold 4 N=300: lms_default 0.6229, pfa 0.6374, rasch 0.7090, gbdt 0.7029, stack_transfer 0.7068, hybrid 0.7079, sakt 0.6172, sakt_item 0.6106, akt_lite 0.6206  alpha 0.25
+fold 4 N=all: lms_default 0.6229, pfa 0.6451, rasch 0.7407, gbdt 0.7296, stack_transfer 0.7299, hybrid 0.7312, sakt 0.6551, sakt_item 0.6709, akt_lite 0.6758  alpha 0.5
+fold 5 N=30: lms_default 0.5932, pfa 0.5813, rasch 0.6376, gbdt 0.6207, stack_transfer 0.6489, hybrid 0.6480, sakt 0.5215, sakt_item 0.5404, akt_lite 0.5313  alpha 0.25
+fold 5 N=100: lms_default 0.5932, pfa 0.5969, rasch 0.6607, gbdt 0.6594, stack_transfer 0.6673, hybrid 0.6678, sakt 0.5204, sakt_item 0.5139, akt_lite 0.5174  alpha 0.25
+fold 5 N=300: lms_default 0.5932, pfa 0.5992, rasch 0.6799, gbdt 0.6746, stack_transfer 0.6776, hybrid 0.6790, sakt 0.6051, sakt_item 0.5810, akt_lite 0.6131  alpha 0.25
+fold 5 N=all: lms_default 0.5932, pfa 0.6228, rasch 0.7095, gbdt 0.6988, stack_transfer 0.6974, hybrid 0.6997, sakt 0.6354, sakt_item 0.6551, akt_lite 0.6745  alpha 0.5
 
 ### ednet: AUC (mean over folds, std in brackets)
 
-| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
-| --- | --- | --- | --- | --- | --- | --- |
-| 30 | 0.6029 (0.0145) | 0.5789 (0.0241) | 0.6503 (0.0107) | 0.6274 (0.0241) | 0.6606 (0.0084) | 0.6602 (0.0086) |
-| 100 | 0.6029 (0.0145) | 0.6072 (0.0159) | 0.6738 (0.0123) | 0.6697 (0.0119) | 0.6791 (0.0115) | 0.6794 (0.0118) |
-| 300 | 0.6029 (0.0145) | 0.6206 (0.0157) | 0.6979 (0.0120) | 0.6926 (0.0123) | 0.6952 (0.0121) | 0.6965 (0.0120) |
-| all | 0.6029 (0.0145) | 0.6352 (0.0107) | 0.7276 (0.0109) | 0.7177 (0.0112) | 0.7168 (0.0114) | 0.7187 (0.0113) |
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid | sakt | sakt_item | akt_lite |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.6029 (0.0145) | 0.5789 (0.0241) | 0.6503 (0.0107) | 0.6274 (0.0241) | 0.6606 (0.0084) | 0.6602 (0.0086) | 0.5389 (0.0279) | 0.5633 (0.0147) | 0.5391 (0.0045) |
+| 100 | 0.6029 (0.0145) | 0.6072 (0.0159) | 0.6738 (0.0123) | 0.6697 (0.0119) | 0.6791 (0.0115) | 0.6794 (0.0118) | 0.5692 (0.0311) | 0.5733 (0.0330) | 0.5715 (0.0333) |
+| 300 | 0.6029 (0.0145) | 0.6206 (0.0157) | 0.6979 (0.0120) | 0.6926 (0.0123) | 0.6952 (0.0121) | 0.6965 (0.0120) | 0.6152 (0.0096) | 0.5981 (0.0114) | 0.6265 (0.0159) |
+| all | 0.6029 (0.0145) | 0.6352 (0.0107) | 0.7276 (0.0109) | 0.7177 (0.0112) | 0.7168 (0.0114) | 0.7187 (0.0113) | 0.6473 (0.0092) | 0.6656 (0.0066) | 0.6844 (0.0081) |
 
 ### ednet: ECE (mean over folds, std in brackets)
 
-| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
-| --- | --- | --- | --- | --- | --- | --- |
-| 30 | 0.1520 (0.0126) | 0.0744 (0.0368) | 0.0177 (0.0008) | 0.0494 (0.0129) | 0.0339 (0.0135) | 0.0316 (0.0123) |
-| 100 | 0.1520 (0.0126) | 0.0377 (0.0184) | 0.0169 (0.0016) | 0.0171 (0.0044) | 0.0188 (0.0108) | 0.0186 (0.0108) |
-| 300 | 0.1520 (0.0126) | 0.0294 (0.0091) | 0.0157 (0.0023) | 0.0130 (0.0040) | 0.0163 (0.0055) | 0.0138 (0.0055) |
-| all | 0.1520 (0.0126) | 0.0153 (0.0073) | 0.0145 (0.0036) | 0.0089 (0.0032) | 0.0118 (0.0042) | 0.0091 (0.0030) |
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid | sakt | sakt_item | akt_lite |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.1520 (0.0126) | 0.0744 (0.0368) | 0.0177 (0.0008) | 0.0494 (0.0129) | 0.0339 (0.0135) | 0.0316 (0.0123) | 0.0813 (0.0324) | 0.0892 (0.0406) | 0.0716 (0.0349) |
+| 100 | 0.1520 (0.0126) | 0.0377 (0.0184) | 0.0169 (0.0016) | 0.0171 (0.0044) | 0.0188 (0.0108) | 0.0186 (0.0108) | 0.0444 (0.0200) | 0.0806 (0.0333) | 0.0440 (0.0231) |
+| 300 | 0.1520 (0.0126) | 0.0294 (0.0091) | 0.0157 (0.0023) | 0.0130 (0.0040) | 0.0163 (0.0055) | 0.0138 (0.0055) | 0.0341 (0.0100) | 0.0605 (0.0211) | 0.0488 (0.0158) |
+| all | 0.1520 (0.0126) | 0.0153 (0.0073) | 0.0145 (0.0036) | 0.0089 (0.0032) | 0.0118 (0.0042) | 0.0091 (0.0030) | 0.0158 (0.0044) | 0.0384 (0.0167) | 0.0301 (0.0143) |
 
 ### ednet: LogLoss (mean over folds, std in brackets)
 
-| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
-| --- | --- | --- | --- | --- | --- | --- |
-| 30 | 0.7255 (0.0267) | 0.6612 (0.0265) | 0.6148 (0.0151) | 0.6322 (0.0203) | 0.6143 (0.0152) | 0.6135 (0.0158) |
-| 100 | 0.7255 (0.0267) | 0.6392 (0.0232) | 0.6037 (0.0169) | 0.6065 (0.0174) | 0.6021 (0.0182) | 0.6018 (0.0184) |
-| 300 | 0.7255 (0.0267) | 0.6300 (0.0182) | 0.5905 (0.0167) | 0.5936 (0.0172) | 0.5923 (0.0170) | 0.5912 (0.0171) |
-| all | 0.7255 (0.0267) | 0.6216 (0.0151) | 0.5717 (0.0163) | 0.5775 (0.0163) | 0.5784 (0.0161) | 0.5768 (0.0162) |
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid | sakt | sakt_item | akt_lite |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.7255 (0.0267) | 0.6612 (0.0265) | 0.6148 (0.0151) | 0.6322 (0.0203) | 0.6143 (0.0152) | 0.6135 (0.0158) | 0.6688 (0.0075) | 0.6712 (0.0371) | 0.6688 (0.0253) |
+| 100 | 0.7255 (0.0267) | 0.6392 (0.0232) | 0.6037 (0.0169) | 0.6065 (0.0174) | 0.6021 (0.0182) | 0.6018 (0.0184) | 0.6456 (0.0164) | 0.6637 (0.0316) | 0.6458 (0.0186) |
+| 300 | 0.7255 (0.0267) | 0.6300 (0.0182) | 0.5905 (0.0167) | 0.5936 (0.0172) | 0.5923 (0.0170) | 0.5912 (0.0171) | 0.6305 (0.0152) | 0.6432 (0.0191) | 0.6317 (0.0195) |
+| all | 0.7255 (0.0267) | 0.6216 (0.0151) | 0.5717 (0.0163) | 0.5775 (0.0163) | 0.5784 (0.0161) | 0.5768 (0.0162) | 0.6150 (0.0150) | 0.6130 (0.0165) | 0.6021 (0.0147) |
 
 ### ednet: AUC difference stack_transfer minus other model, 95% interval over students (100 resamples)
 
@@ -57,20 +57,32 @@ fold 5 N=all: lms_default 0.5932, pfa 0.6228, rasch 0.7095, gbdt 0.6988, stack_t
 | 100 | pfa | +0.0765 | +0.0668 to +0.0848 |
 | 100 | rasch | +0.0041 | +0.0019 to +0.0069 |
 | 100 | gbdt | +0.0092 | +0.0067 to +0.0121 |
-| all | pfa | +0.0820 | +0.0761 to +0.0875 |
-| all | rasch | -0.0109 | -0.0129 to -0.0091 |
-| all | gbdt | -0.0009 | -0.0016 to -0.0002 |
+| 100 | sakt | +0.1129 | +0.0996 to +0.1280 |
+| 100 | sakt_item | +0.1117 | +0.0999 to +0.1227 |
+| 100 | akt_lite | +0.1100 | +0.0984 to +0.1204 |
+| all | pfa | +0.0820 | +0.0770 to +0.0882 |
+| all | rasch | -0.0109 | -0.0125 to -0.0089 |
+| all | gbdt | -0.0009 | -0.0019 to -0.0001 |
+| all | sakt | +0.0696 | +0.0647 to +0.0738 |
+| all | sakt_item | +0.0535 | +0.0490 to +0.0580 |
+| all | akt_lite | +0.0340 | +0.0284 to +0.0394 |
 
 ### ednet: AUC difference hybrid minus other model, 95% interval over students (100 resamples)
 
 | Training students | against | difference | interval |
 | --- | --- | --- | --- |
-| 100 | pfa | +0.0766 | +0.0657 to +0.0846 |
-| 100 | rasch | +0.0043 | +0.0018 to +0.0069 |
-| 100 | gbdt | +0.0094 | +0.0067 to +0.0115 |
-| 100 | stack_transfer | +0.0001 | -0.0004 to +0.0005 |
-| all | pfa | +0.0839 | +0.0792 to +0.0888 |
-| all | rasch | -0.0089 | -0.0110 to -0.0072 |
-| all | gbdt | +0.0010 | +0.0007 to +0.0015 |
-| all | stack_transfer | +0.0020 | +0.0013 to +0.0025 |
+| 100 | pfa | +0.0766 | +0.0645 to +0.0881 |
+| 100 | rasch | +0.0043 | +0.0016 to +0.0071 |
+| 100 | gbdt | +0.0094 | +0.0069 to +0.0121 |
+| 100 | stack_transfer | +0.0001 | -0.0004 to +0.0006 |
+| 100 | sakt | +0.1130 | +0.0994 to +0.1276 |
+| 100 | sakt_item | +0.1118 | +0.0992 to +0.1230 |
+| 100 | akt_lite | +0.1101 | +0.0995 to +0.1191 |
+| all | pfa | +0.0839 | +0.0790 to +0.0892 |
+| all | rasch | -0.0089 | -0.0106 to -0.0071 |
+| all | gbdt | +0.0010 | +0.0006 to +0.0014 |
+| all | stack_transfer | +0.0020 | +0.0014 to +0.0024 |
+| all | sakt | +0.0716 | +0.0664 to +0.0776 |
+| all | sakt_item | +0.0554 | +0.0516 to +0.0598 |
+| all | akt_lite | +0.0360 | +0.0309 to +0.0418 |
 exit 0

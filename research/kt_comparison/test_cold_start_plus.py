@@ -1,4 +1,5 @@
-"""Checks for the pieces of cold_start_plus.py that the claims rest on. Run in the research environment:
+"""Checks for the pieces of cold_start_plus.py and sequence_models.py that the claims rest on. Run in the research
+environment (the sequence-model checks need PyTorch, so use the Python 3.12 environment for all of them):
     python test_cold_start_plus.py
 """
 import numpy as np
@@ -44,6 +45,34 @@ def test_causal_features_use_only_earlier_answers():
     assert np.allclose(first[:3], second[:3])  # changing the third answer changes nothing up to and including itself
     assert not np.allclose(first[3], second[3])
     assert first[0, 2] == 0.0  # no earlier answers on the skill at the first answer
+
+
+def test_every_test_row_is_scored_exactly_once_by_the_sequence_windows():
+    from sequence_models import WINDOW, windows
+
+    lengths = [3, WINDOW, WINDOW + 1, 3 * WINDOW + 7]
+    frame = pd.concat([pd.DataFrame({"user_id": f"u{i}", "skill_name": "a", "item_id": "x", "correct": 1}, index=range(n))
+                       for i, n in enumerate(lengths)], ignore_index=True)
+    w = windows(frame, {"a": 1}, {"x": 1}, training=False)
+    rows = w["row"][w["scored"]].numpy()
+    assert sorted(rows) == list(range(len(frame)))
+
+
+def test_a_sequence_prediction_does_not_depend_on_later_answers():
+    import torch
+    from sequence_models import WINDOW, Net
+
+    torch.manual_seed(0)
+    net = Net(3, 4, "akt_lite").eval()
+    skill = torch.randint(1, 4, (1, WINDOW))
+    item = torch.randint(1, 5, (1, WINDOW))
+    correct = torch.randint(0, 2, (1, WINDOW))
+    changed = correct.clone()
+    changed[0, 40] = 1 - changed[0, 40]
+    with torch.no_grad():
+        before, after = net(skill, item, correct), net(skill, item, changed)
+    assert torch.allclose(before[0, :41], after[0, :41], atol=1e-5)  # up to and including position 40
+    assert not torch.allclose(before[0, 41:], after[0, 41:], atol=1e-5)
 
 
 if __name__ == "__main__":

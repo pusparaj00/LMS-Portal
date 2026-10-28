@@ -51,10 +51,15 @@ EdNet is CC BY-NC 4.0 (attribution, non-commercial). Check each dataset's terms 
     python test_cold_start_plus.py                                    # checks of its core functions
     python baselines_plus.py --folds 5 --bootstrap 100                # step 92: PFA, Rasch, gradient boosting, hybrid
     python baselines_plus.py --targets ednet --ednet-seed 1           # replication on a second EdNet sample
+    python baselines_plus.py --sequence                               # also sakt, sakt_item, akt_lite (needs PyTorch)
     (the same with `ednet --students 1500` for EdNet)
 
 `kt_comparison.ipynb` is a self-contained version for Kaggle: upload `skill_builder_data.csv` as a private dataset, add it
 as input, switch the internet on once (to install pyBKT) and run all cells.
+
+The sequence models need PyTorch, which has no wheel for Python 3.15: use a Python 3.12 environment
+(`pip install torch --index-url https://download.pytorch.org/whl/cpu numpy pandas scikit-learn scipy`) for `--sequence`
+and for `test_cold_start_plus.py`.
 
 ## Known issues
 

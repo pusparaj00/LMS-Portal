@@ -9,6 +9,7 @@
   gbdt            gradient-boosted trees (scikit-learn HistGradientBoosting) on the stack's six features
   hybrid          post-hoc (added after the first run showed gbdt ahead at large N): a blend of the stack's and gbdt's
                   logits; the blend weight is chosen on out-of-group predictions of the N training students only
+  sakt, sakt_item, akt_lite   sequence models of sequence_models.py, with --sequence
   lms_default     the LMS rule with its default numbers
 Only the N training students are used for fitting, counting and choosing; test students never are.
 
@@ -40,7 +41,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import GroupKFold
 
 LEVELS = [30, 100, 300, None]
-NAMES = ("lms_default", "pfa", "rasch", "gbdt", "stack_transfer", "hybrid")
+NAMES = ["lms_default", "pfa", "rasch", "gbdt", "stack_transfer", "hybrid"]
+SEQUENCE = ("sakt", "sakt_item", "akt_lite")  # sequence_models.py; added to NAMES with --sequence (Python 3.12 + PyTorch)
 ALPHAS = [0.0, 0.25, 0.5, 0.75, 1.0]  # weight of gbdt in the hybrid
 MIN_HYBRID_ROWS = 200
 PFA_C = [0.1, 1.0, 10.0]
@@ -171,6 +173,8 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
                 "stack_transfer": sigmoid(x_te @ w),
                 "hybrid": sigmoid((1 - alpha) * (x_te @ w) + alpha * logit(gbdt_p)),
             }
+            for kind in SEQUENCE if SEQUENCE[0] in NAMES else ():
+                preds[kind] = sequence_predict(sub, test, kind)
             for label, p in preds.items():
                 results.setdefault((level, label), []).append(metrics(truth, p))
             stored.setdefault(level, []).append((te, preds))
@@ -197,7 +201,7 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
             for te, preds in stored[level]:
                 for k in NAMES:
                     merged[k][te] = preds[k]
-            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer") if k != focus]:
+            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *SEQUENCE) if k in NAMES and k != focus]:
                 diff = roc_auc_score(truth_all, merged[focus]) - roc_auc_score(truth_all, merged[other])
                 low, high = auc_bootstrap(truth_all, (merged[focus], merged[other]), user_rows, draws, rng)
                 print(f"| {'all' if level is None else level} | {other} | {diff:+.4f} | {low:+.4f} to {high:+.4f} |")
@@ -210,7 +214,12 @@ def main() -> int:
     parser.add_argument("--students", type=int, default=1500)
     parser.add_argument("--targets", default="assist09,ednet,csedm")
     parser.add_argument("--ednet-seed", type=int, default=0, help="which random sample of EdNet students (1 = replication)")
+    parser.add_argument("--sequence", action="store_true", help="also run sakt, sakt_item and akt_lite (needs PyTorch)")
     args = parser.parse_args()
+    if args.sequence:
+        global sequence_predict
+        from sequence_models import sequence_predict
+        NAMES.extend(SEQUENCE)
     loaders = {"assist09": load_assist09, "ednet": lambda: load_ednet(args.students, args.ednet_seed), "csedm": load_csedm}
     datasets = {name: load() for name, load in loaders.items()}
     for name in args.targets.split(","):
