@@ -12,6 +12,8 @@ Training uses only the N training students; 20% of them (at least one) are held 
 are scored from their own earlier answers only (windows of 100 answers, each prediction has at least 50 earlier answers
 when the student has that many). Constants are declared here and were not tuned on test students.
 """
+import os
+
 import numpy as np
 import pandas as pd
 import torch
@@ -20,7 +22,7 @@ from torch import nn
 WINDOW, STRIDE = 100, 50
 DIM, HEADS, DROPOUT = 48, 2, 0.2
 LEARNING_RATE, WEIGHT_DECAY, BATCH, MAX_EPOCHS, PATIENCE = 2e-3, 1e-5, 64, 40, 4
-torch.set_num_threads(8)
+torch.set_num_threads(int(os.environ.get("KT_THREADS", "8")))
 
 
 class Net(nn.Module):

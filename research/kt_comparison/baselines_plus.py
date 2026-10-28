@@ -16,6 +16,7 @@ Only the N training students are used for fitting, counting and choosing; test s
     python baselines_plus.py [--folds 5] [--bootstrap 100] [--students 1500] [--targets assist09,ednet,csedm]
 """
 import argparse
+import os
 
 import numpy as np
 import pandas as pd
@@ -42,6 +43,11 @@ from sklearn.model_selection import GroupKFold
 
 LEVELS = [30, 100, 300, None]
 NAMES = ["lms_default", "pfa", "rasch", "gbdt", "stack_transfer", "hybrid"]
+PUBLISHED = ("dkt", "akt")  # published_models.py (pyKT DKT and AKT); with --published, only at N in PUBLISHED_LEVELS
+PUBLISHED_LEVELS = (30, 100, None)
+ORDER_SEED = 0  # --order-seed: which random order of the training students; 0 is the run of step 92
+SKIP: set = set()  # --skip: models left out (to save time in repeated runs)
+PLACEBO = False  # --placebo: labels permuted across all answers; every model should then score about 0.5
 SEQUENCE = ("sakt", "sakt_item", "akt_lite")  # sequence_models.py; added to NAMES with --sequence (Python 3.12 + PyTorch)
 ALPHAS = [0.0, 0.25, 0.5, 0.75, 1.0]  # weight of gbdt in the hybrid
 MIN_HYBRID_ROWS = 200
@@ -137,8 +143,10 @@ def hybrid_alpha(x: np.ndarray, y: np.ndarray, group: np.ndarray, w0: np.ndarray
     return min(ALPHAS, key=loss)
 
 
-def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws: int) -> None:
+def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws: int, save_dir: str | None = None) -> None:
     data = data.sort_values("order_id").reset_index(drop=True)
+    if PLACEBO:
+        data["correct"] = np.random.default_rng(0).permutation(data["correct"].to_numpy())
     causal_all, lms_all = causal_features(data)
     wins_all, losses_all = pfa_counts(data)
     print(f"{name}: {len(data)} answers, {data.user_id.nunique()} students", flush=True)
@@ -147,7 +155,7 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
     for fold, (tr, te) in enumerate(GroupKFold(n_splits=folds).split(data, groups=data["user_id"]), 1):
         train, test = data.iloc[tr].reset_index(drop=True), data.iloc[te].reset_index(drop=True)
         truth = test["correct"].to_numpy().astype(float)
-        order = np.random.default_rng(fold).permutation(train["user_id"].unique())
+        order = np.random.default_rng(fold + 1000 * ORDER_SEED).permutation(train["user_id"].unique())
         for level in LEVELS:
             if level is not None and level >= len(order):
                 continue
@@ -167,26 +175,34 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
             gbdt_p = gbdt.predict_proba(x_te[:, :6])[:, 1]
             preds = {
                 "lms_default": lms_all[te],
-                "pfa": pfa_predict(sub, test, wins_all[tr][mask], losses_all[tr][mask], wins_all[te], losses_all[te]),
-                "rasch": rasch_predict(sub, test),
+                "pfa": None if "pfa" in SKIP else pfa_predict(
+                    sub, test, wins_all[tr][mask], losses_all[tr][mask], wins_all[te], losses_all[te]),
+                "rasch": None if "rasch" in SKIP else rasch_predict(sub, test),
                 "gbdt": gbdt_p,
                 "stack_transfer": sigmoid(x_te @ w),
                 "hybrid": sigmoid((1 - alpha) * (x_te @ w) + alpha * logit(gbdt_p)),
             }
+            preds = {k: v for k, v in preds.items() if v is not None}
             for kind in SEQUENCE if SEQUENCE[0] in NAMES else ():
                 preds[kind] = sequence_predict(sub, test, kind)
+            if PUBLISHED[0] in NAMES and level in PUBLISHED_LEVELS:
+                for kind in PUBLISHED:
+                    preds[kind] = published_predict(sub, test, kind)
             for label, p in preds.items():
                 results.setdefault((level, label), []).append(metrics(truth, p))
             stored.setdefault(level, []).append((te, preds))
+            if save_dir:
+                np.savez_compressed(f"{save_dir}/{name}_fold{fold}_N{'all' if level is None else level}.npz", rows=te, **preds)
             print(f"fold {fold} N={'all' if level is None else level}: "
-                  + ", ".join(f"{k} {results[(level, k)][-1]['AUC']:.4f}" for k in NAMES) + f"  alpha {alpha}", flush=True)
+                  + ", ".join(f"{k} {results[(level, k)][-1]['AUC']:.4f}" for k in NAMES if k in preds) + f"  alpha {alpha}", flush=True)
     for metric in ("AUC", "ECE", "LogLoss"):
         print(f"\n### {name}: {metric} (mean over folds, std in brackets)\n")
         print("| Training students | " + " | ".join(NAMES) + " |\n| --- | " + " | ".join("---" for _ in NAMES) + " |")
         for level in LEVELS:
             if (level, NAMES[0]) in results:
                 cells = [f"{np.mean([r[metric] for r in results[(level, k)]]):.4f} "
-                         f"({np.std([r[metric] for r in results[(level, k)]]):.4f})" for k in NAMES]
+                         f"({np.std([r[metric] for r in results[(level, k)]]):.4f})" if (level, k) in results else "-"
+                         for k in NAMES]
                 print(f"| {'all' if level is None else level} | " + " | ".join(cells) + " |")
     truth_all = data["correct"].to_numpy().astype(float)
     user_rows = pd.Series(np.arange(len(data))).groupby(data["user_id"].to_numpy()).indices
@@ -197,11 +213,13 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
         for level in (100, None):
             if level not in stored:
                 continue
-            merged = {k: np.zeros(len(data)) for k in NAMES}
+            present = [k for k in NAMES if k in stored[level][0][1]]
+            merged = {k: np.zeros(len(data)) for k in present}
             for te, preds in stored[level]:
-                for k in NAMES:
+                for k in present:
                     merged[k][te] = preds[k]
-            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *SEQUENCE) if k in NAMES and k != focus]:
+            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *SEQUENCE, *PUBLISHED)
+                          if k in present and k != focus]:
                 diff = roc_auc_score(truth_all, merged[focus]) - roc_auc_score(truth_all, merged[other])
                 low, high = auc_bootstrap(truth_all, (merged[focus], merged[other]), user_rows, draws, rng)
                 print(f"| {'all' if level is None else level} | {other} | {diff:+.4f} | {low:+.4f} to {high:+.4f} |")
@@ -215,7 +233,27 @@ def main() -> int:
     parser.add_argument("--targets", default="assist09,ednet,csedm")
     parser.add_argument("--ednet-seed", type=int, default=0, help="which random sample of EdNet students (1 = replication)")
     parser.add_argument("--sequence", action="store_true", help="also run sakt, sakt_item and akt_lite (needs PyTorch)")
+    parser.add_argument("--published", action="store_true", help="also run the pyKT DKT and AKT (needs PyTorch and pykt-toolkit)")
+    parser.add_argument("--order-seed", type=int, default=0, help="seed of the order of training students (0 = step 92)")
+    parser.add_argument("--skip", default="", help="comma-separated models to leave out, for example pfa,rasch")
+    parser.add_argument("--levels", default="", help="comma-separated training sizes, for example 30,100,all")
+    parser.add_argument("--half", type=int, default=-1, help="0 or 1: run on a random half of the target dataset's students")
+    parser.add_argument("--placebo", action="store_true", help="permute the labels across all answers (leak check)")
+    parser.add_argument("--save", default=None, help="directory for each fold's test predictions (npz)")
     args = parser.parse_args()
+    global ORDER_SEED, PLACEBO, LEVELS
+    ORDER_SEED, PLACEBO = args.order_seed, args.placebo
+    SKIP.update(x for x in args.skip.split(",") if x)
+    for skipped in SKIP:
+        NAMES.remove(skipped)
+    if args.levels:
+        LEVELS = [None if x == "all" else int(x) for x in args.levels.split(",")]
+    if args.published:
+        global published_predict
+        from published_models import published_predict
+        NAMES.extend(PUBLISHED)
+    if args.save:
+        os.makedirs(args.save, exist_ok=True)
     if args.sequence:
         global sequence_predict
         from sequence_models import sequence_predict
@@ -225,7 +263,12 @@ def main() -> int:
     for name in args.targets.split(","):
         w = transfer_weights([d for k, d in datasets.items() if k != name])
         print(f"\n## {name}\n", flush=True)
-        run(name, datasets[name], w, args.folds, args.bootstrap)
+        target = datasets[name]
+        if args.half >= 0:
+            users = np.sort(target["user_id"].unique())
+            chosen = np.random.default_rng(0).permutation(users)[args.half::2]
+            target = target[target["user_id"].isin(chosen)]
+        run(name, target, w, args.folds, args.bootstrap, args.save)
     return 0
 
 

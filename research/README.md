@@ -52,6 +52,13 @@ EdNet is CC BY-NC 4.0 (attribution, non-commercial). Check each dataset's terms 
     python baselines_plus.py --folds 5 --bootstrap 100                # step 92: PFA, Rasch, gradient boosting, hybrid
     python baselines_plus.py --targets ednet --ednet-seed 1           # replication on a second EdNet sample
     python baselines_plus.py --sequence                               # also sakt, sakt_item, akt_lite (needs PyTorch)
+    python baselines_plus.py --published --save DIR                   # also the pyKT DKT and AKT (pip install --no-deps pykt-toolkit==0.0.38);
+                                                                      # --save keeps each fold's test predictions
+    python analyze_predictions.py DIR assist09                        # tables and intervals from the saved folds, also while a run is unfinished
+    python baselines_plus.py --placebo --skip pfa,rasch               # leak check: labels permuted, every model should score about 0.5
+    python baselines_plus.py --order-seed 1 --levels 30,100           # another random order of the training students
+    python baselines_plus.py --targets assist09 --half 0              # run on a random half of the students
+    python sensitivity_plus.py                                        # declared constants halved and doubled
     (the same with `ednet --students 1500` for EdNet)
 
 `kt_comparison.ipynb` is a self-contained version for Kaggle: upload `skill_builder_data.csv` as a private dataset, add it

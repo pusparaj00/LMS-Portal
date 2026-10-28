@@ -1,4 +1,4 @@
-"""Checks for the pieces of cold_start_plus.py and sequence_models.py that the claims rest on. Run in the research
+"""Checks for the pieces of cold_start_plus.py, sequence_models.py and published_models.py that the claims rest on. Run in the research
 environment (the sequence-model checks need PyTorch, so use the Python 3.12 environment for all of them):
     python test_cold_start_plus.py
 """
@@ -73,6 +73,24 @@ def test_a_sequence_prediction_does_not_depend_on_later_answers():
         before, after = net(skill, item, correct), net(skill, item, changed)
     assert torch.allclose(before[0, :41], after[0, :41], atol=1e-5)  # up to and including position 40
     assert not torch.allclose(before[0, 41:], after[0, 41:], atol=1e-5)
+
+
+def test_the_published_models_do_not_depend_on_later_answers():
+    import torch
+    from published_models import build, probabilities
+    from sequence_models import WINDOW
+
+    torch.manual_seed(0)
+    for kind in ("dkt", "akt"):
+        net = build(kind, 3, 4).eval()
+        w = {"skill": torch.randint(1, 4, (1, WINDOW)), "item": torch.randint(1, 5, (1, WINDOW)),
+             "correct": torch.randint(0, 2, (1, WINDOW))}
+        changed = {k: v.clone() for k, v in w.items()}
+        changed["correct"][0, 40] = 1 - changed["correct"][0, 40]
+        with torch.no_grad():
+            before, after = (torch.nan_to_num(probabilities(net, kind, x)[0], nan=-1) for x in (w, changed))
+        assert torch.allclose(before[0, :41], after[0, :41], atol=1e-5), kind  # up to and including position 40
+        assert not torch.allclose(before[0, 41:], after[0, 41:], atol=1e-5), kind
 
 
 if __name__ == "__main__":

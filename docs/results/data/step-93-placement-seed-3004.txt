@@ -1,0 +1,60 @@
+# Diagnostic simulation results
+
+- Command: `python -m simulation.run --students 500 --seed 3004`
+- Run at: 2026-10-28 13:31 UTC
+- Simulated students: 500, bank: 75 items, test length: 20
+
+## Error of the mastery vector (mean absolute error against true mastery)
+
+| Items asked | adaptive | random | BKT (random order) | adaptive + pooled | random + pooled |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 0.281 | 0.281 | 0.281 | 0.276 | 0.276 |
+| 3 | 0.282 | 0.281 | 0.280 | 0.266 | 0.268 |
+| 5 | 0.280 | 0.281 | 0.281 | 0.257 | 0.260 |
+| 8 | 0.279 | 0.284 | 0.284 | 0.245 | 0.257 |
+| 10 | 0.277 | 0.284 | 0.281 | 0.237 | 0.252 |
+| 16 | 0.267 | 0.279 | 0.274 | 0.224 | 0.241 |
+| 20 | 0.259 | 0.274 | 0.267 | 0.218 | 0.234 |
+
+Threshold = the error random selection reaches after 20 items (0.274). Adaptive selection reaches it after 15 items, 25% fewer than random (target in the PRD: at least 30% fewer).
+
+With the pooled estimate the threshold is random's error after 20 items (0.234). Adaptive selection reaches it after 12 items, 40% fewer than random.
+
+## Coverage and ranking after the whole test
+
+| Policy | Concepts touched (of 12) | Correlation of estimate with true mastery |
+| --- | --- | --- |
+| adaptive | 12.0 | 0.380 |
+| random | 10.7 | 0.325 |
+| BKT (random order) | 10.7 | 0.315 |
+| adaptive + pooled | 12.0 | 0.390 |
+| random + pooled | 10.7 | 0.338 |
+
+## Five-item sanity test (TR-V-06)
+
+RMSE of the average mastery estimated after 5 adaptive items against the student's true average mastery, compared with predicting the population mean of the true average mastery.
+
+| Estimate | True value is | Estimate RMSE | Population-mean RMSE | Result |
+| --- | --- | --- | --- | --- |
+| independent | average over all concepts | 0.182 | 0.201 | beats the mean predictor |
+| independent | average over the concepts the 5 items tested | 0.190 | 0.218 | beats the mean predictor |
+| pooled | average over all concepts | 0.178 | 0.201 | beats the mean predictor |
+| pooled | average over the concepts the 5 items tested | 0.187 | 0.218 | beats the mean predictor |
+
+## Prediction of held-out responses
+
+20470 responses to bank items the adaptive test did not ask, pooled over students.
+
+| Predictor | AUC | Calibration error (ECE, 10 bins) |
+| --- | --- | --- |
+| Adaptive selection + mastery update | 0.612 | 0.103 |
+| Random selection + mastery update | 0.608 | 0.104 |
+| BKT baseline (random order, learning rate 0.1) | 0.606 | 0.123 |
+| Ability-only 2PL baseline (random order) | 0.694 | 0.028 |
+| Adaptive selection + pooled estimate | 0.700 | 0.061 |
+| Random selection + pooled estimate | 0.698 | 0.055 |
+| No evidence (every concept at its prior) | 0.528 | 0.049 |
+
+## Limits
+
+The students are synthetic and drawn from a different response model than the one the selector assumes (correlated continuous abilities, perturbed item parameters, different slip and guess values), but the simulator is my own and is not fitted to real learners. These numbers describe this bank and this simulator only, say nothing yet about real students, and the simulator was not changed after seeing results.
