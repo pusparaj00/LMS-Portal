@@ -49,6 +49,8 @@ EdNet is CC BY-NC 4.0 (attribution, non-commercial). Check each dataset's terms 
     python significance.py assist09 --folds 5 --bkt --fit-skill       # student bootstrap, paired differences
     python cold_start_plus.py --folds 5 --bootstrap 100               # step 91: stack started from other datasets' weights
     python test_cold_start_plus.py                                    # checks of its core functions
+    python baselines_plus.py --folds 5 --bootstrap 100                # step 92: PFA, Rasch, gradient boosting, hybrid
+    python baselines_plus.py --targets ednet --ednet-seed 1           # replication on a second EdNet sample
     (the same with `ednet --students 1500` for EdNet)
 
 `kt_comparison.ipynb` is a self-contained version for Kaggle: upload `skill_builder_data.csv` as a private dataset, add it

@@ -1,0 +1,226 @@
+
+## assist09
+
+assist09: 283105 answers, 4163 students
+fold 1 N=30: lms_default 0.6835, pfa 0.5990, rasch 0.6801, gbdt 0.6644, stack_transfer 0.7150, hybrid 0.7151  alpha 0.25
+fold 1 N=100: lms_default 0.6835, pfa 0.6832, rasch 0.6920, gbdt 0.7212, stack_transfer 0.7295, hybrid 0.7325  alpha 0.25
+fold 1 N=300: lms_default 0.6835, pfa 0.7128, rasch 0.7104, gbdt 0.7469, stack_transfer 0.7420, hybrid 0.7494  alpha 0.5
+fold 1 N=all: lms_default 0.6835, pfa 0.7258, rasch 0.7610, gbdt 0.7807, stack_transfer 0.7684, hybrid 0.7807  alpha 1.0
+fold 2 N=30: lms_default 0.6815, pfa 0.6081, rasch 0.6736, gbdt 0.6370, stack_transfer 0.7067, hybrid 0.7067  alpha 0.0
+fold 2 N=100: lms_default 0.6815, pfa 0.6770, rasch 0.6823, gbdt 0.7175, stack_transfer 0.7242, hybrid 0.7277  alpha 0.25
+fold 2 N=300: lms_default 0.6815, pfa 0.7093, rasch 0.7018, gbdt 0.7380, stack_transfer 0.7329, hybrid 0.7408  alpha 0.75
+fold 2 N=all: lms_default 0.6815, pfa 0.7237, rasch 0.7641, gbdt 0.7810, stack_transfer 0.7683, hybrid 0.7810  alpha 1.0
+fold 3 N=30: lms_default 0.6658, pfa 0.6344, rasch 0.6631, gbdt 0.6619, stack_transfer 0.6992, hybrid 0.6992  alpha 0.0
+fold 3 N=100: lms_default 0.6658, pfa 0.6583, rasch 0.6728, gbdt 0.6937, stack_transfer 0.7045, hybrid 0.7075  alpha 0.5
+fold 3 N=300: lms_default 0.6658, pfa 0.7007, rasch 0.6925, gbdt 0.7229, stack_transfer 0.7209, hybrid 0.7281  alpha 0.5
+fold 3 N=all: lms_default 0.6658, pfa 0.7079, rasch 0.7462, gbdt 0.7648, stack_transfer 0.7513, hybrid 0.7648  alpha 1.0
+fold 4 N=30: lms_default 0.6897, pfa 0.6036, rasch 0.6807, gbdt 0.6726, stack_transfer 0.7181, hybrid 0.7211  alpha 0.25
+fold 4 N=100: lms_default 0.6897, pfa 0.6632, rasch 0.6918, gbdt 0.7263, stack_transfer 0.7333, hybrid 0.7368  alpha 0.25
+fold 4 N=300: lms_default 0.6897, pfa 0.7057, rasch 0.7054, gbdt 0.7450, stack_transfer 0.7412, hybrid 0.7477  alpha 0.75
+fold 4 N=all: lms_default 0.6897, pfa 0.7324, rasch 0.7673, gbdt 0.7877, stack_transfer 0.7744, hybrid 0.7877  alpha 1.0
+fold 5 N=30: lms_default 0.6826, pfa 0.5765, rasch 0.6785, gbdt 0.6854, stack_transfer 0.7117, hybrid 0.7147  alpha 0.25
+fold 5 N=100: lms_default 0.6826, pfa 0.6566, rasch 0.6848, gbdt 0.7106, stack_transfer 0.7221, hybrid 0.7260  alpha 0.5
+fold 5 N=300: lms_default 0.6826, pfa 0.6922, rasch 0.7025, gbdt 0.7344, stack_transfer 0.7325, hybrid 0.7394  alpha 0.5
+fold 5 N=all: lms_default 0.6826, pfa 0.7196, rasch 0.7572, gbdt 0.7769, stack_transfer 0.7648, hybrid 0.7769  alpha 1.0
+
+### assist09: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.6806 (0.0079) | 0.6043 (0.0186) | 0.6752 (0.0065) | 0.6643 (0.0159) | 0.7101 (0.0066) | 0.7114 (0.0076) |
+| 100 | 0.6806 (0.0079) | 0.6677 (0.0106) | 0.6848 (0.0071) | 0.7139 (0.0113) | 0.7227 (0.0099) | 0.7261 (0.0100) |
+| 300 | 0.6806 (0.0079) | 0.7041 (0.0072) | 0.7025 (0.0059) | 0.7374 (0.0086) | 0.7339 (0.0076) | 0.7411 (0.0075) |
+| all | 0.6806 (0.0079) | 0.7219 (0.0081) | 0.7592 (0.0073) | 0.7782 (0.0075) | 0.7654 (0.0077) | 0.7782 (0.0075) |
+
+### assist09: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.1418 (0.0047) | 0.0525 (0.0182) | 0.0142 (0.0040) | 0.0550 (0.0244) | 0.0211 (0.0039) | 0.0222 (0.0039) |
+| 100 | 0.1418 (0.0047) | 0.0337 (0.0130) | 0.0134 (0.0019) | 0.0206 (0.0078) | 0.0161 (0.0050) | 0.0135 (0.0038) |
+| 300 | 0.1418 (0.0047) | 0.0229 (0.0081) | 0.0116 (0.0017) | 0.0103 (0.0042) | 0.0114 (0.0025) | 0.0087 (0.0021) |
+| all | 0.1418 (0.0047) | 0.0113 (0.0012) | 0.0076 (0.0014) | 0.0067 (0.0012) | 0.0092 (0.0030) | 0.0067 (0.0012) |
+
+### assist09: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.6663 (0.0056) | 0.6423 (0.0192) | 0.5939 (0.0041) | 0.6157 (0.0163) | 0.5755 (0.0041) | 0.5745 (0.0042) |
+| 100 | 0.6663 (0.0056) | 0.6083 (0.0114) | 0.5894 (0.0045) | 0.5733 (0.0076) | 0.5667 (0.0058) | 0.5639 (0.0054) |
+| 300 | 0.6663 (0.0056) | 0.5828 (0.0089) | 0.5797 (0.0047) | 0.5552 (0.0063) | 0.5587 (0.0049) | 0.5524 (0.0051) |
+| all | 0.6663 (0.0056) | 0.5675 (0.0052) | 0.5403 (0.0060) | 0.5221 (0.0058) | 0.5345 (0.0054) | 0.5221 (0.0058) |
+
+### assist09: AUC difference stack_transfer minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | pfa | +0.0556 | +0.0508 to +0.0618 |
+| 100 | rasch | +0.0374 | +0.0346 to +0.0401 |
+| 100 | gbdt | +0.0091 | +0.0075 to +0.0107 |
+| all | pfa | +0.0436 | +0.0407 to +0.0461 |
+| all | rasch | +0.0062 | +0.0047 to +0.0075 |
+| all | gbdt | -0.0127 | -0.0137 to -0.0119 |
+
+### assist09: AUC difference hybrid minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | pfa | +0.0590 | +0.0541 to +0.0644 |
+| 100 | rasch | +0.0409 | +0.0381 to +0.0440 |
+| 100 | gbdt | +0.0126 | +0.0114 to +0.0138 |
+| 100 | stack_transfer | +0.0035 | +0.0030 to +0.0040 |
+| all | pfa | +0.0564 | +0.0536 to +0.0590 |
+| all | rasch | +0.0190 | +0.0171 to +0.0210 |
+| all | gbdt | +0.0000 | +0.0000 to +0.0000 |
+| all | stack_transfer | +0.0127 | +0.0119 to +0.0136 |
+
+## ednet
+
+ednet: 175088 answers, 1500 students
+fold 1 N=30: lms_default 0.6476, pfa 0.5559, rasch 0.6685, gbdt 0.5722, stack_transfer 0.6915, hybrid 0.6856  alpha 0.25
+fold 1 N=100: lms_default 0.6476, pfa 0.6282, rasch 0.6865, gbdt 0.6882, stack_transfer 0.7033, hybrid 0.7033  alpha 0.25
+fold 1 N=300: lms_default 0.6476, pfa 0.6580, rasch 0.7111, gbdt 0.7029, stack_transfer 0.7173, hybrid 0.7143  alpha 0.5
+fold 1 N=all: lms_default 0.6476, pfa 0.6673, rasch 0.7371, gbdt 0.7376, stack_transfer 0.7365, hybrid 0.7385  alpha 0.5
+fold 2 N=30: lms_default 0.6238, pfa 0.5495, rasch 0.6594, gbdt 0.6250, stack_transfer 0.6710, hybrid 0.6710  alpha 0.0
+fold 2 N=100: lms_default 0.6238, pfa 0.5773, rasch 0.6688, gbdt 0.6399, stack_transfer 0.6790, hybrid 0.6793  alpha 0.25
+fold 2 N=300: lms_default 0.6238, pfa 0.6362, rasch 0.7086, gbdt 0.6962, stack_transfer 0.7069, hybrid 0.7083  alpha 0.25
+fold 2 N=all: lms_default 0.6238, pfa 0.6538, rasch 0.7503, gbdt 0.7434, stack_transfer 0.7416, hybrid 0.7440  alpha 0.5
+fold 3 N=30: lms_default 0.5890, pfa 0.5391, rasch 0.5990, gbdt 0.5834, stack_transfer 0.6208, hybrid 0.6184  alpha 0.25
+fold 3 N=100: lms_default 0.5890, pfa 0.5889, rasch 0.6251, gbdt 0.6199, stack_transfer 0.6403, hybrid 0.6399  alpha 0.25
+fold 3 N=300: lms_default 0.5890, pfa 0.6051, rasch 0.6493, gbdt 0.6494, stack_transfer 0.6565, hybrid 0.6571  alpha 0.25
+fold 3 N=all: lms_default 0.5890, pfa 0.6184, rasch 0.7019, gbdt 0.6979, stack_transfer 0.6959, hybrid 0.6985  alpha 0.5
+fold 4 N=30: lms_default 0.5753, pfa 0.5500, rasch 0.6254, gbdt 0.5928, stack_transfer 0.6360, hybrid 0.6360  alpha 0.0
+fold 4 N=100: lms_default 0.5753, pfa 0.5735, rasch 0.6351, gbdt 0.6206, stack_transfer 0.6419, hybrid 0.6420  alpha 0.25
+fold 4 N=300: lms_default 0.5753, pfa 0.6028, rasch 0.6673, gbdt 0.6647, stack_transfer 0.6664, hybrid 0.6677  alpha 0.25
+fold 4 N=all: lms_default 0.5753, pfa 0.6118, rasch 0.7078, gbdt 0.6967, stack_transfer 0.6965, hybrid 0.6978  alpha 0.75
+fold 5 N=30: lms_default 0.6185, pfa 0.5389, rasch 0.6530, gbdt 0.6038, stack_transfer 0.6588, hybrid 0.6550  alpha 0.25
+fold 5 N=100: lms_default 0.6185, pfa 0.5935, rasch 0.6696, gbdt 0.6443, stack_transfer 0.6769, hybrid 0.6701  alpha 0.5
+fold 5 N=300: lms_default 0.6185, pfa 0.6092, rasch 0.6880, gbdt 0.6794, stack_transfer 0.6866, hybrid 0.6867  alpha 0.5
+fold 5 N=all: lms_default 0.6185, pfa 0.6339, rasch 0.7235, gbdt 0.7181, stack_transfer 0.7158, hybrid 0.7186  alpha 0.5
+
+### ednet: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.6109 (0.0258) | 0.5467 (0.0067) | 0.6411 (0.0255) | 0.5954 (0.0181) | 0.6556 (0.0250) | 0.6532 (0.0240) |
+| 100 | 0.6109 (0.0258) | 0.5923 (0.0194) | 0.6570 (0.0231) | 0.6426 (0.0248) | 0.6683 (0.0241) | 0.6669 (0.0238) |
+| 300 | 0.6109 (0.0258) | 0.6222 (0.0215) | 0.6849 (0.0238) | 0.6785 (0.0197) | 0.6867 (0.0231) | 0.6868 (0.0222) |
+| all | 0.6109 (0.0258) | 0.6370 (0.0209) | 0.7241 (0.0179) | 0.7188 (0.0194) | 0.7172 (0.0193) | 0.7195 (0.0194) |
+
+### ednet: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.1429 (0.0192) | 0.0865 (0.0222) | 0.0181 (0.0050) | 0.0848 (0.0209) | 0.0296 (0.0093) | 0.0320 (0.0116) |
+| 100 | 0.1429 (0.0192) | 0.0552 (0.0300) | 0.0200 (0.0027) | 0.0424 (0.0165) | 0.0148 (0.0055) | 0.0202 (0.0053) |
+| 300 | 0.1429 (0.0192) | 0.0328 (0.0068) | 0.0199 (0.0048) | 0.0208 (0.0049) | 0.0131 (0.0036) | 0.0148 (0.0040) |
+| all | 0.1429 (0.0192) | 0.0254 (0.0118) | 0.0151 (0.0018) | 0.0149 (0.0051) | 0.0178 (0.0066) | 0.0147 (0.0068) |
+
+### ednet: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.7039 (0.0440) | 0.6580 (0.0258) | 0.6054 (0.0272) | 0.6458 (0.0259) | 0.6022 (0.0296) | 0.6040 (0.0284) |
+| 100 | 0.7039 (0.0440) | 0.6391 (0.0233) | 0.5985 (0.0276) | 0.6112 (0.0289) | 0.5931 (0.0283) | 0.5944 (0.0291) |
+| 300 | 0.7039 (0.0440) | 0.6167 (0.0283) | 0.5856 (0.0300) | 0.5892 (0.0278) | 0.5840 (0.0299) | 0.5839 (0.0294) |
+| all | 0.7039 (0.0440) | 0.6097 (0.0288) | 0.5625 (0.0288) | 0.5658 (0.0296) | 0.5676 (0.0297) | 0.5653 (0.0298) |
+
+### ednet: AUC difference stack_transfer minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | pfa | +0.0852 | +0.0749 to +0.0999 |
+| 100 | rasch | +0.0086 | +0.0058 to +0.0125 |
+| 100 | gbdt | +0.0319 | +0.0238 to +0.0375 |
+| all | pfa | +0.0804 | +0.0748 to +0.0897 |
+| all | rasch | -0.0077 | -0.0108 to -0.0046 |
+| all | gbdt | -0.0017 | -0.0027 to -0.0008 |
+
+### ednet: AUC difference hybrid minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | pfa | +0.0828 | +0.0652 to +0.0951 |
+| 100 | rasch | +0.0062 | +0.0018 to +0.0105 |
+| 100 | gbdt | +0.0295 | +0.0247 to +0.0350 |
+| 100 | stack_transfer | -0.0024 | -0.0039 to -0.0012 |
+| all | pfa | +0.0828 | +0.0755 to +0.0922 |
+| all | rasch | -0.0054 | -0.0089 to -0.0027 |
+| all | gbdt | +0.0007 | +0.0002 to +0.0011 |
+| all | stack_transfer | +0.0023 | +0.0017 to +0.0029 |
+
+## csedm
+
+csedm: 24032 answers, 506 students
+fold 1 N=30: lms_default 0.7208, pfa 0.7673, rasch 0.7538, gbdt 0.7847, stack_transfer 0.7924, hybrid 0.7969  alpha 0.25
+fold 1 N=100: lms_default 0.7208, pfa 0.7748, rasch 0.7759, gbdt 0.8037, stack_transfer 0.8056, hybrid 0.8093  alpha 0.5
+fold 1 N=300: lms_default 0.7208, pfa 0.7784, rasch 0.7848, gbdt 0.8172, stack_transfer 0.8153, hybrid 0.8203  alpha 0.5
+fold 1 N=all: lms_default 0.7208, pfa 0.7784, rasch 0.7837, gbdt 0.8177, stack_transfer 0.8151, hybrid 0.8206  alpha 0.75
+fold 2 N=30: lms_default 0.6940, pfa 0.7569, rasch 0.7526, gbdt 0.7380, stack_transfer 0.7810, hybrid 0.7781  alpha 0.25
+fold 2 N=100: lms_default 0.6940, pfa 0.7637, rasch 0.7658, gbdt 0.7909, stack_transfer 0.7950, hybrid 0.7982  alpha 0.25
+fold 2 N=300: lms_default 0.6940, pfa 0.7676, rasch 0.7702, gbdt 0.8091, stack_transfer 0.8014, hybrid 0.8097  alpha 0.75
+fold 2 N=all: lms_default 0.6940, pfa 0.7672, rasch 0.7710, gbdt 0.8116, stack_transfer 0.8026, hybrid 0.8117  alpha 0.75
+fold 3 N=30: lms_default 0.7068, pfa 0.7656, rasch 0.7449, gbdt 0.7392, stack_transfer 0.7749, hybrid 0.7749  alpha 0.0
+fold 3 N=100: lms_default 0.7068, pfa 0.7689, rasch 0.7614, gbdt 0.7916, stack_transfer 0.7925, hybrid 0.7953  alpha 0.5
+fold 3 N=300: lms_default 0.7068, pfa 0.7691, rasch 0.7666, gbdt 0.8054, stack_transfer 0.7992, hybrid 0.8056  alpha 0.5
+fold 3 N=all: lms_default 0.7068, pfa 0.7690, rasch 0.7678, gbdt 0.8097, stack_transfer 0.7996, hybrid 0.8091  alpha 0.75
+fold 4 N=30: lms_default 0.6871, pfa 0.7540, rasch 0.7787, gbdt 0.7665, stack_transfer 0.7838, hybrid 0.7849  alpha 0.25
+fold 4 N=100: lms_default 0.6871, pfa 0.7553, rasch 0.7839, gbdt 0.7962, stack_transfer 0.8005, hybrid 0.8021  alpha 0.5
+fold 4 N=300: lms_default 0.6871, pfa 0.7565, rasch 0.7854, gbdt 0.8043, stack_transfer 0.8011, hybrid 0.8063  alpha 0.75
+fold 4 N=all: lms_default 0.6871, pfa 0.7565, rasch 0.7860, gbdt 0.8062, stack_transfer 0.8014, hybrid 0.8075  alpha 0.75
+fold 5 N=30: lms_default 0.7312, pfa 0.7625, rasch 0.7796, gbdt 0.7649, stack_transfer 0.7895, hybrid 0.7892  alpha 0.25
+fold 5 N=100: lms_default 0.7312, pfa 0.7662, rasch 0.7849, gbdt 0.8010, stack_transfer 0.7973, hybrid 0.8019  alpha 0.25
+fold 5 N=300: lms_default 0.7312, pfa 0.7670, rasch 0.7877, gbdt 0.8120, stack_transfer 0.8008, hybrid 0.8118  alpha 0.75
+fold 5 N=all: lms_default 0.7312, pfa 0.7669, rasch 0.7876, gbdt 0.8104, stack_transfer 0.8016, hybrid 0.8105  alpha 0.75
+
+### csedm: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.7080 (0.0163) | 0.7613 (0.0051) | 0.7619 (0.0144) | 0.7587 (0.0178) | 0.7843 (0.0062) | 0.7848 (0.0078) |
+| 100 | 0.7080 (0.0163) | 0.7658 (0.0064) | 0.7744 (0.0094) | 0.7967 (0.0051) | 0.7982 (0.0045) | 0.8014 (0.0047) |
+| 300 | 0.7080 (0.0163) | 0.7677 (0.0070) | 0.7789 (0.0087) | 0.8096 (0.0047) | 0.8036 (0.0059) | 0.8107 (0.0053) |
+| all | 0.7080 (0.0163) | 0.7676 (0.0070) | 0.7792 (0.0082) | 0.8111 (0.0038) | 0.8041 (0.0056) | 0.8119 (0.0046) |
+
+### csedm: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.0680 (0.0085) | 0.0341 (0.0099) | 0.0356 (0.0064) | 0.0438 (0.0154) | 0.0230 (0.0071) | 0.0240 (0.0069) |
+| 100 | 0.0680 (0.0085) | 0.0323 (0.0078) | 0.0291 (0.0072) | 0.0225 (0.0073) | 0.0239 (0.0061) | 0.0191 (0.0069) |
+| 300 | 0.0680 (0.0085) | 0.0290 (0.0032) | 0.0270 (0.0065) | 0.0174 (0.0032) | 0.0195 (0.0047) | 0.0186 (0.0042) |
+| all | 0.0680 (0.0085) | 0.0299 (0.0034) | 0.0274 (0.0085) | 0.0152 (0.0026) | 0.0206 (0.0027) | 0.0165 (0.0036) |
+
+### csedm: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.5845 (0.0111) | 0.5398 (0.0086) | 0.5410 (0.0124) | 0.5439 (0.0189) | 0.5175 (0.0106) | 0.5163 (0.0116) |
+| 100 | 0.5845 (0.0111) | 0.5348 (0.0111) | 0.5312 (0.0122) | 0.5082 (0.0106) | 0.5064 (0.0102) | 0.5027 (0.0102) |
+| 300 | 0.5845 (0.0111) | 0.5328 (0.0131) | 0.5273 (0.0126) | 0.4945 (0.0110) | 0.5017 (0.0114) | 0.4931 (0.0109) |
+| all | 0.5845 (0.0111) | 0.5325 (0.0128) | 0.5270 (0.0121) | 0.4925 (0.0101) | 0.5011 (0.0114) | 0.4916 (0.0106) |
+
+### csedm: AUC difference stack_transfer minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | pfa | +0.0319 | +0.0271 to +0.0371 |
+| 100 | rasch | +0.0235 | +0.0197 to +0.0272 |
+| 100 | gbdt | +0.0020 | -0.0008 to +0.0047 |
+| all | pfa | +0.0361 | +0.0316 to +0.0413 |
+| all | rasch | +0.0249 | +0.0212 to +0.0290 |
+| all | gbdt | -0.0071 | -0.0093 to -0.0046 |
+
+### csedm: AUC difference hybrid minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | pfa | +0.0348 | +0.0305 to +0.0391 |
+| 100 | rasch | +0.0263 | +0.0228 to +0.0300 |
+| 100 | gbdt | +0.0048 | +0.0033 to +0.0064 |
+| 100 | stack_transfer | +0.0028 | +0.0018 to +0.0039 |
+| all | pfa | +0.0439 | +0.0392 to +0.0489 |
+| all | rasch | +0.0327 | +0.0283 to +0.0370 |
+| all | gbdt | +0.0007 | +0.0002 to +0.0012 |
+| all | stack_transfer | +0.0078 | +0.0060 to +0.0098 |
+exit 0
