@@ -26,28 +26,29 @@ torch.set_num_threads(int(os.environ.get("KT_THREADS", "8")))
 
 
 class Net(nn.Module):
-    def __init__(self, skills: int, items: int, kind: str):
+    def __init__(self, skills: int, items: int, kind: str, dim: int = DIM, dropout: float = DROPOUT):
         super().__init__()
         self.kind = kind
+        self.dim = dim
         self.use_item = kind in ("sakt_item", "akt_lite")
-        self.skill_q = nn.Embedding(skills + 1, DIM)
-        self.skill_kv = nn.Embedding(2 * (skills + 1), DIM)
-        self.position = nn.Embedding(WINDOW, DIM)
-        self.start = nn.Parameter(torch.zeros(1, 1, DIM))
+        self.skill_q = nn.Embedding(skills + 1, dim)
+        self.skill_kv = nn.Embedding(2 * (skills + 1), dim)
+        self.position = nn.Embedding(WINDOW, dim)
+        self.start = nn.Parameter(torch.zeros(1, 1, dim))
         if kind == "sakt_item":
-            self.item_q = nn.Embedding(items + 1, DIM)
-            self.item_kv = nn.Embedding(2 * (items + 1), DIM)
+            self.item_q = nn.Embedding(items + 1, dim)
+            self.item_kv = nn.Embedding(2 * (items + 1), dim)
         if kind == "akt_lite":
             self.difficulty = nn.Embedding(items + 1, 1)
-            self.variation_q = nn.Embedding(skills + 1, DIM)
-            self.variation_kv = nn.Embedding(2 * (skills + 1), DIM)
+            self.variation_q = nn.Embedding(skills + 1, dim)
+            self.variation_kv = nn.Embedding(2 * (skills + 1), dim)
             nn.init.zeros_(self.difficulty.weight)
             self.decay = nn.Parameter(torch.full((HEADS,), -2.0))
-        self.attention = nn.MultiheadAttention(DIM, HEADS, dropout=DROPOUT, batch_first=True)
-        self.norm1, self.norm2 = nn.LayerNorm(DIM), nn.LayerNorm(DIM)
-        self.feed = nn.Sequential(nn.Linear(DIM, DIM), nn.ReLU(), nn.Dropout(DROPOUT), nn.Linear(DIM, DIM))
-        self.drop = nn.Dropout(DROPOUT)
-        self.out = nn.Linear(DIM, 1)
+        self.attention = nn.MultiheadAttention(dim, HEADS, dropout=dropout, batch_first=True)
+        self.norm1, self.norm2 = nn.LayerNorm(dim), nn.LayerNorm(dim)
+        self.feed = nn.Sequential(nn.Linear(dim, dim), nn.ReLU(), nn.Dropout(dropout), nn.Linear(dim, dim))
+        self.drop = nn.Dropout(dropout)
+        self.out = nn.Linear(dim, 1)
         past = torch.arange(WINDOW)
         gap = (past[:, None] - past[None, :]).float()  # query position minus key position
         self.register_buffer("gap", gap)
@@ -65,7 +66,7 @@ class Net(nn.Module):
             kv = kv + mu * self.variation_kv(skill * 2 + correct)
         batch, length = skill.shape
         keys = kv + self.position(torch.arange(length, device=skill.device))
-        keys = torch.cat([self.start.expand(batch, 1, DIM), keys], dim=1)  # a start token so no query has an empty history
+        keys = torch.cat([self.start.expand(batch, 1, self.dim), keys], dim=1)  # a start token so no query has an empty history
         hidden = self.causal[:length, :length]
         bias = torch.zeros(HEADS, length, length + 1, device=skill.device)
         if self.kind == "akt_lite":
@@ -107,7 +108,7 @@ def windows(frame: pd.DataFrame, skills: dict, items: dict, training: bool):
     return {k: torch.as_tensor(np.stack(v)) for k, v in out.items()}
 
 
-def sequence_predict(sub: pd.DataFrame, test: pd.DataFrame, kind: str, seed: int = 0) -> np.ndarray:
+def sequence_predict(sub: pd.DataFrame, test: pd.DataFrame, kind: str, seed: int = 0, settings: list | None = None) -> np.ndarray:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     skills = {s: i + 1 for i, s in enumerate(sub["skill_name"].unique())}
@@ -118,42 +119,51 @@ def sequence_predict(sub: pd.DataFrame, test: pd.DataFrame, kind: str, seed: int
     is_held = sub["user_id"].isin(held).to_numpy()
     train_w = windows(sub[~is_held].reset_index(drop=True), skills, items, training=True)
     valid_w = windows(sub[is_held].reset_index(drop=True), skills, items, training=False)
-    net = Net(len(skills), len(items), kind)
-    optimiser = torch.optim.Adam(net.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-    loss_fn = nn.BCEWithLogitsLoss(reduction="none")
+    def fit(setting: dict) -> tuple[float, Net]:
+        torch.manual_seed(seed)
+        net = Net(len(skills), len(items), kind, setting.get("dim", DIM), setting.get("dropout", DROPOUT))
+        optimiser = torch.optim.Adam(net.parameters(), lr=setting.get("lr", LEARNING_RATE), weight_decay=WEIGHT_DECAY)
+        loss_fn = nn.BCEWithLogitsLoss(reduction="none")
 
+        def forward(w):
+            return net(w["skill"], w["item"], w["correct"])
+
+        def validation_loss() -> float:
+            net.eval()
+            with torch.no_grad():
+                z = forward(valid_w)
+                m = valid_w["scored"]
+                return float(loss_fn(z, valid_w["correct"].float())[m].mean())
+
+        best, best_state, wait = np.inf, None, 0
+        for _ in range(MAX_EPOCHS):
+            net.train()
+            order = torch.randperm(len(train_w["skill"]))
+            for i in range(0, len(order), BATCH):
+                b = order[i:i + BATCH]
+                batch = {k: v[b] for k, v in train_w.items()}
+                z = forward(batch)
+                loss = loss_fn(z, batch["correct"].float())[batch["valid"]].mean()
+                optimiser.zero_grad()
+                loss.backward()
+                nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                optimiser.step()
+            current = validation_loss() if len(valid_w["skill"]) else best - 1
+            if current < best - 1e-4:
+                best, best_state, wait = current, {k: v.clone() for k, v in net.state_dict().items()}, 0
+            else:
+                wait += 1
+                if wait >= PATIENCE:
+                    break
+        if best_state is not None:
+            net.load_state_dict(best_state)
+        return best, net
+
+    # one setting: the declared constants. Several (tuning.py): the one with the lowest loss on the held-out fifth is kept.
+    _, net = min((fit(setting) for setting in settings or [{}]), key=lambda pair: pair[0])
     def forward(w):
         return net(w["skill"], w["item"], w["correct"])
 
-    def validation_loss() -> float:
-        net.eval()
-        with torch.no_grad():
-            z = forward(valid_w)
-            m = valid_w["scored"]
-            return float(loss_fn(z, valid_w["correct"].float())[m].mean())
-
-    best, best_state, wait = np.inf, None, 0
-    for _ in range(MAX_EPOCHS):
-        net.train()
-        order = torch.randperm(len(train_w["skill"]))
-        for i in range(0, len(order), BATCH):
-            b = order[i:i + BATCH]
-            batch = {k: v[b] for k, v in train_w.items()}
-            z = forward(batch)
-            loss = loss_fn(z, batch["correct"].float())[batch["valid"]].mean()
-            optimiser.zero_grad()
-            loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-            optimiser.step()
-        current = validation_loss() if len(valid_w["skill"]) else best - 1
-        if current < best - 1e-4:
-            best, best_state, wait = current, {k: v.clone() for k, v in net.state_dict().items()}, 0
-        else:
-            wait += 1
-            if wait >= PATIENCE:
-                break
-    if best_state is not None:
-        net.load_state_dict(best_state)
     net.eval()
     test_w = windows(test, skills, items, training=False)
     out = np.full(len(test), 0.5)

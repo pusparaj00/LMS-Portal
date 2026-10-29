@@ -4,6 +4,7 @@ environment (the sequence-model checks need PyTorch, so use the Python 3.12 envi
 """
 import numpy as np
 import pandas as pd
+from sklearn.metrics import roc_auc_score
 from cold_start_plus import BASE0, causal_features, course_features, ridge_fit, sigmoid
 
 
@@ -91,6 +92,29 @@ def test_the_published_models_do_not_depend_on_later_answers():
             before, after = (torch.nan_to_num(probabilities(net, kind, x)[0], nan=-1) for x in (w, changed))
         assert torch.allclose(before[0, :41], after[0, :41], atol=1e-5), kind  # up to and including position 40
         assert not torch.allclose(before[0, 41:], after[0, 41:], atol=1e-5), kind
+
+
+def test_the_tuning_split_holds_back_whole_students_and_only_training_students():
+    from tuning import held_out_students
+
+    users = np.repeat(np.arange(30), 7)
+    held = held_out_students(users)
+    assert held.sum() == 6 * 7 and set(users[held]).isdisjoint(set(users[~held]))
+    assert (held_out_students(users) == held).all()
+
+
+def test_tuned_gbdt_is_repeatable_and_learns_the_signal():
+    from tuning import tuned_gbdt
+
+    rng = np.random.default_rng(3)
+    x = rng.normal(size=(600, 6))
+    y = (rng.random(600) < sigmoid(x[:, 0])).astype(float)
+    users = np.repeat(np.arange(60), 10)
+    probe = rng.normal(size=(50, 6))
+    first = tuned_gbdt(x, y, users).predict_proba(probe)[:, 1]
+    again = tuned_gbdt(x, y, users).predict_proba(probe)[:, 1]
+    assert np.allclose(first, again)
+    assert roc_auc_score((probe[:, 0] > 0).astype(int), first) > 0.8
 
 
 if __name__ == "__main__":

@@ -35,11 +35,11 @@ def _load(name: str):
     return module
 
 
-def build(kind: str, skills: int, items: int) -> nn.Module:
+def build(kind: str, skills: int, items: int, dim: int = DIM, dropout: float | None = None) -> nn.Module:
     if kind == "dkt":
-        return _load("dkt").DKT(num_c=skills + 1, emb_size=DIM, dropout=0.1)
-    return _load("akt").AKT(n_question=skills + 1, n_pid=items, d_model=DIM, n_blocks=2, dropout=0.2, d_ff=256,
-                            kq_same=1, final_fc_dim=512, num_attn_heads=8, l2=1e-5)
+        return _load("dkt").DKT(num_c=skills + 1, emb_size=dim, dropout=0.1 if dropout is None else dropout)
+    return _load("akt").AKT(n_question=skills + 1, n_pid=items, d_model=dim, n_blocks=2, dropout=0.2 if dropout is None else dropout,
+                            d_ff=2 * dim, kq_same=1, final_fc_dim=512, num_attn_heads=8, l2=1e-5)
 
 
 def probabilities(net: nn.Module, kind: str, w: dict) -> tuple[torch.Tensor, torch.Tensor]:
@@ -54,7 +54,7 @@ def probabilities(net: nn.Module, kind: str, w: dict) -> tuple[torch.Tensor, tor
     return p, torch.zeros(())
 
 
-def published_predict(sub: pd.DataFrame, test: pd.DataFrame, kind: str, seed: int = 0) -> np.ndarray:
+def published_predict(sub: pd.DataFrame, test: pd.DataFrame, kind: str, seed: int = 0, settings: list | None = None) -> np.ndarray:
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     skills = {s: i + 1 for i, s in enumerate(sub["skill_name"].unique())}
@@ -65,39 +65,45 @@ def published_predict(sub: pd.DataFrame, test: pd.DataFrame, kind: str, seed: in
     is_held = sub["user_id"].isin(held).to_numpy()
     train_w = windows(sub[~is_held].reset_index(drop=True), skills, items, training=True)
     valid_w = windows(sub[is_held].reset_index(drop=True), skills, items, training=False)
-    net = build(kind, len(skills), len(items))
-    optimiser = torch.optim.Adam(net.parameters(), lr=LEARNING_RATE)
+    def fit(setting: dict) -> tuple[float, nn.Module]:
+        torch.manual_seed(seed)
+        net = build(kind, len(skills), len(items), setting.get("dim", DIM), setting.get("dropout"))
+        optimiser = torch.optim.Adam(net.parameters(), lr=setting.get("lr", LEARNING_RATE))
 
-    def loss_of(w, mask):
-        p, penalty = probabilities(net, kind, w)
-        keep = mask & ~torch.isnan(p)
-        p = torch.nan_to_num(p, nan=0.5).clamp(1e-6, 1 - 1e-6)
-        target = w["correct"].float()
-        bce = -(target * p.log() + (1 - target) * (1 - p).log())
-        return (bce * keep).sum() / keep.sum().clamp(min=1) + penalty
+        def loss_of(w, mask):
+            p, penalty = probabilities(net, kind, w)
+            keep = mask & ~torch.isnan(p)
+            p = torch.nan_to_num(p, nan=0.5).clamp(1e-6, 1 - 1e-6)
+            target = w["correct"].float()
+            bce = -(target * p.log() + (1 - target) * (1 - p).log())
+            return (bce * keep).sum() / keep.sum().clamp(min=1) + penalty
 
-    best, best_state, wait = np.inf, None, 0
-    for _ in range(MAX_EPOCHS):
-        net.train()
-        order = torch.randperm(len(train_w["skill"]))
-        for i in range(0, len(order), BATCH):
-            batch = {k: v[order[i:i + BATCH]] for k, v in train_w.items()}
-            loss = loss_of(batch, batch["valid"])
-            optimiser.zero_grad()
-            loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-            optimiser.step()
-        net.eval()
-        with torch.no_grad():
-            current = float(loss_of(valid_w, valid_w["scored"])) if len(valid_w["skill"]) else best - 1
-        if current < best - 1e-4:
-            best, best_state, wait = current, {k: v.clone() for k, v in net.state_dict().items()}, 0
-        else:
-            wait += 1
-            if wait >= PATIENCE:
-                break
-    if best_state is not None:
-        net.load_state_dict(best_state)
+        best, best_state, wait = np.inf, None, 0
+        for _ in range(MAX_EPOCHS):
+            net.train()
+            order = torch.randperm(len(train_w["skill"]))
+            for i in range(0, len(order), BATCH):
+                batch = {k: v[order[i:i + BATCH]] for k, v in train_w.items()}
+                loss = loss_of(batch, batch["valid"])
+                optimiser.zero_grad()
+                loss.backward()
+                nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                optimiser.step()
+            net.eval()
+            with torch.no_grad():
+                current = float(loss_of(valid_w, valid_w["scored"])) if len(valid_w["skill"]) else best - 1
+            if current < best - 1e-4:
+                best, best_state, wait = current, {k: v.clone() for k, v in net.state_dict().items()}, 0
+            else:
+                wait += 1
+                if wait >= PATIENCE:
+                    break
+        if best_state is not None:
+            net.load_state_dict(best_state)
+        return best, net
+
+    # one setting: the declared constants. Several (tuning.py): the one with the lowest loss on the held-out fifth is kept.
+    _, net = min((fit(setting) for setting in settings or [{}]), key=lambda pair: pair[0])
     net.eval()
     test_w = windows(test, skills, items, training=False)
     out = np.full(len(test), float(sub["correct"].mean()))

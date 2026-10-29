@@ -40,6 +40,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import GroupKFold
+from tuning import PFA_C_TUNED, PUBLISHED_SETTINGS, SEQUENCE_SETTINGS, tuned_gbdt, tuned_rasch_c
 
 LEVELS = [30, 100, 300, None]
 NAMES = ["lms_default", "pfa", "rasch", "gbdt", "stack_transfer", "hybrid"]
@@ -48,6 +49,7 @@ PUBLISHED_LEVELS = (30, 100, None)
 ORDER_SEED = 0  # --order-seed: which random order of the training students; 0 is the run of step 92
 SKIP: set = set()  # --skip: models left out (to save time in repeated runs)
 PLACEBO = False  # --placebo: labels permuted across all answers; every model should then score about 0.5
+TUNED = ("gbdt_tuned", "pfa_tuned", "rasch_tuned")  # tuning.py; added to NAMES with --tune
 SEQUENCE = ("sakt", "sakt_item", "akt_lite")  # sequence_models.py; added to NAMES with --sequence (Python 3.12 + PyTorch)
 ALPHAS = [0.0, 0.25, 0.5, 0.75, 1.0]  # weight of gbdt in the hybrid
 MIN_HYBRID_ROWS = 200
@@ -75,7 +77,7 @@ def pfa_matrix(skill_index: np.ndarray, wins: np.ndarray, losses: np.ndarray, sk
     return sparse.csr_matrix((data, (np.concatenate([rows] * 3), cols)), shape=(len(skill_index), 3 * skills))
 
 
-def pfa_predict(sub, test, wins_tr, losses_tr, wins_te, losses_te) -> np.ndarray:
+def pfa_predict(sub, test, wins_tr, losses_tr, wins_te, losses_te, c_grid=None) -> np.ndarray:
     skills = {s: i for i, s in enumerate(sub["skill_name"].unique())}
     k = len(skills)
     x_tr = pfa_matrix(sub["skill_name"].map(skills).to_numpy(), wins_tr, losses_tr, k)
@@ -84,8 +86,9 @@ def pfa_predict(sub, test, wins_tr, losses_tr, wins_te, losses_te) -> np.ndarray
     users = sub["user_id"].unique()
     held = np.random.default_rng(0).choice(users, size=max(1, len(users) // 5), replace=False)
     is_held = sub["user_id"].isin(held).to_numpy()
-    best, best_c = np.inf, PFA_C[1]
-    for c in PFA_C:
+    c_grid = c_grid or PFA_C
+    best, best_c = np.inf, c_grid[len(c_grid) // 2]
+    for c in c_grid:
         fit = LogisticRegression(C=c, max_iter=300).fit(x_tr[~is_held], y[~is_held])
         p = np.clip(fit.predict_proba(x_tr[is_held])[:, 1], 1e-6, 1 - 1e-6)
         loss = -np.mean(y[is_held] * np.log(p) + (1 - y[is_held]) * np.log(1 - p))
@@ -182,12 +185,23 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
                 "stack_transfer": sigmoid(x_te @ w),
                 "hybrid": sigmoid((1 - alpha) * (x_te @ w) + alpha * logit(gbdt_p)),
             }
+            if TUNED[0] in NAMES:
+                preds["gbdt_tuned"] = tuned_gbdt(x_tr[:, :6], y, sub["user_id"].to_numpy()).predict_proba(x_te[:, :6])[:, 1]
+                preds["pfa_tuned"] = pfa_predict(sub, test, wins_all[tr][mask], losses_all[tr][mask], wins_all[te], losses_all[te],
+                                                 PFA_C_TUNED)
+                preds["rasch_tuned"] = rasch_predict(sub, test, tuned_rasch_c(sub, rasch_predict))
             preds = {k: v for k, v in preds.items() if v is not None}
             for kind in SEQUENCE if SEQUENCE[0] in NAMES else ():
-                preds[kind] = sequence_predict(sub, test, kind)
-            if PUBLISHED[0] in NAMES and level in PUBLISHED_LEVELS:
+                if kind in NAMES:
+                    preds[kind] = sequence_predict(sub, test, kind)
+                if f"{kind}_tuned" in NAMES:
+                    preds[f"{kind}_tuned"] = sequence_predict(sub, test, kind, settings=SEQUENCE_SETTINGS)
+            if level in PUBLISHED_LEVELS:
                 for kind in PUBLISHED:
-                    preds[kind] = published_predict(sub, test, kind)
+                    if kind in NAMES:
+                        preds[kind] = published_predict(sub, test, kind)
+                    if f"{kind}_tuned" in NAMES:
+                        preds[f"{kind}_tuned"] = published_predict(sub, test, kind, settings=PUBLISHED_SETTINGS)
             for label, p in preds.items():
                 results.setdefault((level, label), []).append(metrics(truth, p))
             stored.setdefault(level, []).append((te, preds))
@@ -218,7 +232,7 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
             for te, preds in stored[level]:
                 for k in present:
                     merged[k][te] = preds[k]
-            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *SEQUENCE, *PUBLISHED)
+            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *TUNED, *SEQUENCE, *PUBLISHED)
                           if k in present and k != focus]:
                 diff = roc_auc_score(truth_all, merged[focus]) - roc_auc_score(truth_all, merged[other])
                 low, high = auc_bootstrap(truth_all, (merged[focus], merged[other]), user_rows, draws, rng)
@@ -238,6 +252,9 @@ def main() -> int:
     parser.add_argument("--skip", default="", help="comma-separated models to leave out, for example pfa,rasch")
     parser.add_argument("--levels", default="", help="comma-separated training sizes, for example 30,100,all")
     parser.add_argument("--half", type=int, default=-1, help="0 or 1: run on a random half of the target dataset's students")
+    parser.add_argument("--tune", action="store_true", help="also run gbdt, PFA and Rasch tuned with the declared budget (tuning.py)")
+    parser.add_argument("--neural-tuned", default="", help="comma-separated neural models to also run tuned, for example dkt,akt "
+                        "(each also needs --published or --sequence for its code to load; the untuned runs can be left out with --skip)")
     parser.add_argument("--placebo", action="store_true", help="permute the labels across all answers (leak check)")
     parser.add_argument("--save", default=None, help="directory for each fold's test predictions (npz)")
     args = parser.parse_args()
@@ -248,6 +265,8 @@ def main() -> int:
         NAMES.remove(skipped)
     if args.levels:
         LEVELS = [None if x == "all" else int(x) for x in args.levels.split(",")]
+    if args.tune:
+        NAMES.extend(TUNED)
     if args.published:
         global published_predict
         from published_models import published_predict
@@ -258,6 +277,8 @@ def main() -> int:
         global sequence_predict
         from sequence_models import sequence_predict
         NAMES.extend(SEQUENCE)
+    if args.neural_tuned:
+        NAMES.extend(f"{m}_tuned" for m in args.neural_tuned.split(","))
     loaders = {"assist09": load_assist09, "ednet": lambda: load_ednet(args.students, args.ednet_seed), "csedm": load_csedm}
     datasets = {name: load() for name, load in loaders.items()}
     for name in args.targets.split(","):
