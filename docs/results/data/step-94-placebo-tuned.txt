@@ -1,0 +1,95 @@
+
+## csedm
+
+csedm: 24032 answers, 506 students
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 1 N=30: lms_default 0.4919, gbdt 0.4975, stack_transfer 0.5026, hybrid 0.5026, gbdt_tuned 0.4992, pfa_tuned 0.5014, rasch_tuned 0.4894  alpha 0.0
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 1 N=100: lms_default 0.4919, gbdt 0.5133, stack_transfer 0.5071, hybrid 0.5071, gbdt_tuned 0.5070, pfa_tuned 0.5105, rasch_tuned 0.4992  alpha 0.0
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 1 N=300: lms_default 0.4919, gbdt 0.5085, stack_transfer 0.5078, hybrid 0.5078, gbdt_tuned 0.5089, pfa_tuned 0.5020, rasch_tuned 0.4985  alpha 0.0
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 1 N=all: lms_default 0.4919, gbdt 0.5005, stack_transfer 0.5088, hybrid 0.5088, gbdt_tuned 0.5016, pfa_tuned 0.5052, rasch_tuned 0.4973  alpha 0.0
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 2 N=30: lms_default 0.5036, gbdt 0.4956, stack_transfer 0.4874, hybrid 0.4893, gbdt_tuned 0.4939, pfa_tuned 0.5076, rasch_tuned 0.5083  alpha 0.25
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 2 N=100: lms_default 0.5036, gbdt 0.5106, stack_transfer 0.4988, hybrid 0.4988, gbdt_tuned 0.5106, pfa_tuned 0.5112, rasch_tuned 0.5099  alpha 0.0
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 2 N=300: lms_default 0.5036, gbdt 0.5008, stack_transfer 0.4978, hybrid 0.5002, gbdt_tuned 0.5036, pfa_tuned 0.5088, rasch_tuned 0.5117  alpha 0.25
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 2 N=all: lms_default 0.5036, gbdt 0.4984, stack_transfer 0.4923, hybrid 0.4923, gbdt_tuned 0.4929, pfa_tuned 0.5072, rasch_tuned 0.5104  alpha 0.0
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 3 N=30: lms_default 0.4996, gbdt 0.4917, stack_transfer 0.5044, hybrid 0.4995, gbdt_tuned 0.4938, pfa_tuned 0.5020, rasch_tuned 0.4961  alpha 0.25
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 3 N=100: lms_default 0.4996, gbdt 0.5024, stack_transfer 0.5038, hybrid 0.5071, gbdt_tuned 0.5040, pfa_tuned 0.5053, rasch_tuned 0.4972  alpha 0.25
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 3 N=300: lms_default 0.4996, gbdt 0.5021, stack_transfer 0.5053, hybrid 0.5052, gbdt_tuned 0.4974, pfa_tuned 0.5052, rasch_tuned 0.4978  alpha 0.25
+C:\Users\puspa\Documents\NEW LMS\LMS-Portal\research\kt_comparison\cold_start_plus.py:46: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-z))
+fold 3 N=all: lms_default 0.4996, gbdt 0.4980, stack_transfer 0.5066, hybrid 0.5066, gbdt_tuned 0.5047, pfa_tuned 0.5073, rasch_tuned 0.4974  alpha 0.0
+
+### csedm: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid | gbdt_tuned | pfa_tuned | rasch_tuned |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.4984 (0.0049) | 0.4949 (0.0024) | 0.4981 (0.0076) | 0.4971 (0.0057) | 0.4956 (0.0025) | 0.5036 (0.0028) | 0.4980 (0.0078) |
+| 100 | 0.4984 (0.0049) | 0.5088 (0.0046) | 0.5032 (0.0034) | 0.5044 (0.0039) | 0.5072 (0.0027) | 0.5090 (0.0027) | 0.5021 (0.0055) |
+| 300 | 0.4984 (0.0049) | 0.5038 (0.0034) | 0.5036 (0.0043) | 0.5044 (0.0031) | 0.5033 (0.0047) | 0.5053 (0.0028) | 0.5027 (0.0064) |
+| all | 0.4984 (0.0049) | 0.4989 (0.0011) | 0.5026 (0.0073) | 0.5026 (0.0073) | 0.4997 (0.0050) | 0.5066 (0.0010) | 0.5017 (0.0062) |
+
+### csedm: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid | gbdt_tuned | pfa_tuned | rasch_tuned |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.1759 (0.0038) | 0.0582 (0.0062) | 0.0219 (0.0089) | 0.0235 (0.0082) | 0.0645 (0.0061) | 0.0142 (0.0061) | 0.0261 (0.0052) |
+| 100 | 0.1759 (0.0038) | 0.0179 (0.0040) | 0.0039 (0.0002) | 0.0033 (0.0009) | 0.0294 (0.0083) | 0.0030 (0.0002) | 0.0216 (0.0049) |
+| 300 | 0.1759 (0.0038) | 0.0088 (0.0035) | 0.0031 (0.0018) | 0.0029 (0.0017) | 0.0114 (0.0034) | 0.0032 (0.0018) | 0.0156 (0.0029) |
+| all | 0.1759 (0.0038) | 0.0061 (0.0009) | 0.0035 (0.0012) | 0.0035 (0.0012) | 0.0129 (0.0011) | 0.0036 (0.0012) | 0.0156 (0.0028) |
+
+### csedm: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid | gbdt_tuned | pfa_tuned | rasch_tuned |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.7574 (0.0039) | 0.6640 (0.0042) | 0.6524 (0.0023) | 0.6525 (0.0022) | 0.6666 (0.0026) | 0.6511 (0.0005) | 0.6531 (0.0029) |
+| 100 | 0.7574 (0.0039) | 0.6503 (0.0011) | 0.6484 (0.0014) | 0.6484 (0.0014) | 0.6534 (0.0011) | 0.6480 (0.0013) | 0.6520 (0.0026) |
+| 300 | 0.7574 (0.0039) | 0.6493 (0.0013) | 0.6479 (0.0014) | 0.6479 (0.0014) | 0.6499 (0.0009) | 0.6479 (0.0015) | 0.6508 (0.0020) |
+| all | 0.7574 (0.0039) | 0.6488 (0.0012) | 0.6479 (0.0013) | 0.6479 (0.0013) | 0.6502 (0.0015) | 0.6479 (0.0015) | 0.6507 (0.0020) |
+
+### csedm: AUC difference stack_transfer minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | gbdt | -0.0058 | -0.0133 to +0.0019 |
+| 100 | gbdt_tuned | -0.0043 | -0.0143 to +0.0036 |
+| 100 | pfa_tuned | -0.0052 | -0.0156 to +0.0033 |
+| 100 | rasch_tuned | +0.0010 | -0.0063 to +0.0112 |
+| all | gbdt | +0.0036 | -0.0055 to +0.0118 |
+| all | gbdt_tuned | +0.0030 | -0.0046 to +0.0109 |
+| all | pfa_tuned | -0.0049 | -0.0128 to +0.0017 |
+| all | rasch_tuned | +0.0003 | -0.0101 to +0.0119 |
+
+### csedm: AUC difference hybrid minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 100 | gbdt | -0.0047 | -0.0132 to +0.0033 |
+| 100 | stack_transfer | +0.0011 | -0.0009 to +0.0035 |
+| 100 | gbdt_tuned | -0.0032 | -0.0121 to +0.0066 |
+| 100 | pfa_tuned | -0.0041 | -0.0115 to +0.0059 |
+| 100 | rasch_tuned | +0.0021 | -0.0082 to +0.0111 |
+| all | gbdt | +0.0036 | -0.0056 to +0.0129 |
+| all | stack_transfer | +0.0000 | +0.0000 to +0.0000 |
+| all | gbdt_tuned | +0.0030 | -0.0048 to +0.0112 |
+| all | pfa_tuned | -0.0049 | -0.0111 to +0.0021 |
+| all | rasch_tuned | +0.0003 | -0.0089 to +0.0114 |
