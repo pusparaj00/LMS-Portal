@@ -11,6 +11,8 @@
                   logits; the blend weight is chosen on out-of-group predictions of the N training students only
   sakt, sakt_item, akt_lite   sequence models of sequence_models.py, with --sequence
   lms_default     the LMS rule with its default numbers
+  stack_flat, rule_platt, drop_*   controls, with --controls (step 95): the stack without transfer (prior weights 0), the rule with a
+                  Platt map fitted on the other datasets, and the transfer stack with one feature left out
 Only the N training students are used for fitting, counting and choosing; test students never are.
 
     python baselines_plus.py [--folds 5] [--bootstrap 100] [--students 1500] [--targets assist09,ednet,csedm]
@@ -33,6 +35,7 @@ from cold_start_plus import (
     logit,
     ridge_fit,
     transfer_weights,
+    dataset_matrix,
 )
 from compare import load_assist09, load_ednet
 from scipy import sparse
@@ -51,6 +54,8 @@ SKIP: set = set()  # --skip: models left out (to save time in repeated runs)
 PLACEBO = False  # --placebo: labels permuted across all answers; every model should then score about 0.5
 TUNED = ("gbdt_tuned", "pfa_tuned", "rasch_tuned")  # tuning.py; added to NAMES with --tune
 SEQUENCE = ("sakt", "sakt_item", "akt_lite")  # sequence_models.py; added to NAMES with --sequence (Python 3.12 + PyTorch)
+CONTROLS = ("stack_flat", "rule_platt", "drop_rule", "drop_student", "drop_count", "drop_recent", "drop_skill", "drop_item")
+PRIORS: dict = {}  # --controls: "platt" weights on (rule logit, intercept) and "drop" priors, one per left-out feature
 ALPHAS = [0.0, 0.25, 0.5, 0.75, 1.0]  # weight of gbdt in the hybrid
 MIN_HYBRID_ROWS = 200
 PFA_C = [0.1, 1.0, 10.0]
@@ -190,6 +195,13 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
                 preds["pfa_tuned"] = pfa_predict(sub, test, wins_all[tr][mask], losses_all[tr][mask], wins_all[te], losses_all[te],
                                                  PFA_C_TUNED)
                 preds["rasch_tuned"] = rasch_predict(sub, test, tuned_rasch_c(sub, rasch_predict))
+            if CONTROLS[0] in NAMES:
+                preds["stack_flat"] = sigmoid(x_te @ choose_and_fit(x_tr, y, group, np.zeros(x_tr.shape[1]))[0])
+                preds["rule_platt"] = sigmoid(x_te[:, [0, 6]] @ PRIORS["platt"])
+                for k, label in enumerate(CONTROLS[2:]):
+                    keep = np.arange(x_tr.shape[1]) != k
+                    w_drop = choose_and_fit(x_tr * keep, y, group, PRIORS["drop"][k])[0]
+                    preds[label] = sigmoid((x_te * keep) @ w_drop)
             preds = {k: v for k, v in preds.items() if v is not None}
             for kind in SEQUENCE if SEQUENCE[0] in NAMES else ():
                 if kind in NAMES:
@@ -224,7 +236,7 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
     for focus in ("stack_transfer", "hybrid"):
         print(f"\n### {name}: AUC difference {focus} minus other model, 95% interval over students "
               f"({draws} resamples)\n\n| Training students | against | difference | interval |\n| --- | --- | --- | --- |")
-        for level in (100, None):
+        for level in (30, 100, None):
             if level not in stored:
                 continue
             present = [k for k in NAMES if k in stored[level][0][1]]
@@ -232,11 +244,36 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
             for te, preds in stored[level]:
                 for k in present:
                     merged[k][te] = preds[k]
-            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *TUNED, *SEQUENCE, *PUBLISHED)
+            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *TUNED, *SEQUENCE, *PUBLISHED, *CONTROLS)
                           if k in present and k != focus]:
                 diff = roc_auc_score(truth_all, merged[focus]) - roc_auc_score(truth_all, merged[other])
                 low, high = auc_bootstrap(truth_all, (merged[focus], merged[other]), user_rows, draws, rng)
                 print(f"| {'all' if level is None else level} | {other} | {diff:+.4f} | {low:+.4f} to {high:+.4f} |")
+
+
+def control_priors(others: list[pd.DataFrame]) -> dict:
+    """Priors of the controls, fitted on the other datasets like transfer_weights: a Platt map of the rule's logit, and the stack's
+    weights refitted without each of the six features in turn."""
+    parts = [dataset_matrix(d) for d in others]
+    x = np.vstack([p[0] for p in parts])
+    y = np.concatenate([p[1] for p in parts])
+    weights = np.concatenate([np.full(len(p[1]), 1 / len(p[1])) for p in parts]) * len(y) / len(parts)
+    start = np.array([1.0, 0, 0, 0, 0, 0, 0])
+    drop = [ridge_fit(x * (np.arange(x.shape[1]) != k), y, start * (np.arange(x.shape[1]) != k), 1e-3, weights) for k in range(6)]
+    return {"platt": ridge_fit(x[:, [0, 6]], y, np.array([1.0, 0.0]), 1e-3, weights), "drop": drop}
+
+
+def print_zero_data_ablation(data: pd.DataFrame, w_full: np.ndarray) -> None:
+    """AUC with no course data (N = 0, course features neutral) of the transfer stack and of each leave-one-feature-out prior."""
+    data = data.sort_values("order_id").reset_index(drop=True)
+    causal, lms = causal_features(data)
+    x = design(causal, np.zeros(len(data)), np.zeros(len(data)))
+    truth = data["correct"].to_numpy().astype(float)
+    cells = {"lms_default": roc_auc_score(truth, lms), "stack_transfer": roc_auc_score(truth, x @ w_full)}
+    for k, label in enumerate(CONTROLS[2:]):
+        cells[label] = roc_auc_score(truth, (x * (np.arange(7) != k)) @ PRIORS["drop"][k])
+    print("\nN = 0, AUC over all answers (no folds, nothing fitted on this dataset): "
+          + ", ".join(f"{k} {v:.4f}" for k, v in cells.items()), flush=True)
 
 
 def main() -> int:
@@ -255,6 +292,7 @@ def main() -> int:
     parser.add_argument("--tune", action="store_true", help="also run gbdt, PFA and Rasch tuned with the declared budget (tuning.py)")
     parser.add_argument("--neural-tuned", default="", help="comma-separated neural models to also run tuned, for example dkt,akt "
                         "(each also needs --published or --sequence for its code to load; the untuned runs can be left out with --skip)")
+    parser.add_argument("--controls", action="store_true", help="also run the transfer controls and the leave-one-feature-out stacks")
     parser.add_argument("--placebo", action="store_true", help="permute the labels across all answers (leak check)")
     parser.add_argument("--save", default=None, help="directory for each fold's test predictions (npz)")
     args = parser.parse_args()
@@ -277,12 +315,18 @@ def main() -> int:
         global sequence_predict
         from sequence_models import sequence_predict
         NAMES.extend(SEQUENCE)
+    if args.controls:
+        NAMES.extend(CONTROLS)
     if args.neural_tuned:
         NAMES.extend(f"{m}_tuned" for m in args.neural_tuned.split(","))
     loaders = {"assist09": load_assist09, "ednet": lambda: load_ednet(args.students, args.ednet_seed), "csedm": load_csedm}
     datasets = {name: load() for name, load in loaders.items()}
     for name in args.targets.split(","):
-        w = transfer_weights([d for k, d in datasets.items() if k != name])
+        others = [d for k, d in datasets.items() if k != name]
+        w = transfer_weights(others)
+        if args.controls:
+            PRIORS.update(control_priors(others))
+            print_zero_data_ablation(datasets[name], w)
         print(f"\n## {name}\n", flush=True)
         target = datasets[name]
         if args.half >= 0:

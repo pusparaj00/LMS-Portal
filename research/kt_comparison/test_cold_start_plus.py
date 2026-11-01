@@ -117,6 +117,44 @@ def test_tuned_gbdt_is_repeatable_and_learns_the_signal():
     assert roc_auc_score((probe[:, 0] > 0).astype(int), first) > 0.8
 
 
+def _truncation_frames():
+    rng = np.random.default_rng(5)
+    rows = []
+    for user in range(12):
+        for t in range(14):
+            rows.append((f"u{user}", f"s{t % 3}", f"i{(user + t) % 6}", int(rng.random() < 0.6), user * 100 + t))
+    frame = pd.DataFrame(rows, columns=["user_id", "skill_name", "item_id", "correct", "order_id"])
+    test_user, cut = "u11", 7
+    after = ((frame["user_id"] == test_user) & (frame.groupby("user_id").cumcount() > cut)).to_numpy()
+    altered = frame.assign(correct=np.where(after, 1 - frame["correct"], frame["correct"]))
+    return frame, altered, (frame["user_id"] == test_user).to_numpy(), cut
+
+
+def test_no_baseline_prediction_depends_on_a_later_answer_of_the_same_student():
+    """Truncation test: flip every answer after position `cut` of one test student; predictions up to `cut` must not move."""
+    from baselines_plus import pfa_counts, pfa_predict, rasch_predict
+
+    frame, altered, is_test, cut = _truncation_frames()
+    train, test_a, test_b = frame[~is_test].reset_index(drop=True), frame[is_test].reset_index(drop=True), altered[is_test].reset_index(drop=True)
+    keep = np.arange(len(test_a)) <= cut
+    first_causal, _ = causal_features(test_a)
+    second_causal, _ = causal_features(test_b)
+    assert np.allclose(first_causal[keep], second_causal[keep])
+    assert np.allclose(rasch_predict(train, test_a)[keep], rasch_predict(train, test_b)[keep])
+    wins_tr, losses_tr = pfa_counts(train)
+    (w_a, l_a), (w_b, l_b) = pfa_counts(test_a), pfa_counts(test_b)
+    assert np.allclose(pfa_predict(train, test_a, wins_tr, losses_tr, w_a, l_a)[keep],
+                       pfa_predict(train, test_b, wins_tr, losses_tr, w_b, l_b)[keep])
+
+
+def test_the_course_features_of_a_test_row_use_training_answers_only():
+    frame, altered, is_test, _ = _truncation_frames()
+    train = frame[~is_test].reset_index(drop=True)
+    first = course_features(frame[is_test].reset_index(drop=True), train)
+    second = course_features(altered[is_test].reset_index(drop=True), train)
+    assert all(np.allclose(a, b) for a, b in zip(first, second, strict=True))
+
+
 if __name__ == "__main__":
     for name, function in list(globals().items()):
         if name.startswith("test_"):
