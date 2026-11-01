@@ -24,7 +24,6 @@ import numpy as np
 import pandas as pd
 from cold_start_plus import (
     GROUPS,
-    auc_bootstrap,
     causal_features,
     choose_and_fit,
     course_features,
@@ -39,6 +38,7 @@ from cold_start_plus import (
 )
 from compare import load_assist09, load_ednet
 from scipy import sparse
+from scipy.stats import rankdata
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
@@ -233,22 +233,44 @@ def run(name: str, data: pd.DataFrame, w_transfer: np.ndarray, folds: int, draws
     truth_all = data["correct"].to_numpy().astype(float)
     user_rows = pd.Series(np.arange(len(data))).groupby(data["user_id"].to_numpy()).indices
     rng = np.random.default_rng(0)
-    for focus in ("stack_transfer", "hybrid"):
+    focuses = ("stack_transfer", "hybrid")
+    pairs = [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *TUNED, *SEQUENCE, *PUBLISHED, *CONTROLS)]
+    boot: dict = {}
+    for level in (30, 100, None):
+        if level not in stored:
+            continue
+        present = [k for k in NAMES if k in stored[level][0][1]]
+        merged = {k: np.zeros(len(data)) for k in present}
+        for te, preds in stored[level]:
+            for k in present:
+                merged[k][te] = preds[k]
+        boot[level] = (merged, {k: fast_auc(truth_all, merged[k]) for k in present}, bootstrap_aucs(truth_all, merged, user_rows, draws, rng))
+    for focus in focuses:
         print(f"\n### {name}: AUC difference {focus} minus other model, 95% interval over students "
               f"({draws} resamples)\n\n| Training students | against | difference | interval |\n| --- | --- | --- | --- |")
-        for level in (30, 100, None):
-            if level not in stored:
-                continue
-            present = [k for k in NAMES if k in stored[level][0][1]]
-            merged = {k: np.zeros(len(data)) for k in present}
-            for te, preds in stored[level]:
-                for k in present:
-                    merged[k][te] = preds[k]
-            for other in [k for k in ("pfa", "rasch", "gbdt", "stack_transfer", *TUNED, *SEQUENCE, *PUBLISHED, *CONTROLS)
-                          if k in present and k != focus]:
-                diff = roc_auc_score(truth_all, merged[focus]) - roc_auc_score(truth_all, merged[other])
-                low, high = auc_bootstrap(truth_all, (merged[focus], merged[other]), user_rows, draws, rng)
-                print(f"| {'all' if level is None else level} | {other} | {diff:+.4f} | {low:+.4f} to {high:+.4f} |")
+        for level, (merged, point, resampled) in boot.items():
+            for other in [k for k in pairs if k in merged and k != focus]:
+                low, high = np.percentile(resampled[focus] - resampled[other], [2.5, 97.5])
+                print(f"| {'all' if level is None else level} | {other} | {point[focus] - point[other]:+.4f} | {low:+.4f} to {high:+.4f} |")
+
+
+def fast_auc(truth: np.ndarray, score: np.ndarray) -> float:
+    ranks = rankdata(score)
+    positives = int(truth.sum())
+    return float((ranks[truth == 1].sum() - positives * (positives + 1) / 2) / (positives * (len(truth) - positives)))
+
+
+def bootstrap_aucs(truth, predictions: dict, user_rows, draws, rng) -> dict:
+    """AUC of every model on each of `draws` resamples of whole students; one resample is shared by all models, so differences are paired."""
+    keys = list(user_rows)
+    out: dict = {k: [] for k in predictions}
+    for _ in range(draws):
+        rows = np.concatenate([user_rows[keys[i]] for i in rng.integers(0, len(keys), len(keys))])
+        if len(set(truth[rows])) < 2:
+            continue
+        for k, p in predictions.items():
+            out[k].append(fast_auc(truth[rows], p[rows]))
+    return {k: np.array(v) for k, v in out.items()}
 
 
 def control_priors(others: list[pd.DataFrame]) -> dict:
