@@ -1,0 +1,124 @@
+
+N = 0, AUC over all answers (no folds, nothing fitted on this dataset): lms_default 0.5968, stack_transfer 0.6384, drop_rule 0.6321, drop_student 0.6284, drop_count 0.6374, drop_recent 0.6307, drop_skill 0.6383, drop_item 0.6365
+
+## ednet
+
+ednet: 147756 answers, 1500 students
+fold 1 N=30: lms_default 0.5869, pfa 0.5753, rasch 0.6390, gbdt 0.6181, stack_transfer 0.6517, hybrid 0.6506, stack_flat 0.6509, rule_platt 0.5869, drop_rule 0.6479, drop_student 0.6415, drop_count 0.6511, drop_recent 0.6490, drop_skill 0.6473, drop_item 0.6272  alpha 0.25
+fold 1 N=100: lms_default 0.5869, pfa 0.6042, rasch 0.6599, gbdt 0.6588, stack_transfer 0.6658, hybrid 0.6677, stack_flat 0.6657, rule_platt 0.5869, drop_rule 0.6631, drop_student 0.6543, drop_count 0.6657, drop_recent 0.6638, drop_skill 0.6594, drop_item 0.6339  alpha 0.25
+fold 1 N=all: lms_default 0.5869, pfa 0.6256, rasch 0.7164, gbdt 0.7043, stack_transfer 0.7040, hybrid 0.7054, stack_flat 0.7041, rule_platt 0.5869, drop_rule 0.7030, drop_student 0.6931, drop_count 0.7043, drop_recent 0.7035, drop_skill 0.6954, drop_item 0.6402  alpha 0.5
+fold 2 N=30: lms_default 0.6219, pfa 0.5811, rasch 0.6701, gbdt 0.6362, stack_transfer 0.6761, hybrid 0.6760, stack_flat 0.6782, rule_platt 0.6218, drop_rule 0.6707, drop_student 0.6643, drop_count 0.6768, drop_recent 0.6709, drop_skill 0.6770, drop_item 0.6659  alpha 0.25
+fold 2 N=100: lms_default 0.6219, pfa 0.6085, rasch 0.6867, gbdt 0.6768, stack_transfer 0.6934, hybrid 0.6931, stack_flat 0.6934, rule_platt 0.6218, drop_rule 0.6903, drop_student 0.6806, drop_count 0.6933, drop_recent 0.6892, drop_skill 0.6910, drop_item 0.6722  alpha 0.25
+fold 2 N=all: lms_default 0.6219, pfa 0.6477, rasch 0.7274, gbdt 0.7234, stack_transfer 0.7240, hybrid 0.7250, stack_flat 0.7241, rule_platt 0.6218, drop_rule 0.7219, drop_student 0.7078, drop_count 0.7241, drop_recent 0.7218, drop_skill 0.7183, drop_item 0.6752  alpha 0.5
+fold 3 N=30: lms_default 0.6000, pfa 0.5354, rasch 0.6479, gbdt 0.5544, stack_transfer 0.6549, hybrid 0.6391, stack_flat 0.6373, rule_platt 0.6000, drop_rule 0.6486, drop_student 0.6391, drop_count 0.6509, drop_recent 0.6146, drop_skill 0.6527, drop_item 0.6472  alpha 0.5
+fold 3 N=100: lms_default 0.6000, pfa 0.5801, rasch 0.6646, gbdt 0.6532, stack_transfer 0.6697, hybrid 0.6697, stack_flat 0.6694, rule_platt 0.6000, drop_rule 0.6668, drop_student 0.6592, drop_count 0.6696, drop_recent 0.6658, drop_skill 0.6676, drop_item 0.6518  alpha 0.0
+fold 3 N=all: lms_default 0.6000, pfa 0.6340, rasch 0.7283, gbdt 0.7217, stack_transfer 0.7214, hybrid 0.7229, stack_flat 0.7214, rule_platt 0.6000, drop_rule 0.7200, drop_student 0.7085, drop_count 0.7214, drop_recent 0.7203, drop_skill 0.7140, drop_item 0.6599  alpha 0.5
+fold 4 N=30: lms_default 0.5892, pfa 0.5806, rasch 0.6316, gbdt 0.6080, stack_transfer 0.6501, hybrid 0.6501, stack_flat 0.6468, rule_platt 0.5892, drop_rule 0.6468, drop_student 0.6432, drop_count 0.6491, drop_recent 0.6427, drop_skill 0.6440, drop_item 0.6407  alpha 0.0
+fold 4 N=100: lms_default 0.5892, pfa 0.6085, rasch 0.6655, gbdt 0.6684, stack_transfer 0.6753, hybrid 0.6767, stack_flat 0.6752, rule_platt 0.5892, drop_rule 0.6744, drop_student 0.6689, drop_count 0.6762, drop_recent 0.6704, drop_skill 0.6659, drop_item 0.6450  alpha 0.25
+fold 4 N=all: lms_default 0.5892, pfa 0.6295, rasch 0.7204, gbdt 0.7141, stack_transfer 0.7152, hybrid 0.7159, stack_flat 0.7152, rule_platt 0.5892, drop_rule 0.7144, drop_student 0.7087, drop_count 0.7153, drop_recent 0.7125, drop_skill 0.7028, drop_item 0.6522  alpha 0.25
+fold 5 N=30: lms_default 0.5850, pfa 0.5714, rasch 0.6211, gbdt 0.5566, stack_transfer 0.6323, hybrid 0.6317, stack_flat 0.5000, rule_platt 0.5850, drop_rule 0.6286, drop_student 0.6269, drop_count 0.6343, drop_recent 0.6245, drop_skill 0.6324, drop_item 0.6258  alpha 0.25
+fold 5 N=100: lms_default 0.5850, pfa 0.6006, rasch 0.6407, gbdt 0.6125, stack_transfer 0.6492, hybrid 0.6478, stack_flat 0.6491, rule_platt 0.5850, drop_rule 0.6475, drop_student 0.6429, drop_count 0.6506, drop_recent 0.6423, drop_skill 0.6426, drop_item 0.6338  alpha 0.25
+fold 5 N=all: lms_default 0.5850, pfa 0.6285, rasch 0.7159, gbdt 0.7049, stack_transfer 0.7063, hybrid 0.7070, stack_flat 0.7063, rule_platt 0.5850, drop_rule 0.7055, drop_student 0.6985, drop_count 0.7064, drop_recent 0.7037, drop_skill 0.6973, drop_item 0.6439  alpha 0.5
+
+### ednet: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid | stack_flat | rule_platt | drop_rule | drop_student | drop_count | drop_recent | drop_skill | drop_item |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.5966 (0.0137) | 0.5688 (0.0171) | 0.6419 (0.0166) | 0.5947 (0.0332) | 0.6530 (0.0140) | 0.6495 (0.0150) | 0.6226 (0.0628) | 0.5966 (0.0136) | 0.6485 (0.0134) | 0.6430 (0.0121) | 0.6525 (0.0137) | 0.6403 (0.0197) | 0.6507 (0.0147) | 0.6414 (0.0147) |
+| 100 | 0.5966 (0.0137) | 0.6004 (0.0106) | 0.6635 (0.0147) | 0.6539 (0.0222) | 0.6707 (0.0143) | 0.6710 (0.0146) | 0.6706 (0.0143) | 0.5966 (0.0136) | 0.6684 (0.0140) | 0.6612 (0.0128) | 0.6711 (0.0140) | 0.6663 (0.0150) | 0.6653 (0.0156) | 0.6474 (0.0142) |
+| all | 0.5966 (0.0137) | 0.6330 (0.0078) | 0.7217 (0.0053) | 0.7137 (0.0081) | 0.7142 (0.0079) | 0.7152 (0.0080) | 0.7142 (0.0079) | 0.5966 (0.0136) | 0.7130 (0.0076) | 0.7033 (0.0064) | 0.7143 (0.0079) | 0.7124 (0.0078) | 0.7056 (0.0091) | 0.6543 (0.0125) |
+
+### ednet: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid | stack_flat | rule_platt | drop_rule | drop_student | drop_count | drop_recent | drop_skill | drop_item |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.1473 (0.0061) | 0.0646 (0.0274) | 0.0228 (0.0084) | 0.0700 (0.0454) | 0.0338 (0.0171) | 0.0286 (0.0132) | 0.0472 (0.0503) | 0.0879 (0.0068) | 0.0323 (0.0138) | 0.0280 (0.0139) | 0.0272 (0.0108) | 0.0398 (0.0240) | 0.0281 (0.0127) | 0.0370 (0.0219) |
+| 100 | 0.1473 (0.0061) | 0.0280 (0.0109) | 0.0202 (0.0061) | 0.0241 (0.0140) | 0.0114 (0.0025) | 0.0113 (0.0025) | 0.0109 (0.0022) | 0.0879 (0.0068) | 0.0127 (0.0014) | 0.0163 (0.0037) | 0.0121 (0.0041) | 0.0136 (0.0031) | 0.0146 (0.0037) | 0.0138 (0.0038) |
+| all | 0.1473 (0.0061) | 0.0114 (0.0052) | 0.0159 (0.0053) | 0.0133 (0.0020) | 0.0154 (0.0027) | 0.0138 (0.0023) | 0.0153 (0.0026) | 0.0879 (0.0068) | 0.0150 (0.0020) | 0.0114 (0.0021) | 0.0153 (0.0025) | 0.0158 (0.0029) | 0.0152 (0.0035) | 0.0106 (0.0028) |
+
+### ednet: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | pfa | rasch | gbdt | stack_transfer | hybrid | stack_flat | rule_platt | drop_rule | drop_student | drop_count | drop_recent | drop_skill | drop_item |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.7303 (0.0119) | 0.6770 (0.0276) | 0.6241 (0.0077) | 0.6640 (0.0355) | 0.6240 (0.0073) | 0.6229 (0.0075) | 0.6353 (0.0301) | 0.6705 (0.0086) | 0.6249 (0.0048) | 0.6267 (0.0056) | 0.6213 (0.0065) | 0.6289 (0.0095) | 0.6223 (0.0067) | 0.6308 (0.0067) |
+| 100 | 0.7303 (0.0119) | 0.6435 (0.0036) | 0.6142 (0.0069) | 0.6208 (0.0104) | 0.6101 (0.0071) | 0.6099 (0.0069) | 0.6101 (0.0071) | 0.6705 (0.0086) | 0.6113 (0.0068) | 0.6156 (0.0057) | 0.6099 (0.0072) | 0.6121 (0.0069) | 0.6129 (0.0077) | 0.6216 (0.0074) |
+| all | 0.7303 (0.0119) | 0.6280 (0.0043) | 0.5816 (0.0041) | 0.5860 (0.0058) | 0.5861 (0.0058) | 0.5851 (0.0059) | 0.5861 (0.0058) | 0.6705 (0.0086) | 0.5869 (0.0057) | 0.5925 (0.0044) | 0.5860 (0.0058) | 0.5873 (0.0056) | 0.5917 (0.0064) | 0.6184 (0.0070) |
+
+### ednet: AUC difference stack_transfer minus other model, 95% interval over students (1000 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | pfa | +0.0916 | +0.0808 to +0.1041 |
+| 30 | rasch | +0.0094 | +0.0057 to +0.0134 |
+| 30 | gbdt | +0.0610 | +0.0507 to +0.0737 |
+| 30 | stack_flat | +0.0311 | +0.0182 to +0.0464 |
+| 30 | rule_platt | +0.0547 | +0.0490 to +0.0615 |
+| 30 | drop_rule | +0.0045 | +0.0032 to +0.0060 |
+| 30 | drop_student | +0.0107 | +0.0077 to +0.0140 |
+| 30 | drop_count | +0.0002 | -0.0011 to +0.0017 |
+| 30 | drop_recent | +0.0142 | +0.0082 to +0.0218 |
+| 30 | drop_skill | +0.0016 | +0.0001 to +0.0032 |
+| 30 | drop_item | +0.0115 | +0.0099 to +0.0135 |
+| 100 | pfa | +0.0736 | +0.0660 to +0.0813 |
+| 100 | rasch | +0.0071 | +0.0042 to +0.0104 |
+| 100 | gbdt | +0.0176 | +0.0137 to +0.0215 |
+| 100 | stack_flat | +0.0001 | +0.0000 to +0.0002 |
+| 100 | rule_platt | +0.0742 | +0.0682 to +0.0813 |
+| 100 | drop_rule | +0.0025 | +0.0013 to +0.0038 |
+| 100 | drop_student | +0.0100 | +0.0074 to +0.0131 |
+| 100 | drop_count | -0.0003 | -0.0010 to +0.0003 |
+| 100 | drop_recent | +0.0045 | +0.0032 to +0.0060 |
+| 100 | drop_skill | +0.0054 | +0.0040 to +0.0069 |
+| 100 | drop_item | +0.0233 | +0.0206 to +0.0261 |
+| all | pfa | +0.0809 | +0.0748 to +0.0864 |
+| all | rasch | -0.0080 | -0.0101 to -0.0059 |
+| all | gbdt | +0.0004 | -0.0007 to +0.0014 |
+| all | stack_flat | -0.0000 | -0.0000 to +0.0000 |
+| all | rule_platt | +0.1168 | +0.1083 to +0.1250 |
+| all | drop_rule | +0.0012 | +0.0005 to +0.0019 |
+| all | drop_student | +0.0106 | +0.0074 to +0.0145 |
+| all | drop_count | -0.0001 | -0.0002 to +0.0000 |
+| all | drop_recent | +0.0020 | +0.0012 to +0.0027 |
+| all | drop_skill | +0.0086 | +0.0067 to +0.0105 |
+| all | drop_item | +0.0592 | +0.0530 to +0.0652 |
+
+### ednet: AUC difference hybrid minus other model, 95% interval over students (1000 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | pfa | +0.0887 | +0.0780 to +0.1005 |
+| 30 | rasch | +0.0065 | +0.0031 to +0.0104 |
+| 30 | gbdt | +0.0581 | +0.0489 to +0.0695 |
+| 30 | stack_transfer | -0.0029 | -0.0051 to -0.0010 |
+| 30 | stack_flat | +0.0282 | +0.0151 to +0.0428 |
+| 30 | rule_platt | +0.0518 | +0.0457 to +0.0594 |
+| 30 | drop_rule | +0.0016 | -0.0004 to +0.0035 |
+| 30 | drop_student | +0.0078 | +0.0043 to +0.0113 |
+| 30 | drop_count | -0.0027 | -0.0043 to -0.0013 |
+| 30 | drop_recent | +0.0113 | +0.0063 to +0.0174 |
+| 30 | drop_skill | -0.0013 | -0.0036 to +0.0007 |
+| 30 | drop_item | +0.0086 | +0.0056 to +0.0114 |
+| 100 | pfa | +0.0739 | +0.0666 to +0.0813 |
+| 100 | rasch | +0.0074 | +0.0045 to +0.0107 |
+| 100 | gbdt | +0.0178 | +0.0144 to +0.0214 |
+| 100 | stack_transfer | +0.0003 | -0.0004 to +0.0009 |
+| 100 | stack_flat | +0.0004 | -0.0002 to +0.0010 |
+| 100 | rule_platt | +0.0744 | +0.0686 to +0.0815 |
+| 100 | drop_rule | +0.0027 | +0.0014 to +0.0042 |
+| 100 | drop_student | +0.0103 | +0.0077 to +0.0131 |
+| 100 | drop_count | -0.0001 | -0.0009 to +0.0008 |
+| 100 | drop_recent | +0.0048 | +0.0033 to +0.0063 |
+| 100 | drop_skill | +0.0057 | +0.0042 to +0.0073 |
+| 100 | drop_item | +0.0235 | +0.0206 to +0.0269 |
+| all | pfa | +0.0820 | +0.0759 to +0.0875 |
+| all | rasch | -0.0070 | -0.0088 to -0.0050 |
+| all | gbdt | +0.0015 | +0.0009 to +0.0020 |
+| all | stack_transfer | +0.0011 | +0.0005 to +0.0017 |
+| all | stack_flat | +0.0011 | +0.0005 to +0.0016 |
+| all | rule_platt | +0.1179 | +0.1097 to +0.1259 |
+| all | drop_rule | +0.0023 | +0.0014 to +0.0032 |
+| all | drop_student | +0.0116 | +0.0082 to +0.0158 |
+| all | drop_count | +0.0010 | +0.0005 to +0.0016 |
+| all | drop_recent | +0.0031 | +0.0023 to +0.0038 |
+| all | drop_skill | +0.0097 | +0.0077 to +0.0115 |
+| all | drop_item | +0.0602 | +0.0541 to +0.0663 |

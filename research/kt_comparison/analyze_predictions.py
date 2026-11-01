@@ -13,7 +13,7 @@ import re
 
 import numpy as np
 import pandas as pd
-from baselines_plus import auc_bootstrap
+from cold_start_plus import auc_bootstrap
 from cold_start_plus import load_csedm, metrics
 from compare import load_assist09, load_ednet
 from sklearn.metrics import roc_auc_score
