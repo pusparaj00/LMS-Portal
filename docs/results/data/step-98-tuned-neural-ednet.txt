@@ -1,0 +1,59 @@
+
+## ednet
+
+ednet: 175088 answers, 1500 students
+fold 1 N=30: lms_default 0.6476, gbdt 0.5722, stack_transfer 0.6915, hybrid 0.6856, dkt 0.5407, akt 0.5839, dkt_tuned 0.5446, akt_tuned 0.6022  alpha 0.25
+fold 1 N=100: lms_default 0.6476, gbdt 0.6882, stack_transfer 0.7033, hybrid 0.7033, dkt 0.6059, akt 0.6499, dkt_tuned 0.6056, akt_tuned 0.6406  alpha 0.25
+fold 2 N=30: lms_default 0.6238, gbdt 0.6250, stack_transfer 0.6710, hybrid 0.6710, dkt 0.5372, akt 0.5536, dkt_tuned 0.5404, akt_tuned 0.5389  alpha 0.0
+fold 2 N=100: lms_default 0.6238, gbdt 0.6399, stack_transfer 0.6790, hybrid 0.6793, dkt 0.5734, akt 0.6142, dkt_tuned 0.5755, akt_tuned 0.6259  alpha 0.25
+fold 3 N=30: lms_default 0.5890, gbdt 0.5834, stack_transfer 0.6208, hybrid 0.6184, dkt 0.5233, akt 0.5626, dkt_tuned 0.5282, akt_tuned 0.5567  alpha 0.25
+fold 3 N=100: lms_default 0.5890, gbdt 0.6199, stack_transfer 0.6403, hybrid 0.6399, dkt 0.5491, akt 0.5840, dkt_tuned 0.5497, akt_tuned 0.5840  alpha 0.25
+fold 4 N=30: lms_default 0.5753, gbdt 0.5928, stack_transfer 0.6360, hybrid 0.6360, dkt 0.5583, akt 0.5605, dkt_tuned 0.5604, akt_tuned 0.5949  alpha 0.0
+fold 4 N=100: lms_default 0.5753, gbdt 0.6206, stack_transfer 0.6419, hybrid 0.6420, dkt 0.5591, akt 0.6022, dkt_tuned 0.5842, akt_tuned 0.6040  alpha 0.25
+fold 5 N=30: lms_default 0.6185, gbdt 0.6038, stack_transfer 0.6588, hybrid 0.6550, dkt 0.5315, akt 0.6132, dkt_tuned 0.5227, akt_tuned 0.5939  alpha 0.25
+fold 5 N=100: lms_default 0.6185, gbdt 0.6443, stack_transfer 0.6769, hybrid 0.6701, dkt 0.5599, akt 0.6393, dkt_tuned 0.5812, akt_tuned 0.6393  alpha 0.5
+
+### ednet: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid | dkt | akt | dkt_tuned | akt_tuned |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.6109 (0.0258) | 0.5954 (0.0181) | 0.6556 (0.0250) | 0.6532 (0.0240) | 0.5382 (0.0116) | 0.5748 (0.0217) | 0.5393 (0.0132) | 0.5773 (0.0249) |
+| 100 | 0.6109 (0.0258) | 0.6426 (0.0248) | 0.6683 (0.0241) | 0.6669 (0.0238) | 0.5695 (0.0198) | 0.6179 (0.0241) | 0.5792 (0.0180) | 0.6188 (0.0218) |
+
+### ednet: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid | dkt | akt | dkt_tuned | akt_tuned |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.1429 (0.0192) | 0.0848 (0.0209) | 0.0296 (0.0093) | 0.0320 (0.0116) | 0.1304 (0.0506) | 0.0776 (0.0386) | 0.1284 (0.0486) | 0.0912 (0.0441) |
+| 100 | 0.1429 (0.0192) | 0.0424 (0.0165) | 0.0148 (0.0055) | 0.0202 (0.0053) | 0.1037 (0.0331) | 0.0470 (0.0265) | 0.0939 (0.0375) | 0.0456 (0.0180) |
+
+### ednet: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid | dkt | akt | dkt_tuned | akt_tuned |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 0.7039 (0.0440) | 0.6458 (0.0259) | 0.6022 (0.0296) | 0.6040 (0.0284) | 0.6748 (0.0118) | 0.6433 (0.0208) | 0.6738 (0.0135) | 0.6484 (0.0302) |
+| 100 | 0.7039 (0.0440) | 0.6112 (0.0289) | 0.5931 (0.0283) | 0.5944 (0.0291) | 0.6556 (0.0254) | 0.6215 (0.0236) | 0.6537 (0.0247) | 0.6202 (0.0238) |
+
+### ednet: AUC difference stack_transfer minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0666 | +0.0456 to +0.0923 |
+| 30 | dkt | +0.1301 | +0.1098 to +0.1486 |
+| 30 | akt | +0.0967 | +0.0828 to +0.1135 |
+| 100 | gbdt | +0.0319 | +0.0269 to +0.0376 |
+| 100 | dkt | +0.1020 | +0.0905 to +0.1116 |
+| 100 | akt | +0.0557 | +0.0478 to +0.0637 |
+
+### ednet: AUC difference hybrid minus other model, 95% interval over students (100 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0623 | +0.0441 to +0.0842 |
+| 30 | stack_transfer | -0.0043 | -0.0081 to -0.0012 |
+| 30 | dkt | +0.1258 | +0.1076 to +0.1433 |
+| 30 | akt | +0.0924 | +0.0798 to +0.1072 |
+| 100 | gbdt | +0.0295 | +0.0250 to +0.0341 |
+| 100 | stack_transfer | -0.0024 | -0.0037 to -0.0012 |
+| 100 | dkt | +0.0996 | +0.0884 to +0.1094 |
+| 100 | akt | +0.0533 | +0.0447 to +0.0616 |
