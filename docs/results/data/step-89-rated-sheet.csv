@@ -1,0 +1,1630 @@
+id,problem,statement,student_code,failed_categories,error_type,explanation_1,explanation_2,explanation_3,r1_exp1,r1_exp2,r2_exp1,r2_exp2,r1_exp3,r2_exp3,notes
+1,Sum from 1 to n,Read an integer n. Print the sum 1 + 2 + ... + n (0 if n is 0).,"n = int(input())
+total = 0
+for i in range(n):
+    total += i
+print(total)
+","basic, large_input",,"The loop is iterating over the wrong range.  
+`range(n)` produces the numbers `0, 1, 2, …, n‑1`.  
+So you’re adding 0 up to `n‑1`, which gives the sum of the first `n‑1` integers, not the first `n`.  
+
+Think about what the loop variable should start at and what the upper bound should be.  
+If you want to add `1 + 2 + … + n`, you need a range that includes `n` and starts at `1`.  
+
+Also remember that for `n = 0` the sum should be `0`, which your current code already handles correctly.  
+
+Adjust the range so that the loop covers exactly the numbers you want to sum.","Hello! I'd be happy to help you figure out what's going wrong with your code.
+
+### The Problem
+Your code fails the tests because it is calculating the sum from `0` to `n-1` instead of `1` to `n`. 
+
+### Why is this happening?
+In Python, the `range(n)` function starts counting at **`0`** and stops *before* it reaches `n`. 
+
+For example, if `n = 3`:
+* `range(3)` gives you the numbers: `0, 1, 2`
+* Your code adds: `0 + 1 + 2 = 3`
+* But the problem asks for: `1 + 2 + 3 = 6`
+
+Notice two issues here:
+1. It includes `0` (though adding 0 doesn't change the sum, it's unnecessary).
+2. It misses `n` itself because `range(n)` stops at `n - 1`.
+
+### How to Fix It
+
+You need your `range` to start at `1` and end at `n` (inclusive). To include `n` in a `range`, you need to go up to `n + 1`.
+
+Here is how you can update your loop:
+```python
+range(1, n + 1)
+```
+
+### Try This:
+Update your `for` loop to use `range(1, n + 1)` and run your code again. It should pass all the tests! 
+
+Let me know if you have any questions about how `range()` works. Keep up the good work!","On line 3, using range(n) starts the loop from 0 instead of 1, causing the sum to miss the value of n and include 0. (line 3)",5,4,,,3,,"E1 targeted hint, correct. E2 correct but hands over the range fix. E3 correct line, but 'include 0' is irrelevant and no why."
+2,Factorial,Read an integer n from 0 to 12. Print n! (0! is 1).,"n = int(input())
+result = 0
+for i in range(2, n + 1):
+    result *= i
+print(result)
+","basic, large_input, zero",,"### What the code is doing
+
+```python
+n = int(input())          # read the number
+result = 0                # <-- starts at 0
+for i in range(2, n + 1):
+    result *= i           # multiply the current result by i
+print(result)
+```
+
+### Why it fails
+
+1. **`result` is initialized to `0`.**  
+   Multiplying anything by `0` always gives `0`.  
+   So after the first iteration (`result *= 2`) you still have `0`, and the same happens for every subsequent iteration.  
+   The final value printed is always `0`, no matter what `n` is.
+
+2. **Special case `n = 0` (and `n = 1`).**  
+   The factorial of `0` (and of `1`) is defined to be `1`.  
+   With the current code the loop never runs for `n = 0` or `n = 1`, so `result` stays at its initial value (`0`) instead of `1`.
+
+### How to fix it
+
+- **Start `result` at `1`.**  
+  The factorial of any number is the product of all positive integers up to that number.  
+  Starting with `1` is the neutral element for multiplication.
+
+```python
+n = int(input())
+result = 1                # start with 1, not 0
+for i in range(2, n + 1):
+    result *= i
+print(result)
+```
+
+- **Optional: handle the `0` case explicitly** (not necessary if you start at `1`, but good for clarity):
+
+```python
+if n == 0:
+    print(1)
+else:
+    result = 1
+    for i in range(2, n + 1):
+        result *= i
+    print(result)
+```
+
+### Quick sanity check
+
+| n | Expected | Your original code | Fixed code |
+|---|----------|--------------------|------------|
+| 0 | 1 | 0 | 1 |
+| 1 | 1 | 0 | 1 |
+| 2 | 2 | 0 | 2 |
+| 3 | 6 | 0 | 6 |
+| 4 | 24 | 0 | 24 |
+
+Once you initialize `result` to `1`, the program will correctly compute factorials for all inputs from `0` to `12`.","The variable `result = 0` is initialized to 0, so multiplying it by any number keeps it 0, causing the factorial to be wrong. (line 2)","The main issue is how you start the multiplication.  
+You set `result = 0` and then multiply it by each number in the loop.  
+Since anything multiplied by 0 is still 0, the final value will always be 0 (except when the loop never runs).  
+
+Think about what the first value of a product should be and how you can handle the special case of `n = 0`. Also consider whether the loop range is appropriate for the factorial definition.",3,3,,,3,,All find result=0. E1 gives full code + needless extras. E2 one line. E3 says 'except when loop never runs' (wrong: still 0) and questions a correct range.
+3,Countdown,"Read an integer n. Print n, n-1, ..., 1 each on its own line, then `Liftoff!`.","n = int(input())
+for i in range(n, 0):
+    print(i)
+print(""Liftoff!"")
+",basic,,"It looks like the loop isn’t running at all.  
+Think about how `range(start, stop)` behaves:
+
+- The `stop` value is **exclusive** – the loop stops *before* reaching it.  
+- If you don’t specify a `step`, it defaults to `+1`.
+
+So `range(n, 0)` starts at `n` and tries to count up to (but not including) `0`.  
+Since `n` is already greater than `0`, the sequence is empty and nothing gets printed.
+
+Try adjusting the arguments so that the loop counts **down** from `n` to `1`.  
+Remember that the `stop` value is still exclusive, so you’ll need to set it just below the last number you want to print.","**What’s happening in the student’s code**
+
+```python
+n = int(input())
+for i in range(n, 0):
+    print(i)
+print(""Liftoff!"")
+```
+
+1. **`range(n, 0)` is empty**  
+   - `range(start, stop)` stops *before* `stop`.  
+   - With the default step of `+1`, the sequence would go: `n, n+1, n+2, …` until it reaches a value **≥ 0**.  
+   - Since `n` is already greater than `0`, the loop never runs at all.  
+   - As a result, nothing is printed before the “Liftoff!” line.
+
+2. **Missing the negative step**  
+   - To count down from `n` to `1`, you need a step of `-1`.  
+   - The correct call is `range(n, 0, -1)` (or `range(n, 0, -1)`).
+
+3. **The `print(""Liftoff!"")` line is fine**  
+   - It will execute after the loop, but because the loop never runs, you only see “Liftoff!”.
+
+---
+
+### How to fix it
+
+```python
+n = int(input())          # read the starting number
+for i in range(n, 0, -1):  # start at n, stop before 0, step -1
+    print(i)              # prints n, n-1, …, 1
+print(""Liftoff!"")         # prints after the countdown
+```
+
+**Why this works**
+
+- `range(n, 0, -1)` generates the sequence: `n, n-1, n-2, …, 1`.  
+- The loop body runs once for each number in that sequence, printing it.  
+- After the loop finishes, the program prints “Liftoff!”.
+
+---
+
+### Quick checklist
+
+| Issue | Fix |
+|-------|-----|
+| `range(n, 0)` never iterates | Use `range(n, 0, -1)` |
+| Step direction wrong | Provide a negative step (`-1`) |
+| Stop value exclusive | `0` is correct because we want to stop *before* 0 (i.e., at 1) |
+
+With these changes, the program will correctly output:
+
+```
+n
+n-1
+...
+1
+Liftoff!
+```
+
+Happy coding!","The loop uses `range(n, 0)` which has no step, so it counts up and never iterates, causing no numbers to be printed. (line 2)",5,3,,,3,,"E1 best: explains empty range, leaves fix to student. E2 full solution, confusing 'n, n+1...' wording, duplicated range text. E3 correct but terse."
+4,Reverse a string,Read a line of text. Print it reversed.,"s = input()
+s.reverse()
+print(s)
+","basic, empty_input, palindrome, single_char, spaces",runtime_error,"Your program stopped with an error on some inputs. Read the error message: it names the kind of error and the line where it happened. Remember that string methods return a new string, and check your indexes and slices.","### What the student’s code is doing
+
+```python
+s = input()      # read a line of text → s is a **string**
+s.reverse()      # try to reverse it
+print(s)         # print whatever s is
+```
+
+1. **`s` is a string** – in Python strings are *immutable* (you can’t change them in place).  
+2. **`str` objects don’t have a `reverse()` method** – that method exists only on lists (`list.reverse()`), not on strings.  
+3. Because `s.reverse()` is invalid, Python raises an exception (`AttributeError`), which the judge reports as a *runtime error*.
+
+That’s why the program fails on every test case (empty input, palindromes, spaces, etc.).
+
+---
+
+### How to reverse a string correctly
+
+There are several idiomatic ways in Python:
+
+| Method | Code | Explanation |
+|--------|------|-------------|
+| **Slicing** | `rev = s[::-1]` | `[::-1]` creates a new string that starts at the end and steps backwards. |
+| **`reversed()` + `''.join()`** | `rev = ''.join(reversed(s))` | `reversed()` returns an iterator over the characters in reverse order; `join` concatenates them. |
+| **Loop** | `rev = ''`<br>`for ch in s:`<br>`    rev += ch`<br>`rev = rev[::-1]` | Less efficient, but shows the idea of building a new string. |
+
+The simplest and most common is the slicing trick.
+
+---
+
+### Corrected program
+
+```python
+# Read a line of text
+s = input()
+
+# Reverse it
+rev = s[::-1]
+
+# Print the reversed string
+print(rev)
+```
+
+This works for:
+
+- Empty input (`""""` → `""""`)
+- Palindromes (`""madam""` → `""madam""`)
+- Single characters (`""a""` → `""a""`)
+- Strings with spaces (`""hello world""` → `""dlrow olleh""`)
+
+---
+
+### Why the original code also prints the wrong thing
+
+Even if `s.reverse()` were somehow allowed, it would *modify the object in place* and return `None`.  
+So `print(s)` would still print the original string (or `None` if the method existed).  
+Because strings can’t be modified, the code never reaches that point.
+
+---
+
+### Take‑away
+
+* **Strings are immutable** – you can’t call `reverse()` on them.  
+* Use slicing (`s[::-1]`) or `''.join(reversed(s))` to get a reversed copy.  
+* Always test with edge cases: empty string, single character, spaces, etc.  
+
+With the corrected code above, the program will pass all the test categories.","`input()` gives you a **string**, and strings in Python are immutable.  
+The method `reverse()` is a **list method** – it mutates the list in place and returns `None`.  
+So when you call `s.reverse()` you’re actually trying to call a method that doesn’t exist for a string, and even if it did, it wouldn’t change the string itself.
+
+Think about how you can produce a new string that contains the characters of `s` in reverse order. (You can use slicing, the `reversed()` function, or convert the string to a list first.) Once you have that reversed string, you can print it.",3,2,,,4,,"E1 generic runtime-error template, no AttributeError named. E2 correct but very long, full solution, confusing 'prints wrong thing' section. E3 clear and hints at options."
+5,Count vowels,"Read a line of text. Print how many vowels (a, e, i, o, u, in either case) it contains.","text = input()
+print(sum(1 for ch in text if ch in ""aeiou""))
+",uppercase,,"Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: uppercase. Remember that string methods return a new string, and check your indexes and slices.","### What the code does
+
+```python
+text = input()
+print(sum(1 for ch in text if ch in ""aeiou""))
+```
+
+* `input()` reads the whole line.
+* The generator expression `1 for ch in text if ch in ""aeiou""` yields a `1` for every character that is **exactly** one of the lowercase letters `a e i o u`.
+* `sum()` adds those `1`s together, giving the count of lowercase vowels.
+
+### Why the test fails
+
+The test that failed is in the **uppercase** category.  
+Your code only counts lowercase vowels. If the input contains an uppercase vowel such as `A`, `E`, `I`, `O`, or `U`, it is **not** counted because:
+
+```python
+'A' in ""aeiou""   # → False
+```
+
+So the program under‑reports the number of vowels when uppercase letters are present.
+
+### How to fix it
+
+You have two simple options:
+
+1. **Convert the whole string to lowercase** before checking:
+
+   ```python
+   text = input()
+   print(sum(1 for ch in text.lower() if ch in ""aeiou""))
+   ```
+
+   `text.lower()` turns every character into its lowercase form, so both `A` and `a` become `a`, etc.
+
+2. **Check each character in a case‑insensitive way**:
+
+   ```python
+   text = input()
+   print(sum(1 for ch in text if ch.lower() in ""aeiou""))
+   ```
+
+   Here each character is converted to lowercase only for the membership test.
+
+Both solutions count vowels regardless of case.
+
+### Quick sanity check
+
+```python
+>>> input()  # user types: ""Hello World!""
+Hello World!
+>>> # with the fixed code
+5
+```
+
+The string `""Hello World!""` contains the vowels `e`, `o`, `o`, `o`, `a` – five in total, and the program now reports that correctly.
+
+---
+
+**Bottom line:** The original code missed uppercase vowels. Convert to lowercase (either the whole string or each character) before performing the membership test.","Your code works for lowercase vowels, but the test that’s failing is checking for uppercase letters.  
+The generator expression
+
+```python
+sum(1 for ch in text if ch in ""aeiou"")
+```
+
+only looks for the characters `a, e, i, o, u`. It never sees `A, E, I, O, U`.  
+Think about a quick way to make the check case‑insensitive—e.g., by normalizing the input or by expanding the set of characters you test against.",3,2,,,5,,"E1 template; 'indexes and slices' tip is off-target. E2 FACTUAL ERROR: 'Hello World!' has 3 vowels, not 5. E3 correct, hint-level, concise."
+8,Fibonacci,"Read n (0 to 20). Print the n-th Fibonacci number, where fib(0) = 0 and fib(1) = 1. Use recursion.","def fib(n):
+    return fib(n - 1) + fib(n - 2)
+
+print(fib(int(input())))
+","base_case, basic, large_input",runtime_error,"### What’s wrong with the code?
+
+```python
+def fib(n):
+    return fib(n - 1) + fib(n - 2)
+
+print(fib(int(input())))
+```
+
+1. **No base cases**  
+   The Fibonacci sequence is defined as  
+   * `fib(0) = 0`  
+   * `fib(1) = 1`  
+   Your function never checks for `n == 0` or `n == 1`.  
+   When `fib(0)` is called, it immediately tries to evaluate `fib(-1)` and `fib(-2)`, which in turn call even more negative indices, and so on. The recursion never stops.
+
+2. **Infinite recursion → RecursionError**  
+   Because there are no stopping conditions, the function keeps calling itself until Python’s recursion depth limit is reached (default 1000). You’ll see a `RuntimeError: maximum recursion depth exceeded` or a `RecursionError`.
+
+3. **Missing handling of negative input**  
+   The problem statement guarantees that `n` will be between 0 and 20, but your code would still crash if a negative number were accidentally passed.
+
+4. **No explicit return for the base cases**  
+   Even if you added base cases, you’d need to return the correct values (`0` or `1`) instead of just calling the function again.
+
+5. **Performance is fine for n ≤ 20, but the algorithm is exponential**  
+   For larger `n` (outside the given range) the naive recursive implementation would be extremely slow. (Not a problem for this task, but worth noting.)
+
+---
+
+### How to fix it
+
+Add the base cases and return the correct values:
+
+```python
+def fib(n):
+    # Base cases
+    if n == 0:
+        return 0
+    if n == 1:
+        return 1
+
+    # Recursive step
+    return fib(n - 1) + fib(n - 2)
+
+print(fib(int(input())))
+```
+
+Now:
+
+- `fib(0)` returns `0` immediately.
+- `fib(1)` returns `1` immediately.
+- For any `n ≥ 2`, the function correctly computes the sum of the two preceding Fibonacci numbers.
+
+---
+
+### Quick sanity check
+
+| n | Expected | Your original code | Fixed code |
+|---|----------|--------------------|------------|
+| 0 | 0 | RecursionError | 0 |
+| 1 | 1 | RecursionError | 1 |
+| 2 | 1 | RecursionError | 1 |
+| 3 | 2 | RecursionError | 2 |
+| 10 | 55 | RecursionError | 55 |
+| 20 | 6765 | RecursionError | 6765 |
+
+The fixed version passes all the test categories (`base_case`, `basic`, `large_input`) because it now handles the smallest inputs correctly and still works for the maximum allowed input (`n = 20`).","Your function never stops calling itself.  
+Think about what happens when `n` is 0 or 1 – the code still tries to evaluate `fib(n‑1)` and `fib(n‑2)`, which keeps recursing forever.  
+You need a *base case* that returns a concrete value for those smallest inputs (e.g., `return n` when `n` is 0 or 1).  
+Once you add that, the recursion will have a stopping point and the function will produce a result.","Your program stopped with an error on some inputs. Read the error message: it names the kind of error and the line where it happened. Check the base case, and that the recursive call's result is returned.",3,4,,,4,,"E1 correct core but padded with irrelevant points 3-5 and full code. E2 concise, correct, nearly gives away 'return n'. E3 tailored template, relevant hint."
+9,Safe division,"Read two integers a and b. Print a // b, or `division by zero` if b is 0.","a, b = map(int, input().split())
+print(a / b)
+","basic, negative_numbers, zero, zero_divisor",runtime_error,"### What the problem asks for
+
+1. **Read two integers** `a` and `b` from one line of input.  
+2. **If `b` is zero** print the exact string  
+   ```
+   division by zero
+   ```  
+3. **Otherwise** print the *integer* division result `a // b` (floor division).
+
+---
+
+### Why the student’s code fails
+
+```python
+a, b = map(int, input().split())
+print(a / b)
+```
+
+| Issue | What the code does | Why it’s wrong |
+|-------|--------------------|----------------|
+| **Wrong operator** | Uses `/` (true division) | `/` returns a *float* (e.g. `5 / 2 == 2.5`). The task requires integer division `//` (floor division). |
+| **No zero‑division check** | Calls `print(a / b)` unconditionally | If `b == 0`, Python raises a `ZeroDivisionError`, causing a runtime error. The problem explicitly wants the string `""division by zero""` instead. |
+| **No handling of negative numbers** | Not an issue for the code itself, but the test suite checks that negative inputs still produce the correct integer quotient. Using `/` would give a float, which is not accepted. | The output must be an integer, not a float. |
+| **Output format** | Prints a float (e.g. `2.5`) or raises an exception | The judge expects an integer or the exact error string. |
+
+---
+
+### How to fix it
+
+```python
+a, b = map(int, input().split())
+
+if b == 0:
+    print(""division by zero"")
+else:
+    print(a // b)          # integer (floor) division
+```
+
+**Explanation of the fix**
+
+1. **Zero‑division guard** – `if b == 0:` ensures we never attempt `a // b` when `b` is zero.  
+2. **Correct operator** – `//` performs integer division, matching the problem statement.  
+3. **Exact error string** – The string `""division by zero""` is printed exactly as required.
+
+---
+
+### Quick sanity check
+
+| Input | Expected output | Student output | Fixed output |
+|-------|-----------------|----------------|--------------|
+| `10 2` | `5` | `5.0` | `5` |
+| `-7 3` | `-3` | `-2.333...` | `-3` |
+| `5 0` | `division by zero` | RuntimeError | `division by zero` |
+
+The corrected code passes all the test categories: **basic, negative_numbers, zero, zero_divisor**.","Line 2 uses floating division (`a / b`) and does not handle the ZeroDivisionError that occurs when b is 0, causing the program to crash on a zero divisor input. (line 2)","Your program reads the numbers correctly, but it doesn’t handle the two special requirements of the task:
+
+1. **Zero divisor** – If `b` is `0` you must not perform the division at all; instead you should output the exact phrase `division by zero`.  
+2. **Integer division** – The problem asks for the floor division result (`a // b`), not the normal division (`a / b`) which produces a floating‑point number.
+
+Think about adding a simple conditional that checks whether `b` is zero before you attempt the division, and use the integer division operator (`//`) when you do perform the calculation. Also remember that the output must match the required string exactly.",3,3,,,5,,"E1 correct but full solution + muddled negative-number row. E2 correct but one line. E3 covers both bugs, hints without code."
+10,Rectangle,"Read a width and a height on one line. Using a class, print the area and the perimeter separated by a space.","class Rectangle:
+    def __init__(self, w, h):
+        self.w = w
+        self.h = h
+
+    def area(self):
+        return self.w + self.h
+
+    def perimeter(self):
+        return 2 * (self.w + self.h)
+
+
+w, h = map(int, input().split())
+r = Rectangle(w, h)
+print(r.area(), r.perimeter())
+","basic, square, zero",,"It looks like the logic for computing the area is off.  
+Think about what the area of a rectangle actually is—how do you combine the width and height?  
+Also, double‑check that the perimeter formula you’re using matches the standard definition.  
+Once you adjust the area calculation, the “basic”, “square”, and “zero” tests should start to pass.","**What the student did wrong**
+
+1. **`area()` is implemented incorrectly**  
+   ```python
+   def area(self):
+       return self.w + self.h
+   ```
+   The area of a rectangle is **width × height**, not the sum of the two sides.  
+   Because of this, the program will give the wrong answer for every test case that
+   expects the true area (basic shapes, squares, and cases where one side is zero).
+
+2. **`perimeter()` is fine**  
+   ```python
+   def perimeter(self):
+       return 2 * (self.w + self.h)
+   ```
+   This formula is correct, so the perimeter part of the output will be right.
+
+3. **Naming (optional improvement)**  
+   Using `self.w` and `self.h` works, but more descriptive names (`self.width`,
+   `self.height`) make the code easier to read.
+
+4. **Input handling is fine**  
+   ```python
+   w, h = map(int, input().split())
+   ```
+   This correctly reads two integers from one line.
+
+**How to fix it**
+
+Replace the `area` method with the proper multiplication:
+
+```python
+class Rectangle:
+    def __init__(self, w, h):
+        self.w = w
+        self.h = h
+
+    def area(self):
+        # Correct formula: width * height
+        return self.w * self.h
+
+    def perimeter(self):
+        return 2 * (self.w + self.h)
+```
+
+Now the program will output the correct area and perimeter for all test cases, including squares and rectangles with a side of length zero.","Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: basic, square, zero. Try the program by hand with the input 0 and follow what each line does with it.",4,4,,,2,,"E1 correct hint (area), harmless extra on perimeter. E2 correct, full fix. E3 template hint 'try input 0' is misleading: 0 0 gives same output with w+h and w*h."
+11,Palindrome check,"Read a word. Print `yes` if it reads the same backwards, ignoring case, otherwise `no`.","word = input().strip()
+print(""yes"" if word == word[::-1] else ""no"")
+",uppercase,,"Your comparison is case‑sensitive.  
+The problem says “ignoring case”, so you need to compare the word to its reverse after normalising the case (e.g., converting both to all lower‑case or all upper‑case). Think about where you can apply that conversion in your code.","### What the code is doing
+
+```python
+word = input().strip()          # read the word, remove leading/trailing spaces
+print(""yes"" if word == word[::-1] else ""no"")
+```
+
+- `word[::-1]` gives the string reversed **exactly as it is**.
+- The comparison `word == word[::-1]` is **case‑sensitive**.  
+  It will only return `True` if the characters match exactly, including their case.
+
+### Why the test fails for uppercase words
+
+The problem statement says:
+
+> “Print `yes` if it reads the same backwards, **ignoring case**, otherwise `no`.”
+
+So the comparison must treat uppercase and lowercase letters as the same.  
+Your code does not do that. For example:
+
+```
+Input:  Madam
+word          = ""Madam""
+word[::-1]    = ""madaM""
+word == word[::-1]   → False   → prints ""no""
+```
+
+But “Madam” is a palindrome when case is ignored, so the correct output should be `yes`.
+
+### How to fix it
+
+Convert the word to a single case (lowercase or uppercase) before comparing:
+
+```python
+word = input().strip()
+lower_word = word.lower()          # or word.upper()
+print(""yes"" if lower_word == lower_word[::-1] else ""no"")
+```
+
+Now the comparison is case‑insensitive, and the program will pass the uppercase tests.
+
+### Quick summary
+
+- **Bug**: Case‑sensitive comparison.
+- **Fix**: Normalize the string to one case (`lower()` or `upper()`) before comparing with its reverse.","Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: uppercase. Remember that string methods return a new string, and check your indexes and slices.",5,4,,,3,,"E1 precise hint. E2 correct, full fix. E3 template, generic and not tailored."
+12,Remove duplicates,"Line 1 has n. Line 2 has n integers. Print the values with duplicates removed, keeping the first occurrence of each and the original order, separated by spaces.","n = int(input())
+print("" "".join(sorted(set(input().split()))))
+",order,,"The main issue is that `sorted(set(...))` changes the order of the numbers.  
+- `set` removes duplicates but it does **not** preserve the original order.  
+- `sorted` then arranges the remaining elements in ascending (or lexicographic) order.
+
+Because the problem requires keeping the first occurrence of each number **in the order they appear**, using a set followed by sorting will not satisfy that requirement. You need a way to remember which numbers have already been seen while iterating through the input in its original sequence.","**What the student’s code does**
+
+```python
+n = int(input())                     # read the number of integers
+print("" "".join(sorted(set(input().split()))))
+```
+
+1. `input().split()` → a list of the *strings* that were typed on the second line.  
+2. `set(...)` → removes duplicates, but a `set` is **unordered**.  
+3. `sorted(...)` → sorts the remaining elements (lexicographically for strings).  
+4. `"" "".join(...)` → prints the sorted, duplicate‑free list.
+
+**Why this fails the “order” requirement**
+
+The problem asks for:
+
+* keep the **first occurrence** of each number  
+* keep the **original order** of those first occurrences
+
+The student’s code does **not** preserve the original order:
+
+* `set` discards the order information entirely.  
+* `sorted` then arranges the numbers in ascending order (lexicographically for strings), which is unrelated to the input order.
+
+So the output will be a sorted list of unique values, not the first‑occurrence order required.
+
+**What should be done instead**
+
+A simple way to keep the first occurrence and preserve order is to iterate through the input list and add a number to a new list only if it hasn’t been seen before:
+
+```python
+n = int(input())
+nums = input().split()          # keep as strings (or convert to int if needed)
+
+seen = set()
+result = []
+
+for x in nums:
+    if x not in seen:
+        seen.add(x)
+        result.append(x)
+
+print("" "".join(result))
+```
+
+This code:
+
+1. Reads the numbers in the order they appear.  
+2. Uses a `set` (`seen`) only to test whether a value has already been added.  
+3. Appends each **first** occurrence to `result`, preserving the original order.  
+4. Prints the list exactly as required.
+
+So the student’s mistake is using `set` and `sorted`, which both destroy the original ordering.","Using `sorted(set(input().split()))` removes the original order, causing the output to be sorted rather than preserving first occurrences. (line 2)",5,4,,,3,,"E1 explains why set+sorted breaks order, no code. E2 correct, full code. E3 correct, one line."
+14,Leap year,"Read a year. Print `leap` if it is a leap year (divisible by 4, except centuries unless divisible by 400), otherwise `common`.","y = int(input())
+print(""leap"" if y % 4 == 0 else ""common"")
+",century,,"Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: century. Check each condition and its boundary, and whether separate if statements should be elif.","**What the student’s code does**
+
+```python
+y = int(input())
+print(""leap"" if y % 4 == 0 else ""common"")
+```
+
+The code only checks whether the year is divisible by 4.  
+If it is, it prints `leap`; otherwise it prints `common`.
+
+**Why that fails for centuries**
+
+The leap‑year rule is:
+
+1. A year is a leap year **if** it is divisible by 4 **and**  
+2. **unless** it is a century year (divisible by 100), in which case it is a leap year **only if** it is also divisible by 400.
+
+So the full condition is:
+
+```
+(y % 400 == 0) or (y % 4 == 0 and y % 100 != 0)
+```
+
+The student’s code ignores the “century” part.  
+For example:
+
+- `1900` → `1900 % 4 == 0` → prints `leap` (wrong, because 1900 is not a leap year)
+- `2000` → `2000 % 4 == 0` → prints `leap` (correct, but only by coincidence)
+- `2100` → `2100 % 4 == 0` → prints `leap` (wrong)
+
+**Corrected code**
+
+```python
+y = int(input())
+
+if (y % 400 == 0) or (y % 4 == 0 and y % 100 != 0):
+    print(""leap"")
+else:
+    print(""common"")
+```
+
+Or, using a single expression:
+
+```python
+y = int(input())
+print(""leap"" if (y % 400 == 0) or (y % 4 == 0 and y % 100 != 0) else ""common"")
+```
+
+**Key takeaway**
+
+Always implement the full leap‑year rule, not just the “divisible by 4” part. The century exception (`% 100`) and the special case for years divisible by 400 are essential.","Your code only checks the “divisible by 4” rule, but the leap‑year rule has a special case for centuries.  
+Think about what should happen for a year like 1900 or 2000.  
+You’ll need an extra test that distinguishes years that are multiples of 100 and then, among those, only keeps the ones that are also multiples of 400.  
+
+So, in addition to the `y % 4 == 0` check, add logic that handles the “century” exception.",3,4,,,5,,"E1 template; 'elif' tip irrelevant. E2 correct, full fix. E3 best: points to 1900/2000, leaves implementation."
+15,Digit sum,Read a non-negative integer. Print the sum of its digits. Use recursion.,"def digit_sum(n):
+    return n % 10 + digit_sum(n // 10)
+
+print(digit_sum(int(input())))
+","base_case, basic, large_input",runtime_error,"The problem is that your recursive function never has a stopping point.  
+When `n` becomes `0` you still call `digit_sum(0 // 10)` which is `digit_sum(0)` again, so the recursion keeps going forever (or until Python’s recursion limit is hit).  
+
+Think about what should happen when the number has no more digits left – that’s the base case you need to add. Also, for very long numbers the recursion depth can become large, so you’ll want to make sure the base case is reached quickly.  
+
+Adding a simple check for the “no‑more‑digits” situation will fix the infinite recursion and allow the function to terminate correctly.","### What the code is doing
+
+```python
+def digit_sum(n):
+    return n % 10 + digit_sum(n // 10)
+```
+
+The function takes the last digit (`n % 10`) and then **recursively** calls itself with the rest of the number (`n // 10`).  
+That’s a classic recursive pattern for summing digits, but it is missing one crucial piece: **a base case**.
+
+---
+
+## Why the tests fail
+
+| Test category | What happens | Why it fails |
+|---------------|--------------|--------------|
+| **base_case** | Input `0` (or any number that eventually becomes `0`) | The function keeps calling itself forever: `digit_sum(0)` → `0 + digit_sum(0)` → … → recursion depth exceeded. |
+| **basic** | Small numbers like `5`, `12`, `123` | Same infinite recursion as above – the function never stops. |
+| **large_input** | Numbers with many digits (e.g., 10⁶ digits) | Even if a base case were added, Python’s default recursion limit (~1000 calls) would be exceeded long before the number is fully processed. |
+
+---
+
+## What’s missing: the base case
+
+A recursive function must eventually stop calling itself.  
+For digit‑sum we stop when the number has no more digits left, i.e. when `n == 0`.
+
+```python
+def digit_sum(n):
+    if n == 0:          # base case
+        return 0
+    return n % 10 + digit_sum(n // 10)
+```
+
+Now:
+
+* `digit_sum(0)` → `0` (stops immediately)
+* `digit_sum(5)` → `5 + digit_sum(0)` → `5 + 0` → `5`
+* `digit_sum(123)` → `3 + digit_sum(12)` → `3 + (2 + digit_sum(1))` → `3 + (2 + (1 + digit_sum(0)))` → `6`
+
+---
+
+## Why large inputs still cause trouble
+
+Even with the base case, each digit requires one recursive call.  
+Python’s recursion depth limit is about 1000, so a number with more than ~1000 digits will raise:
+
+```
+RecursionError: maximum recursion depth exceeded
+```
+
+If the assignment explicitly requires recursion, you can:
+
+1. **Increase the recursion limit** (not recommended for production code):
+
+   ```python
+   import sys
+   sys.setrecursionlimit(2000)   # or higher
+   ```
+
+2. **Use a tail‑recursive helper** that Python can optimize (Python does not do tail‑call optimization, so this is still limited).
+
+3. **Switch to an iterative approach** if the recursion limit is a hard constraint.
+
+---
+
+## Summary
+
+- **Missing base case** → infinite recursion → runtime error on all tests.
+- **Recursion depth** → large inputs exceed Python’s limit → runtime error.
+- **Fix**: add `if n == 0: return 0` and, if needed, raise the recursion limit or switch to an iterative solution.","The function lacks a base case, causing infinite recursion when n reaches 0. (line 2)",4,3,,,3,,"E1 good hint, slight distraction on recursion depth. E2 correct but speculative large-input section and contradictory tail-recursion advice. E3 correct, one line."
+16,Phone book,"Line 1 has n. The next n lines each have a name and a number separated by a space. The last line has a name to look up. Print its number, or `not found`. If a name repeats, the last number wins.","n = int(input())
+book = {}
+for _ in range(n):
+    name, number = input().split()
+    book[name] = number
+print(book[input()])
+","empty_input, missing_key",runtime_error,"The program raises a KeyError when the lookup name is not in the dictionary, because it uses book[input()] without checking for existence. (line 6)","Your program works for the “happy path” where the lookup name is guaranteed to be in the dictionary, but it doesn’t handle the two edge cases that the tests are checking for:
+
+1. **Empty input** – If the input stream ends before you call `input()` for the lookup, `input()` will raise an `EOFError`.  
+2. **Missing key** – If the lookup name isn’t in the dictionary, `book[input()]` will raise a `KeyError`.
+
+Think about how you can safely read the lookup name and then retrieve a value from the dictionary without crashing. A common pattern is to use `dict.get(key, default)` or a `try/except` block around the lookup. Also, consider what should happen if the input stream ends unexpectedly.","### What the student’s code does
+
+```python
+n = int(input())          # read the number of entries
+book = {}
+for _ in range(n):
+    name, number = input().split()   # read each “name number” pair
+    book[name] = number              # store the last number for each name
+
+print(book[input()])   # read the lookup name and print the value
+```
+
+### Why it fails the tests
+
+| Test | What happens | Why it fails |
+|------|--------------|--------------|
+| **empty_input** | The program calls `input()` three times (once for `n`, once for each entry, once for the lookup). If the input stream is empty or ends before the last `input()`, Python raises an `EOFError`. | The code does **not** guard against an empty or prematurely‑ended input. |
+| **missing_key** | The lookup name is not present in `book`. `book[input()]` tries to access a non‑existent key, which raises a `KeyError`. | The specification says to print `""not found""` when the name isn’t in the phone book, but the code never handles that case. |
+
+### What the specification actually requires
+
+1. **Read `n`** – that part is fine.  
+2. **Read `n` lines** – each line contains a name and a number separated by a space.  
+3. **Read the lookup name** – this is the last line of input.  
+4. **Print the number** if the name exists, otherwise print `""not found""`.  
+5. **If the input is empty or incomplete** the program should not crash; it should simply not produce any output (or handle it gracefully).
+
+### How to fix the code
+
+1. **Store the lookup name** in a variable so we can reuse it.  
+2. **Use `dict.get()`** (or a `try/except`) to provide a default value when the key is missing.  
+3. **Wrap the whole thing in a `try/except EOFError`** if you want to be extra safe against empty input.
+
+```python
+try:
+    n = int(input())
+except EOFError:
+    # No input at all – nothing to do
+    exit()
+
+book = {}
+for _ in range(n):
+    try:
+        name, number = input().split()
+    except EOFError:
+        # Input ended before we got all n lines – stop early
+        break
+    book[name] = number
+
+try:
+    lookup = input()
+except EOFError:
+    # No lookup name – nothing to print
+    exit()
+
+print(book.get(lookup, ""not found""))
+```
+
+### Key take‑aways
+
+- **Never assume a key exists** in a dictionary; use `dict.get(key, default)` or handle `KeyError`.  
+- **Always consider the possibility of missing or empty input**; guard against `EOFError` if the input might be incomplete.  
+- **Print exactly what the problem statement asks for** – `""not found""` (lowercase, no quotes) when the name isn’t in the phone book.
+
+With these changes the program will pass the `empty_input` and `missing_key` tests and behave correctly for all valid inputs.",3,4,,,2,,E1 correct for missing_key only; ignores empty_input. E2 right hint (get/try). E3 correct but over-engineered EOF code and invented spec ('no output on empty input').
+19,Word count,Read a line of text. Print the number of words in it (words are separated by whitespace).,"print(len(input().split("" "")))
+","empty_input, whitespace",,"Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: empty input, whitespace. Try the program by hand with nothing to process and follow what each line does with it.","Your code works for the simple case where words are separated by a single space, but it breaks when the input contains other kinds of whitespace or when the line is empty.
+
+Think about what `str.split("" "")` does versus `str.split()` (without an argument). The former splits only on literal space characters, so consecutive spaces, tabs, or a line that contains only spaces will produce empty strings in the list. That’s why you’re getting the wrong count for those test cases. Also, an empty line will still give you a list with one empty string, so you end up counting a word when there isn’t one.
+
+Try using the default split behavior and see how that changes the result.","**What the student’s code does**
+
+```python
+print(len(input().split("" "")))
+```
+
+1. `input()` reads a line of text (or an empty string if the user just presses *Enter*).  
+2. `.split("" "")` splits that string **only on the literal character “ ” (a single space)**.  
+3. `len(...)` counts how many pieces the split produced and prints that number.
+
+**Why this fails for the test cases**
+
+| Test case | What the code returns | What the test expects | Why it’s wrong |
+|-----------|-----------------------|-----------------------|----------------|
+| **Empty input** (`""""`) | `[""""]` → length = 1 | 0 | Splitting an empty string on a space still gives a list with one empty element. |
+| **Whitespace‑only input** (`""   ""` or `"" \t\n""`) | `["""", """", """", ...]` → length > 0 | 0 | Splitting on a single space treats each space as a separator and produces empty strings for the gaps. It also ignores other whitespace characters (tabs, newlines). |
+
+So the code counts *empty strings* that arise from consecutive spaces or from an empty line, and it ignores tabs, newlines, etc. The tests are checking that a line that contains no real words should report `0`.
+
+**How to fix it**
+
+Use the default `split()` (no argument) or `split()` with `None`.  
+That version splits on *any* whitespace and automatically discards empty strings:
+
+```python
+print(len(input().split()))   # or len(input().split(None))
+```
+
+- For `""""` → `[]` → length = 0  
+- For `""   ""` or `"" \t\n""` → `[]` → length = 0  
+- For `""Hello  world""` → `[""Hello"", ""world""]` → length = 2
+
+**Bottom line**
+
+The student’s code splits on a single space and therefore counts empty pieces, giving wrong results for empty or whitespace‑only input. Switching to the default `split()` (or filtering out empty strings) solves the problem.",4,5,,,4,,"E1 tailored template, good. E2 best: explains split(' ') vs split(), no code. E3 correct, full fix, verbose."
+20,Even or odd,"Read an integer. Print `even` if it is even, otherwise `odd`.","n = int(input())
+if n % 2 == 1:
+    print(""even"")
+else:
+    print(""odd"")
+","basic, negative_numbers, zero",,"**What the code is doing wrong**
+
+```python
+n = int(input())
+if n % 2 == 1:          # <-- this checks for odd numbers
+    print(""even"")       # <-- but prints “even”
+else:
+    print(""odd"")        # <-- prints “odd” for everything else
+```
+
+The logic is inverted:
+
+* `n % 2 == 1` is true **only for odd numbers** (including negative odd numbers, because in Python `-3 % 2 == 1`).  
+* The program prints `""even""` when that condition is true, so it reports odd numbers as even.  
+* For all other numbers (even numbers and zero) it prints `""odd""`, so it reports even numbers as odd.
+
+That’s why the tests for basic numbers, negative numbers, and zero all fail.
+
+**How to fix it**
+
+Swap the condition (or swap the printed strings):
+
+```python
+n = int(input())
+if n % 2 == 0:          # true for even numbers (including 0)
+    print(""even"")
+else:
+    print(""odd"")
+```
+
+or equivalently:
+
+```python
+n = int(input())
+if n % 2 == 1:
+    print(""odd"")
+else:
+    print(""even"")
+```
+
+**Why negative numbers and zero are fine**
+
+* In Python, the modulo operator `%` works with negative numbers in a way that still distinguishes even from odd:  
+  * `-4 % 2 == 0` → even  
+  * `-3 % 2 == 1` → odd  
+* Zero is even, and `0 % 2 == 0`, so the corrected condition will correctly print `""even""` for zero.
+
+So the only issue was the reversed logic in the `if` statement. Once that is corrected, the program will pass all the tests.","Line 2 checks `n % 2 == 1` but prints 'even', so the logic is reversed. (line 2)","The problem is that the logic for deciding “even” vs “odd” is flipped.
+
+- `n % 2` gives the remainder when dividing by 2.  
+  * If the remainder is **0**, the number is even.  
+  * If the remainder is **1** (or –1 for negative numbers), the number is odd.
+
+In your code you print `""even""` when `n % 2 == 1`, which is the opposite of what you want.  
+Because of this, zero (which has a remainder of 0) falls into the `else` branch and prints `""odd""`, and negative odd numbers also get mis‑classified.
+
+Think about what the remainder means and how you should map it to the words “even” and “odd”. Once you reverse the condition or swap the print statements, the program will handle all cases correctly.",4,4,,,5,,"E1 correct but verbose, full fix. E2 correct, concise. E3 best: explains remainder meaning, lets student fix."
+23,Bank account,Line 1 is the opening balance. Line 2 is n. The next n lines are `deposit X` or `withdraw X`. A withdrawal larger than the balance is ignored. Print the final balance. Use a class.,"class Account:
+    def __init__(self, balance):
+        self.balance = balance
+
+    def deposit(self, x):
+        self.balance -= x
+
+    def withdraw(self, x):
+        if x <= self.balance:
+            self.balance -= x
+
+
+account = Account(int(input()))
+for _ in range(int(input())):
+    action, x = input().split()
+    getattr(account, action)(int(x))
+print(account.balance)
+",basic,,"Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: basic. Check what each method changes on the object and what it returns.","### What the code is doing
+
+```python
+class Account:
+    def __init__(self, balance):
+        self.balance = balance
+
+    def deposit(self, x):
+        self.balance -= x          # <‑‑ subtracts instead of adding
+
+    def withdraw(self, x):
+        if x <= self.balance:
+            self.balance -= x      # correct – subtract the amount
+```
+
+* `deposit` **subtracts** the amount from the balance.  
+  It should **add** the amount.
+* `withdraw` is fine – it subtracts only when the balance is sufficient.
+
+Because of the wrong `deposit` implementation, every deposit actually *reduces* the balance, which is why the final balance is incorrect.
+
+### How to fix it
+
+```python
+class Account:
+    def __init__(self, balance):
+        self.balance = balance
+
+    def deposit(self, x):
+        self.balance += x          # add the amount
+
+    def withdraw(self, x):
+        if x <= self.balance:
+            self.balance -= x
+```
+
+### Full working example
+
+```python
+class Account:
+    def __init__(self, balance):
+        self.balance = balance
+
+    def deposit(self, x):
+        self.balance += x
+
+    def withdraw(self, x):
+        if x <= self.balance:
+            self.balance -= x
+
+# Read input
+initial_balance = int(input())
+n = int(input())
+
+account = Account(initial_balance)
+
+for _ in range(n):
+    action, amount = input().split()
+    getattr(account, action)(int(amount))
+
+print(account.balance)
+```
+
+Now the program will correctly add deposits, ignore overdraft withdrawals, and print the final balance.","It looks like the `deposit` method is doing the opposite of what you want.  
+When you deposit money you should **add** the amount to the balance, but the code uses `-=` which subtracts it.  
+That’s why the final balance comes out wrong. Check the logic in that method.",4,3,,,5,,"E1 relevant template hint. E2 correct but full program shown twice. E3 concise, correct, hint-level."
+27,Word lengths,"Read a line of words. Print the length of each word, in order, separated by spaces.","words = input().split()
+print(len(words))
+","basic, empty_input, whitespace",,"Your program is only printing the **number of words** it found, not the length of each word.  
+`len(words)` gives you how many items are in the list, but the task wants the length of every individual word.
+
+Think about how you could transform the list `words` into a list of integers where each integer is the length of the corresponding word. Once you have that list, you can print the numbers separated by spaces.  
+(If the input is empty, the list of lengths will be empty, and printing it should produce no output.)","### What the student’s code actually does
+
+```python
+words = input().split()   # split the line into a list of words
+print(len(words))         # print the *number* of words
+```
+
+* `input().split()` returns a list of the words in the line.  
+* `len(words)` is the **count of words**, not the length of each individual word.
+
+So for an input like
+
+```
+hello world
+```
+
+`words` becomes `['hello', 'world']` and `len(words)` is `2`.  
+The program prints `2`, but the problem asks for
+
+```
+5 5
+```
+
+because “hello” has 5 letters and “world” has 5 letters.
+
+### Why the tests fail
+
+| Test category | What the code prints | What the test expects |
+|---------------|----------------------|-----------------------|
+| **basic**     | `2` (number of words) | `5 5` (lengths of each word) |
+| **empty_input** | `0` (empty list length) | *nothing* (no output) |
+| **whitespace** | `0` (split on whitespace gives empty list) | *nothing* (no output) |
+
+The student’s code also prints a trailing newline, which is fine, but the *content* of the output is wrong.
+
+### How to fix it
+
+1. **Iterate over each word** and compute its length.  
+2. **Collect those lengths** and print them separated by spaces.  
+3. **Handle the empty‑input case**: if there are no words, print nothing (not `0`).
+
+A concise, correct solution:
+
+```python
+words = input().split()          # list of words
+lengths = [str(len(w)) for w in words]  # list of string lengths
+print(' '.join(lengths))         # join with spaces, prints nothing if list is empty
+```
+
+Or, if you prefer a one‑liner:
+
+```python
+print(' '.join(map(str, map(len, input().split()))))
+```
+
+Both versions:
+
+* Produce `5 5` for `""hello world""`.
+* Produce an empty line (no output) for an empty string or a line that contains only whitespace.
+* Do **not** print `0` for the empty‑input case.
+
+### Take‑away
+
+- `len(words)` gives the **count of words**, not the lengths of the words.  
+- You need to compute `len(word)` for each word.  
+- Use `join` to format the output as a space‑separated list.  
+- Remember that an empty input should result in no output, not `0`.",Line 2 prints the number of words instead of each word's length. (line 2),5,4,,,4,,"E1 best hint. E2 correct, full fix, sloppy 'empty line (no output)'. E3 correct, terse."
+29,Sum the valid integers,"Read a line of tokens. Print the sum of the tokens that are valid integers, ignoring the others (for example `3.5` or `x`).","total = 0
+for t in input().split():
+    if t.isdigit():
+        total += int(t)
+print(total)
+",invalid_token,,"Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: invalid token. Check which exception you catch and what the program does after catching it.","Your loop is only adding tokens that pass `t.isdigit()`.  
+`str.isdigit()` returns **True only for strings that consist entirely of decimal digits** – it does not accept a leading sign.  
+So a token like `-7` (or `+12`) will be skipped even though it is a valid integer.  
+
+Think about how you could detect a token that can be turned into an `int` even when it has a sign, and how you might ignore tokens that raise an error when you try to convert them.","### What the student’s code does
+
+```python
+total = 0
+for t in input().split():
+    if t.isdigit():          # <-- only true for strings that contain *only* digits
+        total += int(t)
+print(total)
+```
+
+* `input().split()` gives you a list of the tokens separated by whitespace.  
+* `t.isdigit()` returns `True` **only** when every character in `t` is a decimal digit (`0`–`9`).  
+* If that test passes, the token is converted to an `int` and added to `total`.
+
+### Why it fails the “invalid_token” tests
+
+The specification says:
+
+> “Print the sum of the tokens that are **valid integers**, ignoring the others (for example `3.5` or `x`).”
+
+A *valid integer* can be:
+
+| Example | Why it’s a valid integer | What `t.isdigit()` returns |
+|---------|--------------------------|----------------------------|
+| `42` | plain digits | `True` |
+| `-7` | negative sign + digits | **`False`** |
+| `+12` | positive sign + digits | **`False`** |
+| `003` | leading zeros | `True` |
+| `3.5` | contains a decimal point | `False` |
+| `x` | non‑numeric | `False` |
+
+So the student’s code **misses all signed integers** (`-7`, `+12`, etc.).  
+If the test data contains a token like `-5`, the program will ignore it and the sum will be too small, causing the “invalid_token” failure.
+
+### What the code should do
+
+1. **Try to convert each token to an integer.**  
+   If the conversion succeeds, add it to the total.  
+2. **Ignore any token that raises a `ValueError`.**  
+   This automatically skips `3.5`, `x`, `+12`, `-7`, etc.
+
+A simple, robust implementation:
+
+```python
+total = 0
+for token in input().split():
+    try:
+        total += int(token)   # int() accepts signed integers
+    except ValueError:
+        # token is not a valid integer – ignore it
+        pass
+print(total)
+```
+
+### Key take‑away
+
+* `str.isdigit()` is **too restrictive**: it only accepts strings that consist solely of digits and therefore rejects signed integers.  
+* Use a `try/except` block around `int(token)` to correctly identify all valid integers and ignore the rest.",4,5,,,3,,"E1 template hints at exception handling, fine. E2 best: isdigit rejects signs, no code. E3 correct diagnosis but says ValueError skips '+12' and '-7' (they convert fine) - wrong."
+30,Prime check,"Read an integer n (at least 1). Print `prime` if it is prime, otherwise `not prime`.","n = int(input())
+for i in range(2, n):
+    if n % i == 0:
+        print(""not prime"")
+        break
+else:
+    print(""prime"")
+",boundary,,"The loop works fine for numbers ≥ 2, but it doesn’t handle the smallest input correctly.  
+When `n` is 1, the range `range(2, n)` is empty, so the `else` block of the `for` loop runs and prints `""prime""`. Since 1 is **not** a prime number, the program fails on that boundary case.  
+
+Think about adding a special check for `n == 1` (or for `n <= 1`) before you start the loop. That will keep the loop logic unchanged while fixing the boundary error.","### Why the student’s program fails the *boundary* test
+
+The test that fails is the one where the input is the smallest possible value, **`n = 1`**.
+
+```python
+n = int(input())          # n == 1
+for i in range(2, n):     # range(2, 1) → empty sequence
+    if n % i == 0:
+        print(""not prime"")
+        break
+else:
+    print(""prime"")        # executed because the loop never ran
+```
+
+Because the `for` loop never executes (the range is empty), the `else` block is run and the program prints `""prime""`.  
+But **1 is not a prime number**. The definition of a prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself. So the program incorrectly classifies 1 as prime, causing the boundary‑case test to fail.
+
+---
+
+### What the code does *right* for other inputs
+
+- For `n = 2` or `n = 3`, the loop is also empty, but the result `""prime""` is correct.
+- For any composite number (`n = 4, 6, 8, …`), the loop finds a divisor and prints `""not prime""`.
+- For any prime number larger than 2, the loop runs, finds no divisor, and the `else` clause prints `""prime""`.
+
+So the only logical error is the special case `n = 1`.
+
+---
+
+### How to fix it
+
+Add an explicit check for `n <= 1` before the loop:
+
+```python
+n = int(input())
+
+if n <= 1:                     # 1 (and 0, if it ever appears) is not prime
+    print(""not prime"")
+else:
+    for i in range(2, n):
+        if n % i == 0:
+            print(""not prime"")
+            break
+    else:
+        print(""prime"")
+```
+
+Now the program correctly outputs `""not prime""` for `n = 1` and behaves as before for all other inputs.
+
+---
+
+### (Optional) Minor efficiency improvement
+
+The loop only needs to test divisors up to `sqrt(n)`:
+
+```python
+import math
+for i in range(2, int(math.isqrt(n)) + 1):
+    ...
+```
+
+This isn’t required for the test to pass, but it makes the algorithm faster for large `n`.
+
+---
+
+**Bottom line:** The student’s code fails the boundary test because it treats `n = 1` as prime. Adding a simple `if n <= 1:` guard resolves the issue.","The else clause at line 6 executes even when n=1, incorrectly printing ""prime"" for the non‑prime number 1. (line 6)",5,4,,,4,,"E1 clear boundary explanation, hint only. E2 correct, full fix + optional sqrt. E3 correct, cites right line."
+31,Prime check,"Read an integer n (at least 1). Print `prime` if it is prime, otherwise `not prime`.","n = int(input())
+print(""prime"" if n % 2 == 1 else ""not prime"")
+","boundary, square",,"Your program only checks whether `n` is odd or even.  
+That works for distinguishing 2 (the only even prime) from most composites, but it misses a lot of cases:
+
+- **1 is not prime** – your code would print “prime” for `n = 1` because `1 % 2 == 1`.
+- **Odd composites** – numbers like 9, 15, 21, 25, etc. are odd, yet they are not prime. Your test will incorrectly label them as “prime”.
+- **Even composites** – numbers like 4, 6, 8, 10, etc. are correctly caught as “not prime”, but you’re not checking any other divisors.
+
+To correctly determine primality you need to test divisibility by all integers (or at least all primes) up to the square root of `n`. Also remember to treat numbers less than 2 as non‑prime. This will handle the boundary cases and the “square” test failures.","**What the student’s code actually does**
+
+```python
+n = int(input())
+print(""prime"" if n % 2 == 1 else ""not prime"")
+```
+
+* `n % 2 == 1` is true **only for odd numbers** (except for 1, which is odd but not prime).
+* The code never looks at any other divisor of `n`.
+* Therefore it will say “prime” for *every* odd number and “not prime” for *every* even number.
+
+**Why that fails**
+
+| Test case | Expected output | Student’s output | Why it’s wrong |
+|-----------|-----------------|------------------|----------------|
+| `n = 1`   | `not prime`     | `prime`          | 1 is odd, but it’s not prime. |
+| `n = 2`   | `prime`         | `not prime`      | 2 is even, but it’s the only even prime. |
+| `n = 9`   | `not prime`     | `prime`          | 9 is odd, but divisible by 3. |
+| `n = 15`  | `not prime`     | `prime`          | 15 is odd, but divisible by 3 and 5. |
+| `n = 25`  | `not prime`     | `prime`          | 25 is odd, but divisible by 5. |
+| `n = 49`  | `not prime`     | `prime`          | 49 is odd, but divisible by 7. |
+| `n = 97`  | `prime`         | `prime`          | 97 is odd and actually prime – this one *happens* to be correct, but that’s coincidence. |
+
+The “boundary” test (e.g., `n = 1`) and the “square” test (e.g., `n = 9`, `25`, `49`) expose the flaw.
+
+**What a correct prime‑check needs to do**
+
+1. **Handle the special cases**  
+   * Numbers less than 2 (`0`, `1`) are *not* prime.  
+   * `2` is prime (the only even prime).
+
+2. **Check divisibility only for odd numbers**  
+   * If `n` is even and greater than 2, it’s not prime.  
+   * For odd `n`, test divisibility by odd numbers from `3` up to `√n`.  
+   * If any divisor divides `n` evenly, `n` is composite.
+
+3. **Stop early**  
+   * As soon as you find a divisor, you can declare “not prime” and exit the loop.
+
+**A simple, correct implementation**
+
+```python
+import math
+
+n = int(input())
+
+if n < 2:
+    print(""not prime"")
+elif n == 2:
+    print(""prime"")
+elif n % 2 == 0:          # even numbers > 2 are not prime
+    print(""not prime"")
+else:
+    # test only odd divisors up to sqrt(n)
+    limit = int(math.isqrt(n))   # integer square root
+    for d in range(3, limit + 1, 2):
+        if n % d == 0:
+            print(""not prime"")
+            break
+    else:  # no divisor found
+        print(""prime"")
+```
+
+**Why this works**
+
+* `math.isqrt(n)` gives the largest integer `k` such that `k*k <= n`.  
+* If `n` has a divisor larger than `√n`, it must also have a corresponding divisor smaller than `√n`.  
+* By checking only odd divisors (after handling the even case), we reduce the number of iterations roughly by half.
+
+**Key takeaways for the student**
+
+* Checking `n % 2 == 1` only tells you whether `n` is odd, not whether it’s prime.  
+* Prime testing requires checking divisibility by all potential factors up to `√n`.  
+* Don’t forget the edge cases (`n < 2`, `n == 2`).  
+* Use a loop with a proper stopping condition (`break`) and an `else` clause to handle the “no divisor found” case.","Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: boundary, square. Look at the values exactly on the edge between two cases: does each comparison include or exclude the edge value?",3,4,,,3,,"E1 correct but wrongly says the code 'works for 2' (it prints 'not prime' for 2). E2 correct, good table. E3 generic template."
+50,Even or odd,"Read an integer. Print `even` if it is even, otherwise `odd`.","n = int(input())
+print(""even"" if n % 2 else ""odd"")
+","basic, negative_numbers, zero",,"Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: basic, negative numbers, zero. Try the program by hand with a negative number and follow what each line does with it.","The code provided is almost correct, but there's a small issue with the logic inside the `if` statement. The condition `n % 2` returns `True` for even numbers and `False` for odd numbers. The `if` statement checks if `n % 2` is `True`, which means it will print ""even"" for odd numbers and ""odd"" for even numbers. To fix this, you should use the `else` statement to handle the case when `n % 2` is `False` (i.e., when `n` is odd). Here's the corrected version of the code:
+
+```python
+n = int(input())
+print(""even"" if n % 2 == 0 else ""odd"")
+```
+
+This way, the program will correctly identify even and odd numbers.","**What’s wrong?**
+
+The student’s code uses a ternary expression that is the opposite of what we need:
+
+```python
+print(""even"" if n % 2 else ""odd"")
+```
+
+* `n % 2` returns **0** for even numbers and **1** (or –1 for negative odd numbers) for odd numbers.  
+* In Python, `0` is *falsy* and any non‑zero value is *truthy*.
+
+So the expression reads:
+
+| `n % 2` | truthiness | printed string |
+|---------|------------|----------------|
+| 0 (even) | False | `""odd""` |
+| 1 (odd)  | True  | `""even""` |
+
+That means:
+
+* Even numbers → `""odd""` (wrong)
+* Odd numbers → `""even""` (wrong)
+* Zero → `""odd""` (wrong, because 0 is even)
+* Negative odd numbers → `""even""` (wrong, because they are odd)
+
+That’s why the tests for basic cases, negative numbers, and zero all fail.
+
+---
+
+**How to fix it**
+
+Swap the two strings (or, more explicitly, test for equality with 0):
+
+```python
+n = int(input())
+
+# Option 1 – swap the strings
+print(""odd"" if n % 2 else ""even"")
+
+# Option 2 – use an explicit comparison
+print(""even"" if n % 2 == 0 else ""odd"")
+```
+
+Both versions will correctly print:
+
+* `""even""` for 0, 2, –4, 10, …
+* `""odd""` for 1, –3, 7, …
+
+---
+
+**Key takeaway**
+
+When using a ternary operator (`a if condition else b`), remember that the *first* string is printed when the condition is *truthy*. Since `n % 2` is truthy for odd numbers, the strings must be arranged accordingly.",3,2,,,3,,"E1 template; negative-number hint is weak since all cases fail. E2 WRONG: claims n%2 is True for even numbers; muddled. E3 correct but says negative odd gives -1 (Python gives 1), full fix."
+56,Safe division,"Read two integers a and b. Print a // b, or `division by zero` if b is 0.","a, b = map(int, input().split())
+if b == 0:
+    print(""division by zero"")
+else:
+    print(a / b)
+","basic, negative_numbers, zero",,"The student's code attempts to handle division by zero by checking if `b` is zero and printing ""division by zero"" if it is. However, the code does not correctly implement the division operation when `b` is not zero. In Python, the division operator `/` performs floating-point division, which is why the output is not as expected for integer inputs. To fix this, you should use the floor division operator `//` when `b` is not zero, which will ensure the result is an integer.",The division operation should be replaced with a safe division operation to avoid ZeroDivisionError. (line 5),"The student's code has a few issues that need to be addressed:
+
+1. **Division Operation**: In Python 3, the division operator `/` performs floating-point division, not integer division. The `//` operator is used for integer division. Therefore, the line `print(a / b)` should be `print(a // b)` to ensure integer division is performed.
+
+2. **Error Handling**: The error message ""division by zero"" should be printed as a string, not as a result of the division operation. The division operation should only be performed if `b` is not zero.
+
+Here is the corrected version of the code:
+
+```python
+a, b = map(int, input().split())
+if b == 0:
+    print(""division by zero"")
+else:
+    print(a // b)
+```
+
+With these changes, the code will correctly handle the division operation and print the appropriate message.",4,1,,,3,,"E1 correct, points to //. E2 wrong: code already guards zero. E3 correct fix but bogus 'error handling' issue."
+57,Sum and maximum,"Line 1 has n. Line 2 has n integers. Print their sum and their maximum on one line, separated by a space.","n = int(input())
+xs = list(map(int, input().split()))
+print(sum(xs), min(xs))
+","basic, negative_numbers",,The code does not handle the case where the list is empty. (line 2),"The student's code calculates the sum and the minimum value of the numbers, but the task requires printing the sum and the maximum value. Additionally, there are no negative numbers in the input data, so the minimum value is not relevant to the problem statement.","The student's code has a couple of issues that need to be addressed:
+
+1. **Sum Calculation**: The `sum(xs)` function calculates the sum of the numbers, but the problem requires printing the sum and the maximum value of the numbers. The `sum` function alone is not sufficient.
+
+2. **Maximum Calculation**: The `min(xs)` function is used to find the minimum value, but the problem requires finding the maximum value. The correct function to use here is `max(xs)`.
+
+3. **Output Format**: The student's code prints the sum and the minimum value separated by a space, but the problem requires printing the sum and the maximum value separated by a space.
+
+Here is the corrected code:
+
+```python
+n = int(input())
+xs = list(map(int, input().split()))
+
+# Calculate the sum and the maximum value
+sum_of_xs = sum(xs)
+max_of_xs = max(xs)
+
+# Print the sum and the maximum value separated by a space
+print(sum_of_xs, max_of_xs)
+```
+
+This code will correctly calculate the sum and the maximum value of the integers and print them as required.",1,3,,,3,,E1 wrong (empty list irrelevant). E2 finds min vs max but adds nonsense about 'no negative numbers'. E3 correct but padded; 'sum alone not sufficient' is misleading.
+58,Second largest,Line 1 has n. Line 2 has n integers with at least two distinct values. Print the second largest distinct value.,"n = int(input())
+xs = sorted(map(int, input().split()), reverse=True)
+print(xs[1])
+",duplicates,,"The issue with the student's code is that it assumes there are at least two distinct values in the list of integers. However, the problem statement specifies that there are at least two distinct values, but the code does not check for the presence of duplicates. If all values in the list are the same, the list will not have a second largest value, and attempting to access `xs[1]` will result in an error. You should add a check to ensure that the list has more than one unique value before attempting to access the second largest element.","**Why the student’s code fails**
+
+```python
+n = int(input())
+xs = sorted(map(int, input().split()), reverse=True)
+print(xs[1])
+```
+
+The code simply sorts all the numbers in descending order and prints the element at index 1.  
+That works only when the largest value appears **once**.  
+If the largest value occurs more than once, the element at index 1 is the same as the largest value, not the *second largest distinct* value.
+
+---
+
+### Example that breaks the code
+
+Input  
+```
+5
+5 5 4 3 2
+```
+
+*Sorted list (reverse)* → `[5, 5, 4, 3, 2]`  
+`xs[1]` is `5`, but the second largest distinct value is `4`.  
+The program would output `5`, which is wrong.
+
+---
+
+### What the problem actually asks for
+
+> “Print the second largest **distinct** value.”
+
+So we must ignore duplicates of the largest number (and any other duplicates).  
+The correct approach is to consider only unique values.
+
+---
+
+### How to fix it
+
+1. **Remove duplicates**  
+   ```python
+   unique_vals = set(xs)          # or set(map(int, input().split()))
+   ```
+
+2. **Find the largest and second largest**  
+   *Option A – sort the unique values*  
+   ```python
+   sorted_unique = sorted(unique_vals, reverse=True)
+   print(sorted_unique[1])        # second element after sorting
+   ```
+
+   *Option B – use two variables*  
+   ```python
+   largest = second = -float('inf')
+   for v in unique_vals:
+       if v > largest:
+           second = largest
+           largest = v
+       elif v > second:
+           second = v
+   print(second)
+   ```
+
+Both options guarantee that the second value printed is the second largest **distinct** number, regardless of how many times the largest number appears.
+
+---
+
+### Quick fix for the student’s code
+
+```python
+n = int(input())
+xs = sorted(set(map(int, input().split())), reverse=True)
+print(xs[1])
+```
+
+This minimal change removes duplicates before sorting, so `xs[1]` will always be the second largest distinct value.","Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: duplicates. Try the program by hand with the same value appearing twice and follow what each line does with it.",1,4,,,4,,"E1 misses the real bug (duplicates), spec excludes all-equal case. E2 correct with good counterexample. E3 tailored template."
+61,Sum from 1 to n,Read an integer n. Print the sum 1 + 2 + ... + n (0 if n is 0).,"n = int(input())
+print(n * (n - 1) // 2)
+","basic, large_input",,The formula used is incorrect for calculating the sum of the first n natural numbers. (line 2),"The student's code is almost correct, but there is a small mistake in the formula used to calculate the sum of the first `n` natural numbers. The correct formula to calculate the sum of the first `n` natural numbers is:
+
+\[ \text{Sum} = \frac{n \times (n + 1)}{2} \]
+
+The student's code uses:
+
+\[ \text{Sum} = \frac{n \times (n - 1)}{2} \]
+
+This formula is incorrect because it does not account for the `n` in the numerator, which should be `n + 1` to correctly sum from 1 to `n`.
+
+Here is the corrected code:
+
+```python
+n = int(input())
+print(n * (n + 1) // 2)
+```
+
+This code will correctly compute the sum of the first `n` natural numbers and print the result.","The student's code calculates the sum of numbers from 1 to n using the formula \( \frac{n \times (n - 1)}{2} \), which is correct for finding the sum of the first n natural numbers. However, the issue might be related to the input value of n. If n is a very large number, the result could cause an overflow or exceed the maximum limit for integer values in the programming environment. Additionally, the code assumes that the input will always be a valid integer, but if the input handling or validation is not properly implemented elsewhere in the code, it could lead to unexpected results or errors.",2,4,,,1,,"E1 vague, no reason given. E2 correct formula and fix, muddled reasoning. E3 WRONG: calls n(n-1)/2 correct and blames overflow."
+63,Countdown,"Read an integer n. Print n, n-1, ..., 1 each on its own line, then `Liftoff!`.","n = int(input())
+for i in range(n, 0, -1):
+    print(i)
+print(""Liftoff"")
+","basic, zero",,"Your program ran but gave a different answer from the expected one on some tests. Compare your output with the expected output on the examples, then think about the categories of test listed below. Failing categories: basic, zero. Try the program by hand with the input 0 and follow what each line does with it.","The student's code is almost correct, but there's a small issue with the final print statement. The error might be occurring because the program is not printing ""Liftoff!"" as expected. This could be due to the print statement for ""Liftoff!"" being outside the loop, which means it might not be executed at all. Ensure that the ""Liftoff!"" message is printed within the loop or after the loop, so it gets executed as part of the sequence.","The student's code is almost correct, but there is a small issue with the print order. The code correctly prints the numbers from `n` to `1`, but it does not print the number `1` on its own line. Instead, it immediately prints ""Liftoff!"" without a line break. 
+
+Here is the corrected version of the code:
+
+```python
+n = int(input())
+for i in range(n, 0, -1):
+    print(i)
+print(""Liftoff!"")
+```
+
+In the corrected code, the `print(""Liftoff!"")` statement is placed after the loop to ensure that the ""Liftoff!"" message is printed on its own line after all the numbers have been printed.",3,1,,,1,,"Real bug: 'Liftoff' lacks '!'. E1 template hint (try 0) points the right direction, vaguely. E2 misdiagnoses loop placement. E3 misdiagnoses line break."
+68,Palindrome check,"Read a word. Print `yes` if it reads the same backwards, ignoring case, otherwise `no`.","word = input()
+print(""yes"" if word.lower() == word else ""no"")
+","basic, uppercase",,The code does not handle words with spaces or punctuation. (line 2),"The student's code is almost correct, but it doesn't handle uppercase letters properly. The code converts the entire input to lowercase before comparing it to the reversed version, which means that any uppercase letters in the input will be treated as lowercase, potentially leading to incorrect results for palindromes that contain both uppercase and lowercase letters.
+
+For example, the word ""Madam"" would be compared to ""madam"" instead of ""madam"" (ignoring case), and thus would be considered a palindrome. However, ""Madam"" is actually a palindrome when ignoring case. 
+
+To fix this, you should check if the word is equal to its reversed version in a case-insensitive manner. You can do this by comparing the original word to the reversed word, both in their original case. Here's how you can modify the code:
+
+```python
+word = input()
+print(""yes"" if word.lower() == word[::-1].lower() else ""no"")
+```
+
+In this corrected version, `word[::-1]` reverses the string while keeping the original case, and then both the original and reversed strings are converted to lowercase before the comparison is made. This ensures that the comparison is case-insensitive and correctly identifies palindromes.","**What the student’s code is doing**
+
+```python
+word = input()
+print(""yes"" if word.lower() == word else ""no"")
+```
+
+1. `word.lower()` converts the input to all lowercase.  
+2. It then compares that lowercase string **to the original string** (`word`).  
+3. If the original string was already all lowercase, the comparison is true; otherwise it’s false.
+
+So the program only prints “yes” when the user types a word that is *already* in lowercase.  
+It never checks whether the word reads the same backwards, and it ignores the case‑insensitive comparison that the problem asks for.
+
+**Why the tests fail**
+
+- **Basic test** – e.g. input `racecar`.  
+  `word.lower()` → `racecar`, `word` → `racecar`.  
+  The comparison is true, so it prints “yes” – this passes.
+
+- **Uppercase test** – e.g. input `Racecar`.  
+  `word.lower()` → `racecar`, `word` → `Racecar`.  
+  The comparison is false, so it prints “no” – this fails because the word is a palindrome ignoring case.
+
+- **Non‑palindrome test** – e.g. input `hello`.  
+  `word.lower()` → `hello`, `word` → `hello`.  
+  The comparison is true, so it prints “yes” – this fails because “hello” is not a palindrome.
+
+**What’s missing**
+
+1. **Reversing the string** – we need to compare the word to its reverse.  
+2. **Case‑insensitive comparison** – both the original word and its reverse should be converted to the same case (usually lowercase).
+
+**Correct approach**
+
+```python
+word = input()
+# Convert to lowercase and compare to its reverse
+if word.lower() == word.lower()[::-1]:
+    print(""yes"")
+else:
+    print(""no"")
+```
+
+or, more compactly:
+
+```python
+print(""yes"" if word.lower() == word.lower()[::-1] else ""no"")
+```
+
+**Key takeaways**
+
+- `word.lower() == word` only checks if the word is already lowercase; it does **not** check for a palindrome.  
+- To test for a palindrome, compare the string to its reverse (`word[::-1]`).  
+- Always apply the same case conversion to both sides of the comparison when ignoring case.",1,2,,,4,,"E1 wrong (spaces/punctuation). E2 wrongly says code lowercases before comparing to reversed; contradictory. E3 correct: compares to itself, never reverses."

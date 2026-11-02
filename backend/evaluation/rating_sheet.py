@@ -1,6 +1,6 @@
 """Blinded rating sheet for explanation quality (TR-V-03). The assistant that built this does NOT rate anything.
 
-  python -m evaluation.rating_sheet generate SHEET.csv KEY.csv   # needs the model; run in the api container
+  python -m evaluation.rating_sheet generate SHEET.csv KEY.csv [--size N] [--hint]   # needs the model; run in the api container
   python -m evaluation.rating_sheet compute SHEET.csv KEY.csv    # after two reviewers have filled the sheet
   python -m evaluation.rating_sheet llm-rate SHEET.csv OUT.csv groq,mistral   # stand-in panel of two LLM raters
                                                                               # (provider or provider:model), labelled in
@@ -15,7 +15,12 @@ Rating: for each explanation, write 1 if EVERY claim it makes about this code an
 wrong, misleading or invents a problem that is not there. Rate only what is written, not how helpful it sounds. Reviewer 1 fills
 `r1_exp1` and `r1_exp2`; reviewer 2 fills `r2_exp1` and `r2_exp2`, working separately.
 
-compute: the share of correct explanations for each flow, per reviewer and where both reviewers agree, plus their agreement.
+--size N takes the first N failing submissions from SUBMISSIONS and then MORE_SUBMISSIONS (default: all of SUBMISSIONS).
+--hint adds a third explanation per submission from a model told to hint and not to give the solution (columns
+`explanation_3`, `r1_exp3`, `r2_exp3`), the fair stand-in for a guardrail written only in the prompt.
+
+compute: the share of correct explanations for each flow, per reviewer and where both reviewers agree, plus their
+agreement, with a 95% Wilson interval on the share where both agree.
 """
 import csv
 import os
@@ -26,17 +31,22 @@ from collections import Counter
 from datetime import UTC, datetime
 
 from evaluation.join import join_course
+from evaluation.rating_more import MORE_SUBMISSIONS
 
 SHEET_FIELDS = [
     "id", "problem", "statement", "student_code", "failed_categories", "error_type",
     "explanation_1", "explanation_2", "r1_exp1", "r1_exp2", "r2_exp1", "r2_exp2", "notes",
 ]
 KEY_FIELDS = ["id", "explanation_1_is", "explanation_2_is", "verified_status", "verified_attempts", "provider"]
+SHEET_FIELDS_HINT = SHEET_FIELDS[:8] + ["explanation_3"] + SHEET_FIELDS[8:12] + ["r1_exp3", "r2_exp3", "notes"]
+KEY_FIELDS_HINT = KEY_FIELDS[:3] + ["explanation_3_is"] + KEY_FIELDS[3:]
 SEED = 2026
 # Seconds between submissions, to stay under a free tier's per-minute limit (Groq's is 8000 tokens a minute, which
 # allows about three explanation calls); RATING_PAUSE_SECONDS raises it.
 PAUSE_SECONDS = float(os.environ.get("RATING_PAUSE_SECONDS", "8"))
 PLAIN_SYSTEM = "You are a helpful Python tutor for students."
+HINT_SYSTEM = ("You are a Python tutor. Give the student a hint about why their program is wrong. "
+               "Do not give the solution or write the corrected code.")
 
 # (problem title, wrong code). The first ten reuse the Step 4 submissions; ten more cover other concepts and mistakes.
 SUBMISSIONS = [
@@ -71,7 +81,26 @@ def shuffled_pair(rng: random.Random, verified: str, plain: str) -> tuple[str, s
     return plain, verified, "plain", "verified"
 
 
-def generate(sheet_path: str, key_path: str) -> None:
+def shuffled_three(rng: random.Random, verified: str, plain: str, hint: str) -> list[tuple[str, str]]:
+    """(flow, text) for the three explanations of one submission, in a random order."""
+    items = [("verified", verified), ("plain", plain), ("hint-only", hint)]
+    rng.shuffle(items)
+    return items
+
+
+def wilson(successes: int, total: int, z: float = 1.96) -> tuple[float, float]:
+    """95% Wilson score interval for a share."""
+    if not total:
+        return 0.0, 0.0
+    p = successes / total
+    denominator = 1 + z * z / total
+    centre = (p + z * z / (2 * total)) / denominator
+    margin = z * ((p * (1 - p) / total + z * z / (4 * total * total)) ** 0.5) / denominator
+    return max(0.0, centre - margin), min(1.0, centre + margin)
+
+
+def generate(sheet_path: str, key_path: str, size: int | None = None, with_hint: bool = False) -> None:
+    size = len(SUBMISSIONS) if size is None else size
     os.environ["DEMO_CACHE_DIR"] = ""  # the cached demo explanations must not be mixed into a quality measurement
     import uuid
 
@@ -99,7 +128,9 @@ def generate(sheet_path: str, key_path: str) -> None:
     rng = random.Random(SEED)
 
     sheet, key = [], []
-    for number, (title, code) in enumerate(SUBMISSIONS, 1):
+    for number, (title, code) in enumerate([*SUBMISSIONS, *MORE_SUBMISSIONS], 1):
+        if len(sheet) >= size:
+            break
         problem = problems[title]
         submitted = client.post(f"{api}/submissions", headers=headers, json={"problem_id": problem.id, "code": code}).json()
         if submitted["status"] == "passed":
@@ -112,28 +143,36 @@ def generate(sheet_path: str, key_path: str) -> None:
         shown = f"{reply['explanation']['claim']} (line {reply['explanation']['line']})" if reply["explanation"] else reply["fallback_text"]
         failed = ", ".join(submitted["failed_categories"]) or "none"
         run_result = f"status {submitted['status']}, error type {submitted['error_type'] or 'none'}, failed test categories: {failed}"
+        prompt = (f"Problem: {problem.title}. {problem.statement}\n\nStudent code:\n{code}\n\nRun result: {run_result}\n\n"
+                  "Explain what is wrong with the student's code.")
         try:
-            baseline = plain.complete(
-                PLAIN_SYSTEM,
-                f"Problem: {problem.title}. {problem.statement}\n\nStudent code:\n{code}\n\nRun result: {run_result}\n\n"
-                "Explain what is wrong with the student's code.",
-            ).strip()
+            baseline = plain.complete(PLAIN_SYSTEM, prompt).strip()
+            hint = plain.complete(HINT_SYSTEM, prompt).strip() if with_hint else ""
         except LLMError as exc:
             print(f"plain call failed for {title}: {exc}", file=sys.stderr)
             continue
-        first, second, first_is, second_is = shuffled_pair(rng, shown, baseline)
-        sheet.append({
+        row = {
             "id": number, "problem": title, "statement": problem.statement, "student_code": code,
-            "failed_categories": failed, "error_type": submitted["error_type"] or "", "explanation_1": first,
-            "explanation_2": second, "r1_exp1": "", "r1_exp2": "", "r2_exp1": "", "r2_exp2": "", "notes": "",
-        })
-        key.append({
-            "id": number, "explanation_1_is": first_is, "explanation_2_is": second_is,
-            "verified_status": reply["status"], "verified_attempts": reply["attempts"], "provider": plain.config.provider,
-        })
+            "failed_categories": failed, "error_type": submitted["error_type"] or "", "r1_exp1": "", "r1_exp2": "",
+            "r2_exp1": "", "r2_exp2": "", "notes": "",
+        }
+        entry = {"id": number, "verified_status": reply["status"], "verified_attempts": reply["attempts"],
+                 "provider": plain.config.provider}
+        if with_hint:
+            ordered = shuffled_three(rng, shown, baseline, hint)
+            row |= {"r1_exp3": "", "r2_exp3": ""}
+        else:
+            first, second, first_is, second_is = shuffled_pair(rng, shown, baseline)
+            ordered = [(first_is, first), (second_is, second)]
+        for slot, (flow, text_shown) in enumerate(ordered, 1):
+            row[f"explanation_{slot}"] = text_shown
+            entry[f"explanation_{slot}_is"] = flow
+        sheet.append(row)
+        key.append(entry)
         print(f"{number}. {title}: verified flow {reply['status']} ({reply['attempts']} attempts)", file=sys.stderr)
         time.sleep(PAUSE_SECONDS)
-    for path, fields, rows in ((sheet_path, SHEET_FIELDS, sheet), (key_path, KEY_FIELDS, key)):
+    fields_sheet, fields_key = (SHEET_FIELDS_HINT, KEY_FIELDS_HINT) if with_hint else (SHEET_FIELDS, KEY_FIELDS)
+    for path, fields, rows in ((sheet_path, fields_sheet, sheet), (key_path, fields_key, key)):
         with open(path, "w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=fields)
             writer.writeheader()
@@ -149,10 +188,11 @@ def _mark(value: str) -> int | None:
 def compute(sheet_rows: list[dict], key_rows: list[dict]) -> dict:
     """Share of correct explanations per flow, per reviewer and where both agree, plus how often they agree."""
     key = {r["id"]: r for r in key_rows}
-    marks: dict[str, dict[str, list[int]]] = {"verified": {"r1": [], "r2": [], "both": []}, "plain": {"r1": [], "r2": [], "both": []}}
+    flows = ["verified", "plain", *sorted({v for r in key_rows for k, v in r.items() if k.endswith("_is")} - {"verified", "plain"})]
+    marks: dict[str, dict[str, list[int]]] = {flow: {"r1": [], "r2": [], "both": []} for flow in flows}
     pairs, incomplete = [], 0
     for row in sheet_rows:
-        origin = {"1": key[row["id"]]["explanation_1_is"], "2": key[row["id"]]["explanation_2_is"]}
+        origin = {k[len("explanation_"):-len("_is")]: v for k, v in key[row["id"]].items() if k.endswith("_is")}
         for slot, flow in origin.items():
             r1, r2 = _mark(row[f"r1_exp{slot}"]), _mark(row[f"r2_exp{slot}"])
             if r1 is not None:
@@ -175,15 +215,22 @@ def compute(sheet_rows: list[dict], key_rows: list[dict]) -> dict:
     def share(values: list[int]) -> str:
         return f"{sum(values)} of {len(values)} = {sum(values) / len(values):.0%}" if values else "no ratings yet"
 
+    def interval(values: list[int]) -> str:
+        low, high = wilson(sum(values), len(values))
+        return f"{low:.0%} to {high:.0%}" if values else "n/a"
+
     return {
-        flow: {who: share(vals) for who, vals in by.items()} for flow, by in marks.items()
+        flow: {who: share(vals) for who, vals in by.items()} | {"both_interval": interval(by["both"])}
+        for flow, by in marks.items()
     } | {"agreement": agreement, "kappa": kappa, "unrated_explanations": incomplete, "rated_pairs": len(pairs)}
 
 
 def report(result: dict) -> str:
-    lines = ["| Flow | Reviewer 1 | Reviewer 2 | Where both reviewers agree |", "| --- | --- | --- | --- |"]
-    for flow in ("verified", "plain"):
-        lines.append(f"| {flow} | {result[flow]['r1']} | {result[flow]['r2']} | {result[flow]['both']} |")
+    lines = ["| Flow | Reviewer 1 | Reviewer 2 | Where both reviewers agree | 95% interval (agreed) |",
+             "| --- | --- | --- | --- | --- |"]
+    for flow, by in result.items():
+        if isinstance(by, dict):
+            lines.append(f"| {flow} | {by['r1']} | {by['r2']} | {by['both']} | {by['both_interval']} |")
     agree = "n/a" if result["agreement"] is None else f"{result['agreement']:.0%} (kappa {result['kappa']:.2f})"
     lines.append(f"\nReviewer agreement: {agree} over {result['rated_pairs']} explanations rated by both; "
                  f"{result['unrated_explanations']} explanations not yet rated by both.")
@@ -221,8 +268,10 @@ def llm_rate(sheet_path: str, out_path: str, providers: list[str]) -> None:
         rows = list(csv.DictReader(handle))
     label = "LLM-rated, not human: " + "; ".join(
         f"r{i} = {r.config.provider}:{r.config.model}" for i, r in enumerate(raters, 1))
+    fields = SHEET_FIELDS_HINT if rows and "explanation_3" in rows[0] else SHEET_FIELDS
+    slots = ("1", "2", "3") if fields is SHEET_FIELDS_HINT else ("1", "2")
     for row in rows:
-        for slot in ("1", "2"):
+        for slot in slots:
             prompt = RATER_USER.format(
                 problem=row["problem"], statement=row["statement"], code=row["student_code"],
                 error=row["error_type"] or "none", failed=row["failed_categories"], explanation=row[f"explanation_{slot}"])
@@ -238,7 +287,7 @@ def llm_rate(sheet_path: str, out_path: str, providers: list[str]) -> None:
                     row[f"r{number}_exp{slot}"] = match.group(1)
         row["notes"] = label
     with open(out_path, "w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=SHEET_FIELDS)
+        writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
     print(f"{label}; wrote {len(rows)} rows on {datetime.now(UTC):%Y-%m-%d}", file=sys.stderr)
@@ -248,12 +297,20 @@ def main() -> int:
     if len(sys.argv) == 5 and sys.argv[1] == "llm-rate":
         llm_rate(sys.argv[2], sys.argv[3], sys.argv[4].split(","))
         return 0
-    if len(sys.argv) != 4 or sys.argv[1] not in ("generate", "compute"):
+    args = sys.argv[1:]
+    with_hint = "--hint" in args
+    size = None
+    if "--size" in args:
+        at = args.index("--size")
+        size = int(args[at + 1])
+        del args[at:at + 2]
+    args = [a for a in args if a != "--hint"]
+    if len(args) != 3 or args[0] not in ("generate", "compute") or ((with_hint or size) and args[0] != "generate"):
         print(__doc__)
         return 2
-    command, sheet, key = sys.argv[1:]
+    command, sheet, key = args
     if command == "generate":
-        generate(sheet, key)
+        generate(sheet, key, size, with_hint)
         return 0
     with open(sheet, encoding="utf-8", newline="") as a, open(key, encoding="utf-8", newline="") as b:
         print(report(compute(list(csv.DictReader(a)), list(csv.DictReader(b)))))

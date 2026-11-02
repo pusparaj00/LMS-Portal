@@ -15,8 +15,20 @@ from simulation import model
 
 BKT_LEARN = 0.1  # BKT's transition probability: the one thing that distinguishes it from the update rule
 ECE_BINS = 10
-POLICIES = ("adaptive", "random", "bkt", "irt_only")
-POOLED = ("adaptive_pooled", "random_pooled")  # the same questions, estimated with the pooled model
+POLICIES = ("adaptive", "random", "bkt", "irt_only", "cat_info", "fixed")
+SELECTORS = ("adaptive", "random", "cat_info", "fixed")  # ways of choosing questions, each also estimated pooled
+HELD = ("adaptive", "random", "bkt", "irt_only")  # predictors scored on held-out responses
+POOLED = tuple(f"{p}_pooled" for p in SELECTORS)  # the same questions, estimated with the pooled model
+
+
+def most_informative(pool: list[selection.Item], ability: float) -> selection.Item:
+    """The textbook adaptive test (TR-V-05): the question with the largest 2PL Fisher information a^2 P (1 - P) at the
+    current one-number ability estimate, with no concept coverage term. Ties go to the lowest id."""
+    def information(item: selection.Item) -> float:
+        p = selection.prob_correct(ability, item.a, item.b)
+        return item.a ** 2 * p * (1.0 - p)
+
+    return max(sorted(pool, key=lambda i: i.id), key=information)
 
 
 def predict_from_mastery(item: selection.Item, mastery: dict[int, float]) -> float:
@@ -41,6 +53,10 @@ def run_student(
     for _ in range(selection.max_questions(items)):
         if policy == "adaptive":
             item = selection.select_next(items, given, seed, **(prior or {}))
+        elif policy == "cat_info":
+            item = most_informative(selection.allowed(items, asked), selection.eap_theta(responses))
+        elif policy == "fixed":
+            item = min(selection.allowed(items, asked), key=lambda i: i.id)
         else:
             pool = selection.allowed(items, asked)
             item = pool[rng.integers(len(pool))]
@@ -151,7 +167,7 @@ def simulate(students: int, seed: int, bank: model.Bank, prior: dict | None = No
 
     length = selection.max_questions(items)
     curves = {p: np.zeros((students, length)) for p in (*POLICIES, *POOLED)}
-    held_scores = {p: [] for p in (*POLICIES, *POOLED, "prior_only")}
+    held_scores = {p: [] for p in (*HELD, "adaptive_pooled", "random_pooled", "prior_only")}
     held_labels: list[int] = []
     coverage = {p: [] for p in POLICIES}
     correlation = {p: [] for p in (*POLICIES, *POOLED)}
@@ -169,7 +185,7 @@ def simulate(students: int, seed: int, bank: model.Bank, prior: dict | None = No
             coverage[policy].append(len({c for i in asked for c in items[i].concepts}))
             estimate = [mastery[c] for c in range(k)]
             correlation[policy].append(float(np.corrcoef(estimate, mastery_true[s])[0, 1]))
-            if policy in ("adaptive", "random"):
+            if policy in SELECTORS:
                 errors, after_five, theta_hat, covariance = pooled_trace(
                     items, outcomes[s], mastery_true[s], asked, k, **prior
                 )
@@ -191,7 +207,7 @@ def simulate(students: int, seed: int, bank: model.Bank, prior: dict | None = No
         seen = set(asked_by_policy["adaptive"][2]) | set(asked_by_policy["random"][2])
         held = [i for i in items if i.id not in seen]
         held_labels += [int(outcomes[s][i.id]) for i in held]
-        for policy in POLICIES:
+        for policy in HELD:
             mastery, ability, _ = asked_by_policy[policy]
             if policy == "irt_only":
                 held_scores[policy] += [
@@ -266,6 +282,27 @@ def report(result: dict, args: argparse.Namespace) -> str:
             else "Adaptive selection does not reach it within the test length."
         ),
         "",
+        "## Selection baselines, all with the pooled estimate (TR-V-05)",
+        "",
+        "The same estimator for every way of choosing questions, so the comparison is about the choice alone. "
+        "Max-information adaptive is the textbook adaptive test: the question with the largest 2PL information at the "
+        "current ability estimate, with no concept coverage term. Fixed order asks the allowed questions in id order.",
+        "",
+        "| Items asked | adaptive | max-information adaptive | random | fixed order |",
+        "| --- | --- | --- | --- | --- |",
+        *[
+            f"| {n} | " + " | ".join(f"{curves[key][n - 1]:.3f}" for key in (
+                "adaptive_pooled", "cat_info_pooled", "random_pooled", "fixed_pooled")) + " |"
+            for n in sorted({1, 3, 5, 8, 10, 16, length})
+        ],
+        "",
+        f"Items needed to reach random selection's final pooled error ({pooled_threshold:.3f}), out of {length}: "
+        + ", ".join(
+            f"{name} {reach if (reach := items_to_reach(curves[key], pooled_threshold)) else 'not reached'}"
+            for key, name in (("adaptive_pooled", "adaptive"), ("cat_info_pooled", "max-information adaptive"),
+                              ("fixed_pooled", "fixed order"))
+        ) + ".",
+        "",
         "## Coverage and ranking after the whole test",
         "",
         "| Policy | Concepts touched (of 12) | Correlation of estimate with true mastery |",
@@ -276,7 +313,8 @@ def report(result: dict, args: argparse.Namespace) -> str:
         ],
         *[
             f"| {name} | {result['coverage'][key]:.1f} | {result['correlation'][key + '_pooled']:.3f} |"
-            for key, name in (("adaptive", "adaptive + pooled"), ("random", "random + pooled"))
+            for key, name in (("adaptive", "adaptive + pooled"), ("random", "random + pooled"),
+                              ("cat_info", "max-information adaptive + pooled"), ("fixed", "fixed order + pooled"))
         ],
         "",
         "## Five-item sanity test (TR-V-06)",

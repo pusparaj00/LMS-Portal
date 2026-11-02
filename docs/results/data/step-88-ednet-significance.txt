@@ -1,0 +1,22 @@
+ednet: 175088 answers, 1500 students, 141 skills
+fold 1 done
+fold 2 done
+fold 3 done
+fold 4 done
+fold 5 done
+### AUC on the pooled test answers, 500 student bootstraps
+| Model | AUC | 95% interval |
+| --- | --- | --- |
+| skill_mean | 0.5811 | 0.5669 to 0.5949 |
+| lms_default | 0.6155 | 0.5910 to 0.6370 |
+| lms_platt | 0.6009 | 0.5839 to 0.6195 |
+| lms_fitted_skill | 0.6310 | 0.6170 to 0.6440 |
+| pybkt | 0.6307 | 0.6169 to 0.6431 |
+### Paired differences (first minus second)
+| Pair | Difference | 95% interval | First ahead in |
+| --- | --- | --- | --- |
+| lms_default - skill_mean | +0.0344 | +0.0008 to +0.0688 | 98% of resamples |
+| lms_platt - lms_default | -0.0146 | -0.0247 to -0.0051 | 0% of resamples |
+| lms_fitted_skill - lms_default | +0.0154 | -0.0015 to +0.0320 | 96% of resamples |
+| pybkt - lms_default | +0.0151 | -0.0017 to +0.0320 | 96% of resamples |
+| pybkt - lms_fitted_skill | -0.0003 | -0.0029 to +0.0024 | 36% of resamples |

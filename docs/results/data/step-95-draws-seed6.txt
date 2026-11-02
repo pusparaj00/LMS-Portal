@@ -1,0 +1,153 @@
+
+## assist09
+
+assist09: 283105 answers, 4163 students
+fold 1 N=30: lms_default 0.6835, gbdt 0.6392, stack_transfer 0.7086, hybrid 0.7086  alpha 0.0
+fold 1 N=100: lms_default 0.6835, gbdt 0.7127, stack_transfer 0.7197, hybrid 0.7236  alpha 0.25
+fold 2 N=30: lms_default 0.6815, gbdt 0.6449, stack_transfer 0.7098, hybrid 0.7117  alpha 0.25
+fold 2 N=100: lms_default 0.6815, gbdt 0.7034, stack_transfer 0.7174, hybrid 0.7215  alpha 0.25
+fold 3 N=30: lms_default 0.6658, gbdt 0.6661, stack_transfer 0.6956, hybrid 0.6956  alpha 0.0
+fold 3 N=100: lms_default 0.6658, gbdt 0.7000, stack_transfer 0.7053, hybrid 0.7091  alpha 0.25
+fold 4 N=30: lms_default 0.6897, gbdt 0.6847, stack_transfer 0.7198, hybrid 0.7198  alpha 0.0
+fold 4 N=100: lms_default 0.6897, gbdt 0.7141, stack_transfer 0.7380, hybrid 0.7412  alpha 0.25
+fold 5 N=30: lms_default 0.6826, gbdt 0.6722, stack_transfer 0.7163, hybrid 0.7162  alpha 0.25
+fold 5 N=100: lms_default 0.6826, gbdt 0.7180, stack_transfer 0.7256, hybrid 0.7283  alpha 0.25
+
+### assist09: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.6806 (0.0079) | 0.6614 (0.0170) | 0.7100 (0.0083) | 0.7104 (0.0083) |
+| 100 | 0.6806 (0.0079) | 0.7096 (0.0068) | 0.7212 (0.0107) | 0.7247 (0.0104) |
+
+### assist09: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.1418 (0.0047) | 0.0522 (0.0198) | 0.0207 (0.0064) | 0.0196 (0.0062) |
+| 100 | 0.1418 (0.0047) | 0.0187 (0.0052) | 0.0146 (0.0072) | 0.0127 (0.0040) |
+
+### assist09: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.6663 (0.0056) | 0.6152 (0.0180) | 0.5749 (0.0051) | 0.5748 (0.0057) |
+| 100 | 0.6663 (0.0056) | 0.5745 (0.0021) | 0.5675 (0.0052) | 0.5645 (0.0053) |
+
+### assist09: AUC difference stack_transfer minus other model, 95% interval over students (10 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0505 | +0.0479 to +0.0533 |
+| 100 | gbdt | +0.0113 | +0.0101 to +0.0126 |
+
+### assist09: AUC difference hybrid minus other model, 95% interval over students (10 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0508 | +0.0482 to +0.0540 |
+| 30 | stack_transfer | +0.0003 | +0.0001 to +0.0006 |
+| 100 | gbdt | +0.0149 | +0.0143 to +0.0159 |
+| 100 | stack_transfer | +0.0036 | +0.0033 to +0.0037 |
+
+## ednet
+
+ednet: 175088 answers, 1500 students
+fold 1 N=30: lms_default 0.6476, gbdt 0.6293, stack_transfer 0.6847, hybrid 0.6847  alpha 0.0
+fold 1 N=100: lms_default 0.6476, gbdt 0.6986, stack_transfer 0.7079, hybrid 0.7074  alpha 0.25
+fold 2 N=30: lms_default 0.6238, gbdt 0.6195, stack_transfer 0.6716, hybrid 0.6681  alpha 0.25
+fold 2 N=100: lms_default 0.6238, gbdt 0.6797, stack_transfer 0.6874, hybrid 0.6874  alpha 0.0
+fold 3 N=30: lms_default 0.5890, gbdt 0.5962, stack_transfer 0.6351, hybrid 0.6348  alpha 0.25
+fold 3 N=100: lms_default 0.5890, gbdt 0.6239, stack_transfer 0.6467, hybrid 0.6454  alpha 0.25
+fold 4 N=30: lms_default 0.5753, gbdt 0.5785, stack_transfer 0.6141, hybrid 0.6141  alpha 0.0
+fold 4 N=100: lms_default 0.5753, gbdt 0.6086, stack_transfer 0.6378, hybrid 0.6362  alpha 0.25
+fold 5 N=30: lms_default 0.6185, gbdt 0.5876, stack_transfer 0.6643, hybrid 0.6643  alpha 0.0
+fold 5 N=100: lms_default 0.6185, gbdt 0.6767, stack_transfer 0.6859, hybrid 0.6859  alpha 0.0
+
+### ednet: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.6109 (0.0258) | 0.6022 (0.0192) | 0.6540 (0.0257) | 0.6532 (0.0253) |
+| 100 | 0.6109 (0.0258) | 0.6575 (0.0348) | 0.6731 (0.0265) | 0.6725 (0.0271) |
+
+### ednet: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.1429 (0.0192) | 0.0673 (0.0203) | 0.0289 (0.0128) | 0.0276 (0.0143) |
+| 100 | 0.1429 (0.0192) | 0.0226 (0.0080) | 0.0172 (0.0057) | 0.0165 (0.0057) |
+
+### ednet: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.7039 (0.0440) | 0.6387 (0.0408) | 0.6021 (0.0311) | 0.6024 (0.0308) |
+| 100 | 0.7039 (0.0440) | 0.5987 (0.0324) | 0.5912 (0.0294) | 0.5913 (0.0297) |
+
+### ednet: AUC difference stack_transfer minus other model, 95% interval over students (10 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0636 | +0.0473 to +0.0765 |
+| 100 | gbdt | +0.0139 | +0.0110 to +0.0162 |
+
+### ednet: AUC difference hybrid minus other model, 95% interval over students (10 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0628 | +0.0515 to +0.0736 |
+| 30 | stack_transfer | -0.0008 | -0.0011 to -0.0003 |
+| 100 | gbdt | +0.0133 | +0.0116 to +0.0140 |
+| 100 | stack_transfer | -0.0006 | -0.0010 to -0.0003 |
+
+## csedm
+
+csedm: 24032 answers, 506 students
+fold 1 N=30: lms_default 0.7208, gbdt 0.7841, stack_transfer 0.8059, hybrid 0.8059  alpha 0.0
+fold 1 N=100: lms_default 0.7208, gbdt 0.8094, stack_transfer 0.8154, hybrid 0.8161  alpha 0.5
+fold 2 N=30: lms_default 0.6940, gbdt 0.7722, stack_transfer 0.7869, hybrid 0.7892  alpha 0.25
+fold 2 N=100: lms_default 0.6940, gbdt 0.8006, stack_transfer 0.8006, hybrid 0.8040  alpha 0.25
+fold 3 N=30: lms_default 0.7068, gbdt 0.7644, stack_transfer 0.7883, hybrid 0.7875  alpha 0.25
+fold 3 N=100: lms_default 0.7068, gbdt 0.7997, stack_transfer 0.7988, hybrid 0.8032  alpha 0.5
+fold 4 N=30: lms_default 0.6871, gbdt 0.7603, stack_transfer 0.7816, hybrid 0.7813  alpha 0.25
+fold 4 N=100: lms_default 0.6871, gbdt 0.7894, stack_transfer 0.7976, hybrid 0.7986  alpha 0.5
+fold 5 N=30: lms_default 0.7312, gbdt 0.7601, stack_transfer 0.7913, hybrid 0.7898  alpha 0.25
+fold 5 N=100: lms_default 0.7312, gbdt 0.7978, stack_transfer 0.7996, hybrid 0.8030  alpha 0.5
+
+### csedm: AUC (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.7080 (0.0163) | 0.7682 (0.0091) | 0.7908 (0.0082) | 0.7908 (0.0081) |
+| 100 | 0.7080 (0.0163) | 0.7994 (0.0064) | 0.8024 (0.0066) | 0.8050 (0.0059) |
+
+### csedm: ECE (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.0680 (0.0085) | 0.0385 (0.0095) | 0.0174 (0.0054) | 0.0193 (0.0060) |
+| 100 | 0.0680 (0.0085) | 0.0235 (0.0064) | 0.0227 (0.0041) | 0.0227 (0.0048) |
+
+### csedm: LogLoss (mean over folds, std in brackets)
+
+| Training students | lms_default | gbdt | stack_transfer | hybrid |
+| --- | --- | --- | --- | --- |
+| 30 | 0.5845 (0.0111) | 0.5375 (0.0162) | 0.5131 (0.0121) | 0.5133 (0.0127) |
+| 100 | 0.5845 (0.0111) | 0.5052 (0.0130) | 0.5036 (0.0130) | 0.4994 (0.0121) |
+
+### csedm: AUC difference stack_transfer minus other model, 95% interval over students (10 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0228 | +0.0185 to +0.0274 |
+| 100 | gbdt | +0.0032 | +0.0009 to +0.0031 |
+
+### csedm: AUC difference hybrid minus other model, 95% interval over students (10 resamples)
+
+| Training students | against | difference | interval |
+| --- | --- | --- | --- |
+| 30 | gbdt | +0.0227 | +0.0213 to +0.0251 |
+| 30 | stack_transfer | -0.0001 | -0.0007 to +0.0009 |
+| 100 | gbdt | +0.0056 | +0.0048 to +0.0061 |
+| 100 | stack_transfer | +0.0024 | +0.0013 to +0.0031 |
